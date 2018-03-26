@@ -53,3 +53,26 @@ google-services.json
 freeline.py
 freeline/
 freeline_project_description.json
+
+# Fastlane
+.circleci/fastlane/README.md
+.circleci/fastlane/report.xml
+
+# Forcedotcom CLI
+forcehybrid-*.tgz
+forcedroid-*.tgz
+forceios-*.tgz
+forcereact-*.tgz
+
+# Temp Directory for Builing Apps
+tmp*/
+
+# Packager
+SalesforceMobileSDK-Package/
+
+# Test Results
+test_output/
+
+# XCode User Data
+iOS/MobileSDKUITest.xcodeproj/project.xcworkspace/xcuserdata/
+iOS/MobileSDKUITest.xcodeproj/xcuserdata/bpage.xcuserdatad/xcdebugger/ 
