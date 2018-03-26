@@ -1,0 +1,204 @@
+aliases:
+  - &upgrade-git
+    name: Update Git
+    command:  |
+      git --version
+      sudo apt-get install \
+        build-essential flex bison \
+        libreadline6-dev zlib1g-dev \
+        libssl-dev \
+        libcurl4-gnutls-dev \
+        libexpat1-dev \
+        tcl tk \
+        tcl-dev gettext \
+        asciidoc \
+        docbook2x
+
+      wget https://www.kernel.org/pub/software/scm/git/git-2.13.0.tar.gz
+      tar -xvzf git-2.13.0.tar.gz
+      cd git-2.13.0
+      sudo ./configure
+      sudo make && sudo make install
+      git --version
+
+  - &setup
+    name: Setup
+    command: ./install.sh
+    when: always
+
+  - &install-ant
+    name: Install Ant
+    command: brew install ant
+
+linux: &linux
+  working_directory: ~/SalesforceMobileSDK-UITest
+  docker:
+    - image: circleci/android:api-27-node8-alpha
+  environment:
+    - TERM: "dumb"
+    - ADB_INSTALL_TIMEOUT: 15
+    - _JAVA_OPTIONS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+    - GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs="-XX:+HeapDumpOnOutOfMemoryError"'
+    - ANDROID_NDK: '/opt/ndk/android-ndk-r10e'
+    - BUILD_THREADS: 2
+
+#mac: &mac
+#  working_directory: ~/SalesforceMobileSDK-Package
+#  macos:
+#    xcode: "9.2.0"
+#  shell: /bin/bash --login -eo pipefail
+
+version: 2
+jobs:
+  test-android:
+    <<: *linux
+    steps:
+      - checkout
+      - run:
+          name: Start Emulator
+          command: source .circleci/avd_helper.sh && startAVD
+          background: true
+      - run: *upgrade-git
+      - run: *setup
+      - run:
+          name: Wait for Emulator
+          command: source .circleci/avd_helper.sh && waitForAVD
+
+      - run:
+          name: Test Native Java App
+          command: cd .circleci && fastlane android type:native
+          when: always
+          no_output_timeout: 900
+      - store_artifacts:
+          path: tmp*/nativeandroidApp/app/build/outputs/apk/
+          destination: Java
+      - store_artifacts:
+          path: Android/app/build/reports/androidTests/connected/
+          destination: Java
+      - store_artifacts:
+          path: /home/circleci/.fastlane/latest_crash.json
+          destination: Java
+      - store_artifacts:
+          path: Android/screenshots/native/login.png
+          destination: Java
+      - store_test_results:
+          path: Android/app/build/outputs/androidTest-results/
+
+      - run:
+          name: Test Native Kotlin App
+          command: cd .circleci && fastlane android type:native_kotlin
+          when: always
+          no_output_timeout: 900
+      - store_artifacts:
+          path: tmp*/native_kotlinandroidApp/app/build/outputs/apk/
+          destination: Kotlin
+      - store_artifacts:
+          path: Android/app/build/reports/androidTests/connected/
+          destination: Kotlin
+      - store_artifacts:
+          path: /home/circleci/.fastlane/latest_crash.json
+          destination: Kotlin
+      - store_artifacts:
+          path: Android/screenshots/native_kotlin/login.png
+          destination: Kotlin
+      - store_test_results:
+          path: Android/app/build/outputs/androidTest-results/
+
+      - run:
+          name:  Restart Emulator
+          command: source .circleci/avd_helper.sh && restartAVD
+          background: true
+          when: always
+      - run:
+          name: Wait for Emulator
+          command: source .circleci/avd_helper.sh && waitForAVD
+          when: always
+
+      - run:
+          name: Test Hybrid Local App
+          command: cd .circleci && fastlane android type:hybrid_local
+          when: always
+          no_output_timeout: 900
+      - store_artifacts:
+          path: tmp*/hybrid_localandroidApp/platforms/android/app/build/outputs/apk/
+          destination: Hybrid_Local
+      - store_artifacts:
+          path: Android/app/build/reports/androidTests/connected/
+          destination: Hybrid_Local
+      - store_artifacts:
+            path: /home/circleci/.fastlane/latest_crash.json
+            destination: Hybrid_Local
+      - store_artifacts:
+            path: Android/screenshots/hybrid_local/login.png
+            destination: Hybrid_Local
+      - store_test_results:
+          path: Android/app/build/outputs/androidTest-results/
+
+      - run:
+          name: Test Hybrid Remote App
+          command: cd .circleci && fastlane android type:hybrid_remote
+          when: always
+          no_output_timeout: 900
+      - store_artifacts:
+          path: tmp*/hybrid_remoteandroidApp/platforms/android/app/build/outputs/apk/
+          destination: Hybrid_Remote
+      - store_artifacts:
+          path: Android/app/build/reports/androidTests/connected/
+          destination: Hybrid_Remote
+      - store_artifacts:
+          path: /home/circleci/.fastlane/latest_crash.json
+          destination: Hybrid_Remote
+      - store_artifacts:
+          path: Android/screenshots/hybrid_remote/login.png
+          destination: Hybrid_Remote
+      - store_test_results:
+          path: Android/app/build/outputs/androidTest-results/
+
+
+#  test-ios:
+#      <<: *mac
+#      steps:
+#        - checkout
+#        - run: *setup
+#        - run: *install-ant
+#        - run:
+#            name: Build Native Objective-C App
+#            command: ./test/test_force.js --os=ios --apptype=native
+#            when: always
+#        - run:
+#            name: Build Native Swift App
+#            command: ./test/test_force.js --os=ios --apptype=native_swift
+#            when: always
+#        - run:
+#            name: Build Hybrid Local App
+#            command: ./test/test_force.js --os=ios --apptype=hybrid_local
+#            when: always
+#        - run:
+#            name: Build Hybrid Remote App
+#            command: ./test/test_force.js --os=ios --apptype=hybrid_remote
+#            when: always
+#        - run:
+#            name: Build React Native App
+#            command: ./test/test_force.js --os=ios --apptype=react_native
+#            no_output_timeout: 20m
+#            when: always
+
+workflows:
+  version: 2
+
+  pr-build-all-apps:
+    jobs:
+      - test-android
+
+  # Cron are on a timezone 8 hours ahead of PST
+  # Build everything on Saturday Afternoon
+  weekly-build-all-apps:
+    triggers:
+      - schedule:
+          cron: "30 19 * * 6"
+          filters:
+            branches:
+              only:
+                - dev
+    jobs:
+      - test-android
