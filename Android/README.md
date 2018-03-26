@@ -1,5 +1,3 @@
-Android: [![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master.svg?style=svg)](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master)
-
 #  Mobile SDK UI Tests for Android
 
 These tests are designed to validate the functionality of Android apps created using the MobileSDK CLI tools.  Unless otherwise specified each test should run against apps generated using native Java/Kotlin, Cordova, or React Native code.

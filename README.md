@@ -1,4 +1,4 @@
-Android: [![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master.svg?style=svg)](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master)
+[![CircleCI](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master.svg?style=svg)](https://circleci.com/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master)
 
 # Salesforce MobileSDK UI Tests
 
