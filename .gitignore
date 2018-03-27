@@ -39,6 +39,7 @@ captures/
 .idea/gradle.xml
 .idea/dictionaries
 .idea/libraries
+.idea/
 
 # Keystore files
 *.jks
@@ -72,7 +73,8 @@ SalesforceMobileSDK-Package/
 
 # Test Results
 test_output/
+Android/screenshots/
 
 # XCode User Data
 iOS/MobileSDKUITest.xcodeproj/project.xcworkspace/xcuserdata/
-iOS/MobileSDKUITest.xcodeproj/xcuserdata/bpage.xcuserdatad/xcdebugger/ 
+iOS/MobileSDKUITest.xcodeproj/xcuserdata/
