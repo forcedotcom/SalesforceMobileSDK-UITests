@@ -26,18 +26,19 @@
  */
 package PageObjects
 
-import android.os.Build
-import android.support.test.InstrumentationRegistry
-import android.support.test.uiautomator.UiDevice
+import android.support.test.uiautomator.UiSelector
+import org.junit.Assert
 
 /**
  * Created by bpage on 2/24/18.
  */
-open class BasePageObject {
-    val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    // FIXME Update when min verison increaes past API 23
-    val isOldDevice: Boolean = (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M)
-    // FIXME Update this when we stop using ARM Emulators
-    val isArm = Build.SUPPORTED_ABIS.first().contains("armeabi")
-    var timeout:Long = if (isArm) 30000 else 5000
+class HyrbidRemoteAppPageObject(private val app: TestApplication) : BasePageObject() {
+
+    fun assertAppLoads() {
+        Thread.sleep(timeout)
+        val title = device.findObject(UiSelector().className("android.view.View").descriptionContains("Salesforce Mobile SDK Test"))
+        title.waitForExists(timeout)
+        Thread.sleep(timeout / 2)
+        Assert.assertEquals(failedLoginMessage, "Salesforce Mobile SDK Test", title.contentDescription)
+    }
 }

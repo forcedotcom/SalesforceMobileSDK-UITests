@@ -26,18 +26,23 @@
  */
 package PageObjects
 
-import android.os.Build
 import android.support.test.InstrumentationRegistry
-import android.support.test.uiautomator.UiDevice
+import android.content.Intent
 
 /**
- * Created by bpage on 2/24/18.
+ * Created by bpage on 2/21/18.
  */
-open class BasePageObject {
-    val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    // FIXME Update when min verison increaes past API 23
-    val isOldDevice: Boolean = (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M)
-    // FIXME Update this when we stop using ARM Emulators
-    val isArm = Build.SUPPORTED_ABIS.first().contains("armeabi")
-    var timeout:Long = if (isArm) 30000 else 5000
+
+class TestApplication {
+    private var packageName = InstrumentationRegistry.getArguments().get("packageName") as String
+    var name = packageName.split(".").last().replace("_java", "") + "_androidApp"
+    var type = AppType.valueOf(packageName.split(".").last().toUpperCase())
+
+    fun launch() {
+        val context = InstrumentationRegistry.getContext()
+        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        context.startActivity(intent)
+    }
 }

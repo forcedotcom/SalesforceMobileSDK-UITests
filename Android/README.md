@@ -4,7 +4,7 @@ These tests are designed to validate the functionality of Android apps created u
 
 Basic usage:
 1.  Build the app(s) to be tested on a specific device.
-2.  Run the tests here agianst the same device and supply the test app's package id as a parameter with the `-e` flag and the key `packageName`.
+2.  Run the tests here against the same device and supply the test app's package id as a parameter with the `-e` flag and the key `packageName`.
 
 ex:  `adb shell am instrument -w -r -e debug false -e packageName com.mycompany com.salesforce.mobilesdk.mobilesdkuitest.test/android.support.test.runner.AndroidJUnitRunner`
 

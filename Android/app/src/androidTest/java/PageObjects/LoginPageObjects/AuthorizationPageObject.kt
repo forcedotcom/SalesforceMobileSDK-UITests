@@ -26,18 +26,43 @@
  */
 package PageObjects
 
-import android.os.Build
-import android.support.test.InstrumentationRegistry
-import android.support.test.uiautomator.UiDevice
+import android.support.test.uiautomator.*
+import android.util.Log
 
 /**
- * Created by bpage on 2/24/18.
+ * Created by bpage on 2/23/18.
  */
-open class BasePageObject {
-    val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    // FIXME Update when min verison increaes past API 23
-    val isOldDevice: Boolean = (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M)
-    // FIXME Update this when we stop using ARM Emulators
-    val isArm = Build.SUPPORTED_ABIS.first().contains("armeabi")
-    var timeout:Long = if (isArm) 30000 else 5000
+
+class AuthorizationPageObject : BasePageObject() {
+
+    init {
+        if (isArm) {
+            Log.i("uia", "Sleeping a while to let auth page load.")
+            Thread.sleep(timeout)
+        }
+    }
+
+    fun tapAllow() {
+        val allowButton = if (isOldDevice) {
+            device.findObject(UiSelector().className("android.widget.Button").index(0))
+        }
+        else {
+            device.findObject(UiSelector().resourceId("oaapprove"))
+        }
+
+        Log.i("uia", "Waiting for allow button to be present.")
+        assert(allowButton.waitForExists(timeout * 5))
+        if (isArm) {
+            Thread.sleep(timeout)
+        }
+
+        val webview2 = device.wait(Until.findObject(By.clazz("android.webkit.WebView")), timeout)
+        Log.i("uia", "Scrolling webview.")
+        webview2.scroll(Direction.DOWN, 0.5f)
+        allowButton.click()
+
+        if (isOldDevice) {
+            Thread.sleep(timeout)
+        }
+    }
 }
