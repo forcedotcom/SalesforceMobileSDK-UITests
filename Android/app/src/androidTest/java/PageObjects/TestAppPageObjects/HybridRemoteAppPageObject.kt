@@ -30,15 +30,15 @@ import android.support.test.uiautomator.UiSelector
 import org.junit.Assert
 
 /**
- * Created by bpage on 2/24/18.
+ * Created by bpage on 2/26/18.
  */
-class HyrbidRemoteAppPageObject(private val app: TestApplication) : BasePageObject() {
+class HybridRemoteAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
         Thread.sleep(timeout)
         val title = device.findObject(UiSelector().className("android.view.View").descriptionContains("Salesforce Mobile SDK Test"))
         title.waitForExists(timeout)
         Thread.sleep(timeout / 2)
-        Assert.assertEquals(failedLoginMessage, "Salesforce Mobile SDK Test", title.contentDescription)
+        Assert.assertEquals("App did not successfully testLogin.", "Salesforce Mobile SDK Test", title.contentDescription)
     }
 }

@@ -34,10 +34,12 @@
 import XCTest
 
 class LoginTests: XCTestCase {
-    private var username = "circleci@mobilesdk.com"
-    private var password = "test1234"
+    private var username = UserUtility().username
+    private var password = UserUtility().password
     private var appLoadError = "App did not load."
     private var timeout:double_t = 30
+    private let reactNativeUsers = "Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"
+    private let sampleAppTitle = "Mobile SDK Sample App"
     
     override func setUp() {
         super.setUp()
@@ -62,7 +64,7 @@ class LoginTests: XCTestCase {
         // Assert App loads
         switch app.appType {
         case .nativeObjC, .nativeSwift:
-            XCTAssert(app.navigationBars["Mobile SDK Sample App"].waitForExistence(timeout: timeout), appLoadError)
+            XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .hybridLocal, .hyrbidRemote:
             let titleText = (app.appType == .hybridLocal) ? "Users" : "Salesforce Mobile SDK Test"
             let title = app.staticTexts[titleText]
@@ -72,7 +74,7 @@ class LoginTests: XCTestCase {
             waitForExpectations(timeout: timeout, handler: nil)
             XCTAssert(title.exists, appLoadError)
         case .reactNative:
-            let titleElement = app.children(matching: .window).element(boundBy: 0).children(matching: .other).element.children(matching: .other)["Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"].children(matching: .other)["Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"].children(matching: .other)["Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"].children(matching: .other)["Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"].children(matching: .other)["Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"].children(matching: .other)["Mobile SDK Sample App"].children(matching: .other)["Mobile SDK Sample App"].children(matching: .other)["Mobile SDK Sample App"]
+            let titleElement = app.children(matching: .window).element(boundBy: 0).children(matching: .other).element.children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[sampleAppTitle].children(matching: .other)[sampleAppTitle].children(matching: .other)[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         }
     }

@@ -30,13 +30,13 @@ import android.support.test.uiautomator.UiSelector
 import org.junit.Assert
 
 /**
- * Created by bpage on 2/24/18.
+ * Created by bpage on 2/26/18.
  */
-class HyrbidLocalAppPageObject(private val app: TestApplication) : BasePageObject() {
+class HybridLocalAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
         val title = device.findObject(UiSelector().className("android.view.View").descriptionContains("Users"))
         title.waitForExists(timeout)
-        Assert.assertEquals(failedLoginMessage, "Users", title.contentDescription)
+        Assert.assertEquals("App did not successfully testLogin.", "Users", title.contentDescription)
     }
 }

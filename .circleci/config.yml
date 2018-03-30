@@ -199,6 +199,6 @@ workflows:
           filters:
             branches:
               only:
-                - dev
+                - master
     jobs:
       - test-android

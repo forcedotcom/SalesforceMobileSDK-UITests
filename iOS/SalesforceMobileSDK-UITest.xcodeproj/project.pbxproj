@@ -12,6 +12,7 @@
 		A3045A2C203E2F420028F46F /* AuthorizationPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */; };
 		A38B56D92049CE00008D53A2 /* AppType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38B56D82049CE00008D53A2 /* AppType.swift */; };
 		A39442FB2024D440006022F8 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39442FA2024D440006022F8 /* LoginTests.swift */; };
+		A3F06182206DC48100ADA1DD /* UserUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F06181206DC48100ADA1DD /* UserUtility.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		A38B56D82049CE00008D53A2 /* AppType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppType.swift; sourceTree = "<group>"; };
 		A39442FA2024D440006022F8 /* LoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginTests.swift; sourceTree = "<group>"; };
 		A39F9D4B2024CD5100251414 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A3F06181206DC48100ADA1DD /* UserUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserUtility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,10 +40,9 @@
 		A3045A26203E23580028F46F /* PageObjects */ = {
 			isa = PBXGroup;
 			children = (
-				A3045A27203E241B0028F46F /* TestApplication.swift */,
-				A3045A29203E26AD0028F46F /* LoginPageObject.swift */,
-				A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */,
+				A3F06183206DCA2D00ADA1DD /* LoginPageObjects */,
 				A38B56D82049CE00008D53A2 /* AppType.swift */,
+				A3045A27203E241B0028F46F /* TestApplication.swift */,
 			);
 			path = PageObjects;
 			sourceTree = "<group>";
@@ -49,6 +50,7 @@
 		A34A746A202281AC00846B32 = {
 			isa = PBXGroup;
 			children = (
+				A3F06180206DC46900ADA1DD /* TestUtility */,
 				A3045A26203E23580028F46F /* PageObjects */,
 				A39442F92024D3FD006022F8 /* Login */,
 				A39F9D4B2024CD5100251414 /* README.md */,
@@ -70,6 +72,23 @@
 				A39442FA2024D440006022F8 /* LoginTests.swift */,
 			);
 			path = Login;
+			sourceTree = "<group>";
+		};
+		A3F06180206DC46900ADA1DD /* TestUtility */ = {
+			isa = PBXGroup;
+			children = (
+				A3F06181206DC48100ADA1DD /* UserUtility.swift */,
+			);
+			path = TestUtility;
+			sourceTree = "<group>";
+		};
+		A3F06183206DCA2D00ADA1DD /* LoginPageObjects */ = {
+			isa = PBXGroup;
+			children = (
+				A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */,
+				A3045A29203E26AD0028F46F /* LoginPageObject.swift */,
+			);
+			path = LoginPageObjects;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -142,6 +161,7 @@
 				A3045A28203E241B0028F46F /* TestApplication.swift in Sources */,
 				A38B56D92049CE00008D53A2 /* AppType.swift in Sources */,
 				A3045A2C203E2F420028F46F /* AuthorizationPageObject.swift in Sources */,
+				A3F06182206DC48100ADA1DD /* UserUtility.swift in Sources */,
 				A39442FB2024D440006022F8 /* LoginTests.swift in Sources */,
 				A3045A2A203E26AD0028F46F /* LoginPageObject.swift in Sources */,
 			);
