@@ -24,10 +24,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects.loginpageobjects
 
-import android.support.test.uiautomator.*
+import androidx.test.uiautomator.*
 import android.util.Log
+import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 2/23/18.
@@ -35,15 +36,8 @@ import android.util.Log
 
 class AuthorizationPageObject : BasePageObject() {
 
-    init {
-        if (isArm) {
-            Log.i("uia", "Sleeping a while to let auth page load.")
-            Thread.sleep(timeout)
-        }
-    }
-
     fun tapAllow() {
-        val allowButton = if (isOldDevice) {
+        val allowButton = if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.Button").index(0))
         }
         else {
@@ -52,17 +46,11 @@ class AuthorizationPageObject : BasePageObject() {
 
         Log.i("uia", "Waiting for allow button to be present.")
         assert(allowButton.waitForExists(timeout * 5))
-        if (isArm) {
-            Thread.sleep(timeout)
-        }
 
         val webview2 = device.wait(Until.findObject(By.clazz("android.webkit.WebView")), timeout)
         Log.i("uia", "Scrolling webview.")
         webview2.scroll(Direction.DOWN, 0.5f)
         allowButton.click()
-
-        if (isOldDevice) {
-            Thread.sleep(timeout)
-        }
+        Thread.sleep(timeout)
     }
 }

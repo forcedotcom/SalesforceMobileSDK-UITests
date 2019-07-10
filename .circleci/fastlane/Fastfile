@@ -1,141 +1,33 @@
 $is_ci = ENV.has_key? 'CIRCLECI'
+$password
+$sim_name = 'testsim'
 
 lane :ios do |options|
-  password = getPassword
-  run_type = options[:type]
-  UI.user_error!('Please specify run type.') unless(run_type)
-  sfdx = options[:sfdx]
-  skipRemoveApp = options[:skipRemoveApp]
-  device = options[:device]
-  ios = options[:ios]
-  sim_name = 'testsim'
-  xcode_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
+  path, bundle_name = base_ios_test_setup(options)
 
-  if device
-    device.gsub!(' ', '-')
-  else
-    device = 'iPhone-8'
-  end
-
-  if ios
-    ios.slice!(0, 3)
-    ios.gsub!('.', '-')
-  else
-    ios = '11-3'
-  end
-
-  system("xcrun simctl delete #{sim_name}") or puts "No old device to delete"
-  sim_id = `xcrun simctl create #{sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
-
-  Dir.chdir('../../') do
-    generateApp('ios', run_type, sfdx)
-    app_name = "#{run_type}_iosApp"
-    path = Dir.glob("tmp*").first.concat("/#{app_name}/")
-
-    case run_type
-      when 'native'
-        bundle_name = 'com.salesforce.native-iosApp'
-      when 'native_swift'
-        bundle_name = 'com.salesforce.native-swift-iosApp'
-      when 'react_native'
-        path.concat('ios/')
-        bundle_name = 'com.salesforce.react-native-iosApp'
-      else
-        path.concat('platforms/ios/')
-        bundle_name = 'com.salesforce.'.concat(run_type)
-    end
-
-    begin
-      # Start Simulator
-      system("xcrun simctl boot #{sim_id}")
-      system("open #{xcode_path} --args -CurrentDeviceUDID #{sim_id}")
-
-      UI.header 'Build for Simulator'
-      Dir.chdir(path) do
-        if run_type == 'react_native'
-          system('npm start&')
-        end
-        system("xcodebuild build -scheme #{app_name} -workspace #{app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData | xcpretty --color --simple") or exit
-
-        UI.important 'Installing App on Simulator'
-        system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/#{app_name}.app")
-      end
-
-        Dir.chdir('iOS/') do
-        destination = "#{sim_name} (" + `instruments -s devices | grep #{sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
-        scan(
-            project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',
-            scheme: 'TestLogin',
-            device: destination,
-            output_directory: 'test_output',
-            xcargs: "TEST_APP_BUNDLE=#{bundle_name} PASSWORD=#{password}"
-        )
-        end
-      ensure
-        unless skipRemoveApp
-          system("xcrun simctl shutdown #{sim_name}")
-          sleep 3
-          system("xcrun simctl delete #{sim_name}")
-        end
-      end
-  end
+  install_ios_app(path)
+  run_ios_tests(bundle_name, 'LoginTests', nil)
 end
 
 lane :android do |options|
-  password = getPassword
-  run_type = options[:type]
-  UI.user_error!('Please specify run type.') unless(run_type)
-  sfdx = options[:sfdx]
-  skipRemoveApp = options[:skipRemoveApp]
-  app_name = (run_type == 'native') ? 'native_java' : run_type
-  package_name = "com.salesforce.#{app_name}"
+  Dir.chdir('../../')
 
-  Dir.chdir('../../') do
-    generateApp('android', run_type, sfdx)
-    path = Dir.glob("tmp*").first.concat("/#{run_type}_androidApp/")
-
-    case run_type
-      when 'react_native'
-        path.concat('android/')
-      when 'hybrid_local', 'hybrid_remote'
-        path.concat('platforms/android/')
-    end
-
-    Dir.chdir(path) do
-      UI.important 'Installing App on Emulator'
-      result = `adb install -r app/build/outputs/apk/debug/app-debug.apk`.split("\n").last.delete("\r")
-      UI.user_error!("APK did not install successfully. \n\nError: #{result}") unless(result.eql? 'Success')
-
-      if run_type == 'react_native'
-        system("npm start&")
-        system("adb shell pm grant #{package_name} android.permission.SYSTEM_ALERT_WINDOW")
-      end
-    end
-
-    Dir.chdir('Android/') do
-      UI.header 'Run Tests'
-      begin
-        package_param = "-Pandroid.testInstrumentationRunnerArguments.packageName=#{package_name}"
-        password_param = "-Pandroid.testInstrumentationRunnerArguments.password=#{password}"
-        result = system("./gradlew #{package_param} #{password_param} connectedAndroidTest --no-daemon --max-workers 2")
-      ensure
-        `mkdir screenshots`
-        `mkdir screenshots/#{run_type}`
-        search = $is_ci ? "sed 's/\r$//'" : "perl -pe 's/\x0D\x0A/\x0A/g'"
-        system("adb shell screencap -p | #{search} > screenshots/#{run_type}/login.png")
-
-        unless skipRemoveApp
-          system("adb uninstall #{package_name}")
-        end
-        UI.user_error!('Tests failed.') unless(result)
-      end
-    end
+  app_path, package_name = base_android_test_setup(options)
+  
+  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests'
+  if $is_ci
+    run_android_tests_firebase(test_class, package_name, app_path)
+  else
+    system("$ANDROID_HOME/platform-tools/adb uninstall #{package_name}")
+    install_android_app(app_path)  
+    run_android_tests(test_class, package_name)
   end
 end
 
-# Helper Functions
-
-def getPassword()
+#
+# Generic Reusable Helper Functions
+#
+def get_password()
   if ENV.has_key? 'CI_USER_PASSWORD'
     return ENV['CI_USER_PASSWORD']
   else
@@ -150,14 +42,229 @@ def getPassword()
   end
 end
 
-def generateApp(os, type, sfdx)
+# Either type or template needs to be set.
+def generate_app(os, type = nil, template = nil, sfdx = nil)
+  UI.crash!('Error: Cannot generate app without type or template.') unless(type or template)
+
   system('rm -rf tmp*/')
   system('rm -rf Android/app/build/')
-  system('killall -9 node')
-  generate_command = "./SalesforceMobileSDK-Package/test/test_force.js --os=#{os} --apptype=#{type}"
+  generate_command = "./SalesforceMobileSDK-Package/test/test_force.js --os=#{os}"
+  if type
+    UI.header "Generating #{type} App"
+    generate_command.concat(" --apptype=#{type}")
+  else
+    UI.header 'Generating IDP App'
+    generate_command.concat("  --templaterepouri=#{template}")
+  end
+
   if sfdx
     generate_command.concat(' --use-sfdx')
   end
-  result = system(generate_command)
+  
+  result = silence_output { system(generate_command) }
   UI.user_error!('Test app was not successfully created.') unless(result)
+end
+
+#
+# Android Helper Functions
+#
+def base_android_test_setup(options)
+  $password = get_password
+  run_type = options[:type]
+  UI.user_error!('Please specify run type.') unless(run_type)
+  sfdx = options[:sfdx]
+  rerun = options[:rerun]
+  app_name = (run_type == 'native') ? 'native_java' : run_type
+  package_name = "com.salesforce.#{app_name}"
+
+  generate_app('android', run_type, nil, sfdx) unless rerun
+  path = Dir.glob("tmp*").last.concat("/App_#{run_type}_android/")
+
+  case run_type
+    when 'react_native'
+      path.concat('android/')
+    when 'hybrid_local', 'hybrid_remote'
+      path.concat('platforms/android/')
+  end
+
+  Dir.chdir(path) do
+    if run_type == 'react_native'
+      system("npm start&")
+      system("$ANDROID_HOME/platform-tools/adb shell pm grant #{package_name} android.permission.SYSTEM_ALERT_WINDOW")
+    end
+  end
+
+  return path, package_name
+end
+
+def install_android_app(appPath, release = nil)
+  puts "App Path: #{appPath}"
+  apkPath = 'debug/app-debug.apk'
+  Dir.chdir(appPath) do
+    UI.important 'Installing App on Emulator'
+    result = `$ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/#{apkPath}`.split("\n").last.delete("\r")
+    UI.build_failure!("APK did not install successfully. \n\nError: #{result}") unless(result.eql? 'Success')
+  end
+end
+
+def run_android_tests(test_class, package_name, addition_ops = nil)
+  class_param =  "-Pandroid.testInstrumentationRunnerArguments.class=#{test_class}"
+  package_param = "-Pandroid.testInstrumentationRunnerArguments.packageName=#{package_name}"
+  password_param = "-Pandroid.testInstrumentationRunnerArguments.password=#{$password}"
+  addition_ops = '' unless addition_ops
+
+  Dir.chdir('./Android/') do
+    UI.header 'Run Tests Locally'
+    
+    begin
+       system("/usr/local/share/android-sdk/platform-tools/adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'")
+       result = system("./gradlew #{class_param} #{package_param} #{password_param} #{addition_ops} connectedAndroidTest")
+    ensure
+      UI.test_failure!('Tests failed.') unless(result)
+    end
+  end
+end
+
+def run_android_tests_firebase(test_class, package_name, app_path, addition_ops = nil)
+  # Get app type for categorizing test results
+  app_type = package_name.split('.').last
+  bucket = (app_type == "native_java") ? "native" : app_type
+
+  Dir.chdir('./Android/') do
+    UI.message 'Compile Tests'
+    buildResult = system("./gradlew app:assembleAndroidTest")
+    UI.build_failure!('Tests failed to build.') unless buildResult    
+    
+    UI.header 'Run Tests'
+    testResult = system("gcloud firebase test android run \
+      --project mobile-apps-firebase-test \
+      --type instrumentation \
+      --app=../#{app_path}app/build/outputs/apk/debug/app-debug.apk \
+      --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+      --device model=NexusLowRes,version=28,locale=en,orientation=portrait  \
+      --device model=NexusLowRes,version=27,locale=en,orientation=portrait  \
+      --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
+      --device model=NexusLowRes,version=25,locale=en,orientation=portrait  \
+      --device model=NexusLowRes,version=24,locale=en,orientation=portrait  \
+      --device model=NexusLowRes,version=23,locale=en,orientation=portrait  \
+      --results-dir=UITest-#{app_type}  \
+      --results-history-name=UITest-#{app_type}  \
+      --results-dir=UITest-#{bucket}-#{ENV['CIRCLE_BUILD_NUM']}  \
+      --environment-variables class=#{test_class},packageName=#{package_name},password=#{$password},firebase=true   \
+      --no-performance-metrics --no-auto-google-login")
+      UI.test_failure!('Tests failed.') unless testResult
+  end
+end
+
+#
+# iOS Helper Functions
+#
+def base_ios_test_setup(options)
+  $password = get_password
+  run_type = options[:type]
+  UI.user_error!('Please specify run type.') unless(run_type)
+  system("rm -rf ../../test_output/#{run_type}")
+  sfdx = options[:sfdx]
+  device = options[:device]
+  ios = options[:ios]
+  rerun = options[:rerun]
+  xcode_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
+
+  if device
+    device.gsub!(' ', '-')
+  else
+    device = 'iPhone-XR'
+  end
+
+  if ios
+    ios.gsub!('.', '-')
+  else
+    ios = '12-2'
+  end
+
+  puts "device: #{device}, ios: #{ios}" 
+  system("xcrun simctl delete #{$sim_name}") or puts "No old device to delete"
+  sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
+
+  Dir.chdir('../../') do
+    generate_app('ios', run_type, nil, sfdx) unless rerun
+    app_name = "App_#{run_type}_ios"
+    path = Dir.glob("tmp*").first.concat("/#{app_name}/")
+
+    case run_type
+      when 'native'
+        bundle_name = 'com.salesforce.App-native-ios'
+      when 'native_swift'
+        bundle_name = 'com.salesforce.App-native-swift-ios'
+      when 'react_native'
+        path.concat('ios/')
+        bundle_name = 'com.salesforce.App-react-native-ios'
+
+        if run_type == 'react_native'
+          Dir.chdir(path) do
+            system('npm start&')
+          end
+        end
+      else
+        path.concat('platforms/ios/')
+        bundle_name = 'com.salesforce.'.concat(run_type)
+    end
+
+    # Start Simulator
+    system("xcrun simctl boot #{sim_id}")
+    system("open #{xcode_path} --args -CurrentDeviceUDID #{sim_id}")
+
+    return '../../' + path, bundle_name
+  end
+end
+
+def install_ios_app(app_path, release = nil)
+  app_name = app_path.split('/').grep(/ios/).first
+  Dir.chdir(app_path) do
+    UI.important 'Build for Simulator'
+    silence_output { system("xcodebuild build -scheme #{app_name} -workspace #{app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData") }
+    
+    UI.important 'Installing App on Simulator'
+    system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/#{app_name}.app")
+  end
+end
+
+def run_ios_tests(bundle_name, test_scheme, xcargs = nil)
+  xcargs_string = ''
+  xcargs.each { |arg| xcargs_string += "'#{arg}' " } unless xcargs.nil?
+  app_type = bundle_name.split('.').last
+  app_type = (app_type.start_with?('App_')) ? app_type[4..-5] : app_type
+  
+  Dir.chdir('../../iOS/') do
+    destination = "#{$sim_name} (" + `instruments -s devices | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
+    begin
+      scan(
+        project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',
+        scheme: test_scheme,
+        device: destination,
+        output_directory: "test_output/#{app_type}",
+        clean: true,
+        xcargs: "'TEST_APP_BUNDLE=#{bundle_name}' 'PASSWORD=#{$password}' #{xcargs_string}"
+      )
+    ensure
+      system("xcrun simctl shutdown #{$sim_name}")
+    end
+  end
+end
+
+def silence_output
+  begin
+    stderr, stdout = $stderr.clone, $stdout.clone
+    $stderr.reopen(File.new('/dev/null', 'w'))
+    $stdout.reopen(File.new('/dev/null', 'w'))
+
+    yield
+  rescue Exception => e
+    $stdout.reopen(stdout)
+    $stderr.reopen(stderr)
+    raise e
+  ensure
+    $stdout.reopen(stdout)
+    $stderr.reopen(stderr)
+  end
 end

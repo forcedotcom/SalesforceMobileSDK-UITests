@@ -24,10 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects.testapppageobjects
 
-import android.support.test.uiautomator.UiSelector
+import android.os.Build
+import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
+import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 2/26/18.
@@ -35,8 +37,15 @@ import org.junit.Assert
 class HybridLocalAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        val title = device.findObject(UiSelector().className("android.view.View").descriptionContains("Users"))
-        title.waitForExists(timeout)
-        Assert.assertEquals("App did not successfully testLogin.", "Users", title.contentDescription)
+        Thread.sleep(timeout * 2)
+        // TODO: Update when min version increases to API 28
+        val title = if (!hasOldWebview or (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)) {
+            device.findObject(UiSelector().className("android.view.View").text("Contacts"))
+        } else {
+            device.findObject(UiSelector().className("android.view.View").descriptionContains("Contacts"))
+        }
+
+        title.waitForExists(timeout * 5)
+        Assert.assertTrue("App did not successfully testLogin.", title.exists())
     }
 }
