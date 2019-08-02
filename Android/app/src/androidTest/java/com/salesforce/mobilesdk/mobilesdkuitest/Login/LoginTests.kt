@@ -24,31 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.mobilesdk.mobilesdkuitest.Login
+package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import PageObjects.*
-import TestUtility.*
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiSelector
-import org.junit.Assert
+import pageobjects.*
+import testutility.*
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.runner.RunWith
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
+import pageobjects.loginpageobjects.LoginPageObject
+import pageobjects.loginpageobjects.AuthorizationPageObject
+import pageobjects.testapppageobjects.*
 
 /**
  * Created by bpage on 2/2/18.
  */
-
 @RunWith(AndroidJUnit4::class)
 class LoginTests {
-    var app = TestApplication()
-    var userUtil = UserUtility()
-    private var device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    var timeout:Long = 30000
-    var username = userUtil.username
-    var password = userUtil.password
+    private var app = TestApplication()
+    private var userUtil = UserUtility()
+    private var username = userUtil.username
+    private var password = userUtil.password
 
     @Before
     fun setupTestApp() {
@@ -62,7 +58,6 @@ class LoginTests {
         loginPage.setPassword(password)
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllow()
-        Thread.sleep(timeout * 2)
 
         when (app.type) {
             AppType.NATIVE_JAVA, AppType.NATIVE_KOTLIN ->

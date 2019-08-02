@@ -24,10 +24,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects.testapppageobjects
 
-import android.support.test.uiautomator.UiSelector
+import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
+import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 2/24/18.
@@ -36,9 +37,7 @@ class NativeAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
         val titleBar = device.findObject(UiSelector().className("android.widget.TextView").index(0))
-        if (isArm) {
-            titleBar.waitForExists(timeout * 10)
-        }
-        Assert.assertEquals("App did not successfully testLogin.", app.name, titleBar.text)
+        titleBar.waitForExists(timeout * 5)
+        Assert.assertEquals("App did not successfully login.", app.name, titleBar.text)
     }
 }

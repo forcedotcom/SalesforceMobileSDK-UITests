@@ -24,10 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects.testapppageobjects
 
-import android.support.test.InstrumentationRegistry
+import android.content.Context
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
 import android.content.Intent
+import pageobjects.AppType
 
 /**
  * Created by bpage on 2/21/18.
@@ -35,11 +38,11 @@ import android.content.Intent
 
 class TestApplication {
     private var packageName = InstrumentationRegistry.getArguments().get("packageName") as String
-    var name = packageName.split(".").last().replace("_java", "") + "_androidApp"
+    var name = "App_" + packageName.split(".").last().replace("_java", "") + "_android"
     var type = AppType.valueOf(packageName.split(".").last().toUpperCase())
 
     fun launch() {
-        val context = InstrumentationRegistry.getContext()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         val intent = context.packageManager.getLaunchIntentForPackage(packageName)
 
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

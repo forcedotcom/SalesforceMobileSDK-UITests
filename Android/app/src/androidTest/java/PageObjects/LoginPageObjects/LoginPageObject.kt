@@ -24,11 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects.loginpageobjects
 
 import android.os.Build
-import android.support.test.uiautomator.UiSelector
+import androidx.test.uiautomator.UiSelector
 import android.util.Log
+import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 2/21/18.
@@ -36,14 +37,14 @@ import android.util.Log
 class LoginPageObject : BasePageObject() {
 
     init {
-        if (isOldDevice) {
+        if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.EditText").index(2)).waitForExists(120000)
         }
     }
 
     fun setUsername(name: String) {
-        val usernameField = if (isOldDevice) {
-            // FIXME Update when min verison increaes past API 22
+        val usernameField = if (hasOldWebview) {
+            // TODO: Update when min version increases to API 23
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 device.findObject(UiSelector().className("android.widget.EditText").index(2))
             } else {
@@ -55,53 +56,40 @@ class LoginPageObject : BasePageObject() {
         }
 
         Log.i("uia", "Waiting for username filed to be present.")
-        assert(usernameField.waitForExists(timeout * 5))
-        if (isOldDevice) {
+        if (hasOldWebview) {
+            assert(usernameField.waitForExists(timeout * 12))
             usernameField.legacySetText(name)
             Thread.sleep(timeout)
         }
         else {
+            assert(usernameField.waitForExists(timeout * 3))
             usernameField.text = name
         }
     }
 
     fun setPassword(password: String) {
-        // FIXME Update when min verison increaes past API 22
-        val index = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) 4 else 3
-        val passwordField = if (isOldDevice) {
+        // TODO: Update when min version increases to API 23
+        val index = if (hasOldWebview or (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1)) 4 else 3
+        val passwordField = if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.EditText").index(index))
         }
         else {
             device.findObject(UiSelector().resourceId("password"))
         }
+
         Log.i("uia", "Waiting for password filed to be present.")
         assert(passwordField.waitForExists(timeout))
-
-        // Get keyboard out of the way
-        if (isOldDevice) {
-            Log.i("uia", "Hitting back button to uncover password field")
-            device.pressBack()
-            Thread.sleep(timeout)
-            passwordField.legacySetText(password)
-        }
-        else {
-            passwordField.text = password
-        }
+        passwordField.text = password
     }
 
     fun tapLogin() {
-        val loginButton = if (isOldDevice) {
+        val loginButton = if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.Button").index(0))
         }
         else {
             device.findObject(UiSelector().resourceId("Login"))
         }
 
-        if (isOldDevice) {
-            Log.i("uia", "Login button: try hitting back")
-            device.pressBack()
-            Thread.sleep(timeout)
-        }
         assert(loginButton.waitForExists(timeout * 2))
         loginButton.click()
     }

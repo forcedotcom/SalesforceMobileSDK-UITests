@@ -51,6 +51,7 @@
       </MacroExpansion>
       <CommandLineArguments>
          <CommandLineArgument
+            argument = ""
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>

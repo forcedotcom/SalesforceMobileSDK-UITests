@@ -66,7 +66,7 @@ class LoginTests: XCTestCase {
         case .nativeObjC, .nativeSwift:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .hybridLocal, .hyrbidRemote:
-            let titleText = (app.appType == .hybridLocal) ? "Users" : "Salesforce Mobile SDK Test"
+            let titleText = (app.appType == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
             let title = app.staticTexts[titleText]
             let exists = NSPredicate(format: "exists == 1")
             
@@ -74,7 +74,7 @@ class LoginTests: XCTestCase {
             waitForExpectations(timeout: timeout, handler: nil)
             XCTAssert(title.exists, appLoadError)
         case .reactNative:
-            let titleElement = app.children(matching: .window).element(boundBy: 0).children(matching: .other).element.children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[sampleAppTitle].children(matching: .other)[sampleAppTitle].children(matching: .other)[sampleAppTitle]
+            let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         }
     }

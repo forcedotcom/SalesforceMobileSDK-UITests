@@ -24,10 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects.testapppageobjects
 
-import android.support.test.uiautomator.UiSelector
+import android.os.Build
+import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
+import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 2/26/18.
@@ -35,10 +37,14 @@ import org.junit.Assert
 class HybridRemoteAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        Thread.sleep(timeout)
-        val title = device.findObject(UiSelector().className("android.view.View").descriptionContains("Salesforce Mobile SDK Test"))
-        title.waitForExists(timeout)
-        Thread.sleep(timeout / 2)
-        Assert.assertEquals("App did not successfully testLogin.", "Salesforce Mobile SDK Test", title.contentDescription)
+        Thread.sleep(timeout * 2)
+        // TODO: Update when min version increases to API 28
+        val title = if (!hasOldWebview or (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)) {
+            device.findObject(UiSelector().className("android.view.View").text("Salesforce Mobile SDK Test"))
+        } else {
+            device.findObject(UiSelector().className("android.view.View").descriptionContains("Salesforce Mobile SDK Test"))
+        }
+        title.waitForExists(timeout * 5)
+        Assert.assertTrue("App did not successfully login.", title.exists())
     }
 }

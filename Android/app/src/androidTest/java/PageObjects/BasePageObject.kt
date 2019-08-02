@@ -24,20 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package PageObjects
+package pageobjects
 
 import android.os.Build
-import android.support.test.InstrumentationRegistry
-import android.support.test.uiautomator.UiDevice
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 
 /**
  * Created by bpage on 2/24/18.
  */
 open class BasePageObject {
     val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    // FIXME Update when min verison increaes past API 23
-    val isOldDevice: Boolean = (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M)
-    // FIXME Update this when we stop using ARM Emulators
-    val isArm = Build.SUPPORTED_ABIS.first().contains("armeabi")
-    var timeout:Long = if (isArm) 30000 else 5000
+
+    // TODO: Update when min version increases to API 24
+    private var firebase = InstrumentationRegistry.getArguments().get("firebase")
+    val hasOldWebview: Boolean = ((firebase == null) and (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M))
+    var timeout:Long = 5000
 }

@@ -6,21 +6,21 @@ This repo contains tests designed to validate the functionality of apps created 
 1.  `install.sh`
 2.  From the `.circleci` directory execute: `fastlane <os> type:<AppType>`
        
-       ex: `fastlane android type:native` or `fastlane ios type:react_native`
+       ex: `fastlane android type:native_kotlin` or `fastlane ios type:hybrid_local`
 
-       
-----------
       
-Additional options: `sfdx:<true/false>`, `skipAppRemoval:<true/false>`.
+Additional options: `sfdx:<true/false>`, `rerun:<true/false>`.
 
-iOS exclusive options: `device:<"iPhone X"/iPhone-7/etc>`, `ios:<0.3/11-1/etc>`.
-       
-##### Adding New Tests
-Info about test suites and tests only applicable to one app type coming soon.  
-    
-##### Troubleshooting
-If the simulator/emulator fails to login because it needs a verification code, whitelist your IP by doing the following:
-1.  Login to the production org 
-2.  Go to Login History and confirm the issue by finding the entry with the status `Failed: Computer activation required`.
-3.  Copy the source IP 
-4.  Open Network Access and add a new range that captures your IP, such as `X.0.0.0` to `X.255.255.255`.  
+----------
+
+#### Platform Differences
+
+iOS exclusive options: `device:<"iPhone X"/iPhone-7/etc>`, `ios:<11.4/11-4/etc>`.
+
+##### Local Testing
+For testing iOS the options above (or the defaults if not supplied) will determine what simulator gets created for the test run.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against which ever emulator is currently open.  
+
+##### CI
+Individual iOS test runs work exactly the same in CI as they do locally.  Due to the setup time required for cocoapods, all app type tests are grouped together into two parallel runs. One run for the minimum supported version of iOS, and one for the latest release.  
+
+Android uses Firebase Test Lab for executing the tests in CI.  Because of this, it is much more efficient to do the exact opposite of iOS and split test runs up by app type, since we can test all supported API versions at the same time per app.

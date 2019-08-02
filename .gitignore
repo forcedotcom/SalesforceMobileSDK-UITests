@@ -76,5 +76,5 @@ test_output/
 Android/screenshots/
 
 # XCode User Data
-iOS/MobileSDKUITest.xcodeproj/project.xcworkspace/xcuserdata/
-iOS/MobileSDKUITest.xcodeproj/xcuserdata/
+iOS/SalesforceMobileSDK-UITest.xcodeproj/project.xcworkspace/xcuserdata/
+iOS/SalesforceMobileSDK-UITest.xcodeproj/xcuserdata/
