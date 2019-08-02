@@ -74,9 +74,7 @@ class LoginTests: XCTestCase {
             waitForExpectations(timeout: timeout, handler: nil)
             XCTAssert(title.exists, appLoadError)
         case .reactNative:
-            print(app.otherElements)
             let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
-            //let titleElement = app.children(matching: .window).element(boundBy: 0).children(matching: .other).element.children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[reactNativeUsers].children(matching: .other)[sampleAppTitle].children(matching: .other)[sampleAppTitle].children(matching: .other)[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         }
     }

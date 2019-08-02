@@ -89,7 +89,7 @@ def base_android_test_setup(options)
 
   Dir.chdir(path) do
     if run_type == 'react_native'
-      system("npm start&")
+      system("kill -9 `pgrep -f start` && npm start&")
       system("$ANDROID_HOME/platform-tools/adb shell pm grant #{package_name} android.permission.SYSTEM_ALERT_WINDOW")
     end
   end
@@ -181,7 +181,7 @@ def base_ios_test_setup(options)
     ios = '12-2'
   end
 
-  system("xcrun simctl delete #{$sim_name}")
+  system("xcrun simctl delete #{$sim_name}") or true
   UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
 
@@ -201,7 +201,7 @@ def base_ios_test_setup(options)
 
         if run_type == 'react_native'
           Dir.chdir(path) do
-            system('npm start&')
+            system('kill -9 `pgrep -f start` && npm start&')
           end
         end
       else
