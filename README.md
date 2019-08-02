@@ -18,9 +18,9 @@ Additional options: `sfdx:<true/false>`, `rerun:<true/false>`.
 iOS exclusive options: `device:<"iPhone X"/iPhone-7/etc>`, `ios:<11.4/11-4/etc>`.
 
 ##### Local Testing
-For testing iOS the options above (or the defaults if not supplied) will determine what simulator gets created for the test run.  Due to the overhead of downloading/instaling/booting different Android emulator configurations, local builds simply run against whatever emulator is curently open.  
+For testing iOS the options above (or the defaults if not supplied) will determine what simulator gets created for the test run.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against which ever emulator is currently open.  
 
 ##### CI
-Individual iOS test runs work exactly the same in CI as local.  Due to the setup time required for cocoapods all app type tests are grouped together into two parallel runs, one for the minimum supported version of iOS and one for the latest release.  
+Individual iOS test runs work exactly the same in CI as they do locally.  Due to the setup time required for cocoapods, all app type tests are grouped together into two parallel runs. One run for the minimum supported version of iOS, and one for the latest release.  
 
-Android uses Firebase Test Lab for executing the tests.  Because of this it is much more effienent to do the exact opposite of iOS and split test runs up by app type since we can test all supported API versions at the same time per app.
+Android uses Firebase Test Lab for executing the tests in CI.  Because of this, it is much more efficient to do the exact opposite of iOS and split test runs up by app type, since we can test all supported API versions at the same time per app.

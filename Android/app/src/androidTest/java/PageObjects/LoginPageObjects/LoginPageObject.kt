@@ -37,7 +37,7 @@ import pageobjects.BasePageObject
 class LoginPageObject : BasePageObject() {
 
     init {
-       if (hasOldWebview) {
+        if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.EditText").index(2)).waitForExists(120000)
         }
     }

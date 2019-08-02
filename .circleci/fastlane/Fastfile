@@ -98,7 +98,6 @@ def base_android_test_setup(options)
 end
 
 def install_android_app(appPath, release = nil)
-  puts "App Path: #{appPath}"
   apkPath = 'debug/app-debug.apk'
   Dir.chdir(appPath) do
     UI.important 'Installing App on Emulator'
@@ -117,8 +116,8 @@ def run_android_tests(test_class, package_name, addition_ops = nil)
     UI.header 'Run Tests Locally'
     
     begin
-       system("/usr/local/share/android-sdk/platform-tools/adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'")
-       result = system("./gradlew #{class_param} #{package_param} #{password_param} #{addition_ops} connectedAndroidTest")
+      system("/usr/local/share/android-sdk/platform-tools/adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'")
+      result = system("./gradlew #{class_param} #{package_param} #{password_param} #{addition_ops} connectedAndroidTest")
     ensure
       UI.test_failure!('Tests failed.') unless(result)
     end
@@ -182,8 +181,8 @@ def base_ios_test_setup(options)
     ios = '12-2'
   end
 
-  puts "device: #{device}, ios: #{ios}" 
-  system("xcrun simctl delete #{$sim_name}") or puts "No old device to delete"
+  system("xcrun simctl delete #{$sim_name}")
+  UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
 
   Dir.chdir('../../') do

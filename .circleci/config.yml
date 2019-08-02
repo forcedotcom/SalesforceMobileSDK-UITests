@@ -1,75 +1,58 @@
 aliases:
-  - &latest-ios
-    "12.2"
-  - &min-ios
-    "11.4"
-
-  - &upgrade-git
-    name: Update Git
-    command:  |
-      git --version
-      sudo apt-get update
-      sudo apt-get install \
-        build-essential flex bison \
-        libreadline6-dev zlib1g-dev \
-        libssl-dev \
-        libcurl4-gnutls-dev \
-        libexpat1-dev \
-        tcl tk \
-        tcl-dev gettext \
-        asciidoc \
-        docbook2x
-      wget https://www.kernel.org/pub/software/scm/git/git-2.13.0.tar.gz
-      tar -xvzf git-2.13.0.tar.gz
-      cd git-2.13.0
-      sudo ./configure
-      sudo make && sudo make install
-
   - &setup
     name: Setup
     command: ./install.sh
     when: always
+  
+  - &all-jobs
+    - test-android:
+        name: "Java"
+        app_type: "native"
+    - test-android:
+        name: "Kotlin"
+        app_type: "native_kotlin"
+    - test-android:
+        name: "Hybrid Local (Android)"
+        app_type: "hybrid_local"
+    - test-android:
+        name: "Hybrid Remote (Android)"
+        app_type: "hybrid_remote"
+    - test-ios:
+        name: iOS - Latest
+        e: 
+          name: mac
+          xcode: "10.2.1"
+        device: "iPhone XR"
+        ios_version: "12.2"
+    - test-ios:
+        name: iOS - Min
+        e: 
+          name: mac
+          xcode: "10.2.1"
+        device: "iPhone X"
+        ios_version: "11.4"
 
-  - &install-ant
-    name: Install Ant
-    command: HOMEBREW_NO_AUTO_UPDATE=1 brew install ant
-
-  - &gcloud-auth
-    name: Authorize gcloud and set config defaults
-    command:  |
-        echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
-        gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-        gcloud --quiet config set project mobile-apps-firebase-test
-        
-  - &get-firebase-results
-    name: Copy test results data
-    command: |
-        mkdir -p firebase/results
-        gsutil -m cp -r gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/UITest-<< parameters.app_type >>-${CIRCLE_BUILD_NUM} ./firebase/ || true
-
-        count=0
-        for result in $(find ./firebase/ -name 'test_result*'); do
-            mv $result "./firebase/results/result${count}.xml" && (( count++ )) || true 
-        done
-    when: always
 
 executors:
-    linux:
-        working_directory: ~/SalesforceMobileSDK-UITests
-        docker:
-            - image: circleci/android:api-28-node
-        environment:
-            - TERM: "dumb"
-            - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
-    mac:
-        parameters:
-            xcode:
-                type: string
-                default: "10.3.0"
-        working_directory: ~/SalesforceMobileSDK-UITests
-        macos:
-            xcode: << parameters.xcode >>
-        shell: /bin/bash --login -eo pipefail
+  linux:
+    working_directory: ~/SalesforceMobileSDK-UITests
+    docker:
+      - image: circleci/android:api-28-node
+    environment:
+      - TERM: "dumb"
+      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      - FASTLANE_SKIP_UPDATE_CHECK: true
+  mac:
+    parameters:
+      xcode:
+        type: string
+        default: "10.3.0"
+    working_directory: ~/SalesforceMobileSDK-UITests
+    macos:
+      xcode: << parameters.xcode >>
+    shell: /bin/bash --login -eo pipefail
+    environment:
+      - FASTLANE_SKIP_UPDATE_CHECK: true
     
 
 version: 2.1
@@ -82,14 +65,48 @@ jobs:
         default: "native"
     steps:
       - checkout
-      - run: *upgrade-git
+      - run: 
+          name: Update Git
+          command:  |
+            git --version
+            sudo apt-get update
+            sudo apt-get install \
+              build-essential flex bison \
+              libreadline6-dev zlib1g-dev \
+              libssl-dev \
+              libcurl4-gnutls-dev \
+              libexpat1-dev \
+              tcl tk \
+              tcl-dev gettext \
+              asciidoc \
+              docbook2x
+            wget https://www.kernel.org/pub/software/scm/git/git-2.13.0.tar.gz
+            tar -xvzf git-2.13.0.tar.gz
+            cd git-2.13.0
+            sudo ./configure
+            sudo make && sudo make install
       - run: *setup
-      - run: *gcloud-auth
+      - run: 
+          name: Authorize gcloud and set config defaults
+          command:  |
+            echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            gcloud --quiet config set project mobile-apps-firebase-test
       - run: 
           name: Test << parameters.app_type >> Android
           command: cd .circleci && fastlane android type:<< parameters.app_type >>
           when: always
-      - run: *get-firebase-results
+      - run: 
+          name: Copy test results data
+          command: |
+            mkdir -p firebase/results
+            gsutil -m cp -r gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/UITest-<< parameters.app_type >>-${CIRCLE_BUILD_NUM} ./firebase/ || true
+
+            count=0
+            for result in $(find ./firebase/ -name 'test_result*'); do
+              mv $result "./firebase/results/result${count}.xml" && (( count++ )) || true 
+            done
+          when: always
       - store_artifacts:
           path: firebase
           when: always
@@ -109,27 +126,26 @@ jobs:
       steps:
         - checkout
         - run: *setup
-        - run: *install-ant
+        - run:
+            name: Install Ant
+            command: HOMEBREW_NO_AUTO_UPDATE=1 brew install ant
         - run:
             name: Test Native Objective-C App
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
             when: always
-            no_output_timeout: 1200  
+            no_output_timeout: 900  
         - run:
             name: Test Native Swift App
             command: xcrun swift -version && cd .circleci && fastlane ios type:native_swift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
             when: always
-            no_output_timeout: 1200
         - run:
             name: Test Hybrid Local App
             command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
             when: always
-            no_output_timeout: 1200
         - run:
             name: Test Hyrbid Remote App
             command: cd .circleci && fastlane ios type:hybrid_remote device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
             when: always
-            no_output_timeout: 1200
         - store_artifacts:
             path: test_output
         - store_test_results:
@@ -137,55 +153,19 @@ jobs:
 
 
 workflows:
-  pr-build-all-apps:
+  pr:
     jobs:
-      - test-android:
-          name: "Java"
-          app_type: "native"
-      - test-android:
-          name: "Kotlin"
-          app_type: "native_kotlin"
-      - test-android:
-          name: "Hybrid Local (Android)"
-          app_type: "hybrid_local"
-      - test-android:
-          name: "Hybrid Remote (Android)"
-          app_type: "hybrid_remote"
-      - test-ios:
-          name: iOS - Latest
-          e: 
-            name: mac
-            xcode: "10.2.1"
-          device: "iPhone XR"
-          ios_version: *latest-ios
-      - test-ios:
-          name: iOS - Min
-          e: 
-            name: mac
-            xcode: "10.2.1"
-          device: "iPhone X"
-          ios_version: *min-ios
+      *all-jobs
 
   # Cron are on a timezone 8 hours ahead of PST
   # Build everything on Saturday Afternoon
-#  weekly-build-all-apps:
-#    triggers:
-#      - schedule:
-#          cron: "30 19 * * 6"
-#          filters:
-#            branches:
-#              only:
-#                - master
-#    jobs:
-#      - test-android:
-#          API_LEVEL: 23
-#      - test-android:
-#          API_LEVEL: 26
-#      - test-android:
-#          API_LEVEL: 28
-#      - test-ios:
-#          device: "iPhone XR"
-#          ios_version: "12.2"
-#      - test-ios:
-#          device: "iPhone X"
-#          ios_version: "11.4"
+  weekly-build-all-apps:
+    triggers:
+      - schedule:
+          cron: "30 19 * * 6"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      *all-jobs
