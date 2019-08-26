@@ -41,23 +41,23 @@ aliases:
 
   - &all-jobs-sfdx
     - test-android:
-        name: "Java"
+        name: "Java SFDX"
         app_type: "native"
         sfdx: true
     - test-android:
-        name: "Kotlin"
+        name: "Kotlin SFDX"
         app_type: "native_kotlin"
         sfdx: true
     - test-android:
-        name: "Hybrid Local (Android)"
+        name: "Hybrid Local (Android) SFDX"
         app_type: "hybrid_local"
         sfdx: true
     - test-android:
-        name: "Hybrid Remote (Android)"
+        name: "Hybrid Remote (Android) SFDX"
         app_type: "hybrid_remote"
         sfdx: true
     - test-ios:
-        name: iOS 13
+        name: "iOS 13 SFDX"
         e:
           name: mac
           xcode: "11.0.0"
@@ -65,7 +65,7 @@ aliases:
         ios_version: "13.0"
         sfdx: true
     - test-ios:
-        name: iOS 12
+        name: "iOS 12 SFDX"
         e:
           name: mac
           xcode: "10.2.1"
@@ -73,7 +73,7 @@ aliases:
         ios_version: "12.2"
         sfdx: true
     - test-ios:
-        name: iOS 11
+        name: "iOS 11 SFDX"
         e:
           name: mac
           xcode: "10.2.1"
