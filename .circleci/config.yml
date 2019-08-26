@@ -18,26 +18,74 @@ aliases:
         name: "Hybrid Remote (Android)"
         app_type: "hybrid_remote"
     - test-ios:
-        name: iOS - Latest
+        name: iOS 13
         e: 
+          name: mac
+          xcode: "11.0.0"
+        device: "iPhone XR"
+        ios_version: "13.0"
+    - test-ios:
+        name: iOS 12
+        e:
           name: mac
           xcode: "10.2.1"
         device: "iPhone XR"
         ios_version: "12.2"
     - test-ios:
-        name: iOS - Min
+        name: iOS 11
         e: 
           name: mac
           xcode: "10.2.1"
         device: "iPhone X"
         ios_version: "11.4"
 
+  - &all-jobs-sfdx
+    - test-android:
+        name: "Java"
+        app_type: "native"
+        sfdx: true
+    - test-android:
+        name: "Kotlin"
+        app_type: "native_kotlin"
+        sfdx: true
+    - test-android:
+        name: "Hybrid Local (Android)"
+        app_type: "hybrid_local"
+        sfdx: true
+    - test-android:
+        name: "Hybrid Remote (Android)"
+        app_type: "hybrid_remote"
+        sfdx: true
+    - test-ios:
+        name: iOS 13
+        e:
+          name: mac
+          xcode: "11.0.0"
+        device: "iPhone XR"
+        ios_version: "13.0"
+        sfdx: true
+    - test-ios:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "10.2.1"
+        device: "iPhone XR"
+        ios_version: "12.2"
+        sfdx: true
+    - test-ios:
+        name: iOS 11
+        e:
+          name: mac
+          xcode: "10.2.1"
+        device: "iPhone X"
+        ios_version: "11.4"
+        sfdx: true
 
 executors:
   linux:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
-      - image: circleci/android:api-28-node
+      - image: circleci/android:api-29-node
     environment:
       - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
@@ -46,7 +94,7 @@ executors:
     parameters:
       xcode:
         type: string
-        default: "10.3.0"
+        default: "11.0.0"
     working_directory: ~/SalesforceMobileSDK-UITests
     macos:
       xcode: << parameters.xcode >>
@@ -63,6 +111,9 @@ jobs:
       app_type: 
         type: string
         default: "native"
+      sfdx:
+        type: boolean
+        default: false
     steps:
       - checkout
       - run: 
@@ -92,9 +143,17 @@ jobs:
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
-      - run: 
+      - when:
+          condition: << parameters.sfdx >>
+          steps:
+            - run:
+                name: Install SFDX
+                command: |
+                  sudo npm install -g sfdx-cli
+                  sudo chown -R `whoami` $HOME/.config/
+      - run:
           name: Test << parameters.app_type >> Android
-          command: cd .circleci && fastlane android type:<< parameters.app_type >>
+          command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
           when: always
       - run: 
           name: Copy test results data
@@ -123,28 +182,33 @@ jobs:
             type: string
         e:
             type: executor
+        sfdx:
+          type: boolean
+          default: false
       steps:
         - checkout
         - run: *setup
-        - run:
-            name: Install Ant
-            command: HOMEBREW_NO_AUTO_UPDATE=1 brew install ant
+        - when:
+            condition: << parameters.sfdx >>
+            steps:
+              - run:
+                  name: Install SFDX
+                  command: npm install -g sfdx-cli
         - run:
             name: Test Native Objective-C App
-            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
+            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
-            no_output_timeout: 900  
         - run:
             name: Test Native Swift App
-            command: xcrun swift -version && cd .circleci && fastlane ios type:native_swift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
+            command: xcrun swift -version && cd .circleci && fastlane ios type:native_swift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
         - run:
             name: Test Hybrid Local App
-            command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
+            command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
         - run:
             name: Test Hyrbid Remote App
-            command: cd .circleci && fastlane ios type:hybrid_remote device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
+            command: cd .circleci && fastlane ios type:hybrid_remote device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
         - store_artifacts:
             path: test_output
@@ -159,7 +223,7 @@ workflows:
 
   # Cron are on a timezone 8 hours ahead of PST
   # Build everything on Saturday Afternoon
-  weekly-build-all-apps:
+  build-all-apps:
     triggers:
       - schedule:
           cron: "30 19 * * 6"
@@ -169,3 +233,14 @@ workflows:
                 - master
     jobs:
       *all-jobs
+
+  build-all-apps-sfdx:
+    triggers:
+      - schedule:
+          cron: "30 21 * * 6"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      *all-jobs-sfdx
