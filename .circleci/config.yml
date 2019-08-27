@@ -17,13 +17,14 @@ aliases:
     - test-android:
         name: "Hybrid Remote (Android)"
         app_type: "hybrid_remote"
-    - test-ios:
-        name: iOS 13
-        e: 
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "13.0"
+# TODO: Add iOS 13 back when it xctest is more stable
+#    - test-ios:
+#        name: iOS 13
+#        e:
+#          name: mac
+#          xcode: "11.0.0"
+#        device: "iPhone XR"
+#        ios_version: "13.0"
     - test-ios:
         name: iOS 12
         e:
@@ -56,14 +57,15 @@ aliases:
         name: "Hybrid Remote (Android) SFDX"
         app_type: "hybrid_remote"
         sfdx: true
-    - test-ios:
-        name: "iOS 13 SFDX"
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "13.0"
-        sfdx: true
+# TODO: Add iOS 13 back when it xctest is more stable
+#    - test-ios:
+#        name: "iOS 13 SFDX"
+#        e:
+#          name: mac
+#          xcode: "11.0.0"
+#        device: "iPhone XR"
+#        ios_version: "13.0"
+#        sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
         e:
