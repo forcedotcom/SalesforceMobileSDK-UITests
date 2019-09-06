@@ -29,20 +29,21 @@ package pageobjects.testapppageobjects
 import androidx.test.uiautomator.UiSelector
 import android.util.Log
 import org.junit.Assert
+import pageobjects.AppType
 import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 3/6/18.
  */
 
-class ReactNativeAppPageObject : BasePageObject() {
+class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     init {
         timeout *= 3
     }
 
     fun assertAppLoads() {
-        var alertWindow = device.findObject(UiSelector().resourceId("android:id/alertTitle"))
+        val alertWindow = device.findObject(UiSelector().resourceId("android:id/alertTitle"))
         if (alertWindow.exists()) {
             Log.i("uia", "React Native requesting overlay permission.")
             // Tap Continue Button
@@ -50,8 +51,9 @@ class ReactNativeAppPageObject : BasePageObject() {
             Thread.sleep(timeout)
         }
 
+        val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
         val title = device.findObject(UiSelector().className("android.widget.TextView").index(0))
         title.waitForExists(timeout * 5)
-        Assert.assertEquals("App did not successfully login.", "Mobile SDK Sample App", title.text)
+        Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
     }
 }

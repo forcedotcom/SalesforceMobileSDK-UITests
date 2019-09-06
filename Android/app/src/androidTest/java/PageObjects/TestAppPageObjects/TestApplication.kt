@@ -38,14 +38,14 @@ import pageobjects.AppType
 
 class TestApplication {
     private var packageName = InstrumentationRegistry.getArguments().get("packageName") as String
-    var name = "App_" + packageName.split(".").last().replace("_java", "") + "_android"
+    var name = packageName.split(".").last()
     var type = AppType.valueOf(packageName.split(".").last().toUpperCase())
 
     fun launch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val intent = context.packageManager.getLaunchIntentForPackage(packageName)
 
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        intent!!.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         context.startActivity(intent)
     }
 }

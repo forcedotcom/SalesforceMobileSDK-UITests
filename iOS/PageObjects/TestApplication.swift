@@ -43,16 +43,20 @@ class TestApplication: XCUIApplication {
         bundleString = ProcessInfo.processInfo.environment["TEST_APP_BUNDLE"]!
         
         switch bundleString {
-        case "com.salesforce.App-native-ios":
+        case "com.salesforce.native":
             appType = .nativeObjC
-        case "com.salesforce.App-native-swift-ios":
+        case "com.salesforce.native-swift":
             appType = .nativeSwift
         case "com.salesforce.hybrid_local":
             appType = .hybridLocal
         case "com.salesforce.hybrid_remote":
             appType = .hyrbidRemote
-        case "com.salesforce.App-react-native-ios":
+        case "com.salesforce.react-native":
             appType = .reactNative
+        case "com.salesforce.smart-sync-explorer-swift":
+            appType = .smartSyncSwift
+        case "com.salesforce.smart-sync-explorer-react-native":
+            appType = .smartSyncReact
         default:
             assert(false, "Unknown AppType.")
         }

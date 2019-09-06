@@ -17,14 +17,20 @@ aliases:
     - test-android:
         name: "Hybrid Remote (Android)"
         app_type: "hybrid_remote"
-# TODO: Add iOS 13 back when it xctest is more stable
-#    - test-ios:
-#        name: iOS 13
-#        e:
-#          name: mac
-#          xcode: "11.0.0"
-#        device: "iPhone XR"
-#        ios_version: "13.0"
+    - test-android:
+        name: "React Native (Android)"
+        app_type: "react_native"
+    - test-android:
+        name: "SmartSyncExplorerReactNative (Android)"
+        app_type: *SmartSyncExplorerReactNative
+        template: true 
+    - test-ios:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.0.0"
+        device: "iPhone XR"
+        ios_version: "13.0"    
     - test-ios:
         name: iOS 12
         e:
@@ -57,15 +63,23 @@ aliases:
         name: "Hybrid Remote (Android) SFDX"
         app_type: "hybrid_remote"
         sfdx: true
-# TODO: Add iOS 13 back when it xctest is more stable
-#    - test-ios:
-#        name: "iOS 13 SFDX"
-#        e:
-#          name: mac
-#          xcode: "11.0.0"
-#        device: "iPhone XR"
-#        ios_version: "13.0"
-#        sfdx: true
+    - test-android:
+        name: "React Native (Android)"
+        app_type: "react_native"
+        sfdx: true
+    - test-android:
+        name: "SmartSyncExplorerReactNative (Android)"
+        app_type: *SmartSyncExplorerReactNative
+        template: true
+        sfdx: true
+    - test-ios:
+        name: "iOS 13 SFDX"
+        e:
+          name: mac
+          xcode: "11.0.0"
+        device: "iPhone XR"
+        ios_version: "13.0"
+        sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
         e:
@@ -82,6 +96,11 @@ aliases:
         device: "iPhone X"
         ios_version: "11.4"
         sfdx: true
+
+  - &SmartSyncExplorerSwift
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev      
+  - &SmartSyncExplorerReactNative
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev
 
 executors:
   linux:
@@ -113,6 +132,9 @@ jobs:
       app_type: 
         type: string
         default: "native"
+      template:
+        type: boolean
+        default: false
       sfdx:
         type: boolean
         default: false
@@ -153,10 +175,20 @@ jobs:
                 command: |
                   sudo npm install -g sfdx-cli
                   sudo chown -R `whoami` $HOME/.config/
-      - run:
-          name: Test << parameters.app_type >> Android
-          command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
-          when: always
+      - when:
+          condition: << parameters.template >>
+          steps:
+            - run:
+                name: Test << parameters.app_type >> Android
+                command: cd .circleci && fastlane android template:<< parameters.template >> sfdx:"<< parameters.sfdx >>"
+                when: always
+      - unless:
+          condition: << parameters.template >>
+          steps:
+            - run:
+                name: Test << parameters.app_type >> Android
+                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
+                when: always
       - run: 
           name: Copy test results data
           command: |
@@ -212,6 +244,18 @@ jobs:
             name: Test Hyrbid Remote App
             command: cd .circleci && fastlane ios type:hybrid_remote device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
+        - run:
+            name: Test React Native App
+            command: cd .circleci && fastlane ios type:react_native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+        - run:
+            name: Test SmartSync Swift Template
+            command: cd .circleci && fastlane ios template:*SmartSyncExplorerSwift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+        - run:
+            name: Test SmartSync React Native Template
+            command: cd .circleci && fastlane ios template:*SmartSyncExplorerReactNative device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always        
         - store_artifacts:
             path: test_output
         - store_test_results:
