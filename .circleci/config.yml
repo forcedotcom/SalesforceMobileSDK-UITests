@@ -1,4 +1,10 @@
 aliases:
+  # Templates
+  - &SmartSyncExplorerSwift
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev      
+  - &SmartSyncExplorerReactNative
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev
+
   - &setup
     name: Setup
     command: ./install.sh
@@ -96,11 +102,6 @@ aliases:
         device: "iPhone X"
         ios_version: "11.4"
         sfdx: true
-
-  - &SmartSyncExplorerSwift
-    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev      
-  - &SmartSyncExplorerReactNative
-    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev
 
 executors:
   linux:
