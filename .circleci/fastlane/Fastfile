@@ -69,7 +69,7 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     generate_command.concat(' --use-sfdx')
   end
   
-  result = silence_output { system(generate_command) }
+  result = silence_output(true) { system(generate_command) }
   # result = system(generate_command)
   UI.user_error!('Test app was not successfully created.') unless(result)
 end
@@ -286,18 +286,18 @@ def run_ios_tests(bundle_name, test_scheme, xcargs = nil)
   end
 end
 
-def silence_output
+def silence_output(silence_error = false)
   begin
     stderr, stdout = $stderr.clone, $stdout.clone
     $stderr.reopen(File.new('/dev/null', 'w'))
-    $stdout.reopen(File.new('/dev/null', 'w'))
+    $stdout.reopen(File.new('/dev/null', 'w')) if silence_error
     yield
   rescue Exception => e
     $stdout.reopen(stdout)
-    $stderr.reopen(stderr)
+    $stderr.reopen(stderr) if silence_error
   ensure
     $stdout.reopen(stdout)
-    $stderr.reopen(stderr)
+    $stderr.reopen(stderr) if silence_error
   end
 end
 

@@ -30,13 +30,13 @@ aliases:
         name: "SmartSyncExplorerReactNative (Android)"
         app_type: *SmartSyncExplorerReactNative
         template: true 
-    - test-ios:
-        name: "iOS 13"
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "13.0"    
+    # - test-ios:
+    #     name: "iOS 13"
+    #     e:
+    #       name: mac
+    #       xcode: "11.0.0"
+    #     device: "iPhone XR"
+    #     ios_version: "13.0"    
     - test-ios:
         name: iOS 12
         e:
@@ -70,22 +70,22 @@ aliases:
         app_type: "hybrid_remote"
         sfdx: true
     - test-android:
-        name: "React Native (Android)"
+        name: "React Native (Android) SFDX"
         app_type: "react_native"
         sfdx: true
     - test-android:
-        name: "SmartSyncExplorerReactNative (Android)"
+        name: "SmartSyncExplorerReactNative (Android) SFDX"
         app_type: *SmartSyncExplorerReactNative
         template: true
         sfdx: true
-    - test-ios:
-        name: "iOS 13 SFDX"
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "13.0"
-        sfdx: true
+    # - test-ios:
+    #     name: "iOS 13 SFDX"
+    #     e:
+    #       name: mac
+    #       xcode: "11.0.0"
+    #     device: "iPhone XR"
+    #     ios_version: "13.0"
+    #     sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
         e:
@@ -180,8 +180,8 @@ jobs:
           condition: << parameters.template >>
           steps:
             - run:
-                name: Test << parameters.app_type >> Android
-                command: cd .circleci && fastlane android template:<< parameters.template >> sfdx:"<< parameters.sfdx >>"
+                name: Test Android Template Test
+                command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
                 when: always
       - unless:
           condition: << parameters.template >>
