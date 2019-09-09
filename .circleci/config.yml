@@ -122,7 +122,7 @@ executors:
       - image: circleci/android:api-29-node
     environment:
       - TERM: "dumb"
-      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx1-1024m -XX:+HeapDumpOnOutOfMemoryError"'
+      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx1024m -XX:+HeapDumpOnOutOfMemoryError"'
       - FASTLANE_SKIP_UPDATE_CHECK: true
   mac:
     parameters:
