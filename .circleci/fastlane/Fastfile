@@ -69,8 +69,8 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     generate_command.concat(' --use-sfdx')
   end
   
-  result = silence_output(true) { system(generate_command) }
-  # result = system(generate_command)
+  # result = silence_output(true) { system(generate_command) }
+  result = system(generate_command)
   UI.user_error!('Test app was not successfully created.') unless(result)
 end
 
@@ -109,7 +109,7 @@ def base_android_test_setup(options)
     Dir.chdir(app_path) do
     UI.important 'Building Release APK for React Native' 
       silence_output{ 
-        system('./gradlew assembleRelease')
+        system('./gradlew assembleRelease --no-daemon')
         system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
         system('echo "test12\n" | jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk react')
       }
@@ -235,6 +235,10 @@ def base_ios_test_setup(options)
     elsif app_name.include?('react')
       react_native_setup(app_path)
       app_path.concat('ios/')
+
+      Dir.chdir(app_path) do
+        system("pod install")
+      end
     end
   
     # Start Simulator
