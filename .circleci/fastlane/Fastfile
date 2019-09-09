@@ -236,7 +236,7 @@ def base_ios_test_setup(options)
       app_path.concat('ios/')
 
       Dir.chdir(app_path) do
-        system("pod install")
+        silence_output { system("pod install") }
       end
     end
   
@@ -307,7 +307,7 @@ end
 def react_native_setup(app_path)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
-    system("./install*.js")
+    silence_output { system("./install*.js") }
     system('kill -9 `pgrep -f start`')
     system('npm start&')
   end
@@ -347,7 +347,7 @@ def change_connected_app(os, app_path, consumer_key, redirect_uri, old_key = nil
   UI.important 'Rebuilding with modified source files'
   Dir.chdir(app_path) do
     if os == 'android'
-      silence_output { system('./gradlew assemble') }
+      silence_output { system('./gradlew assemble --no-daemon') }
     end
   end
 end

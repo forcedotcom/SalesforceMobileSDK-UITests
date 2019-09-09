@@ -26,10 +26,12 @@ aliases:
     - test-android:
         name: "React Native (Android)"
         app_type: "react_native"
+        e: android-react-native
     - test-android:
         name: "SmartSyncExplorerReactNative (Android)"
         app_type: *SmartSyncExplorerReactNative
         template: true 
+        e: android-react-native
     # - test-ios:
     #     name: "iOS 13"
     #     e:
@@ -73,11 +75,13 @@ aliases:
         name: "React Native (Android) SFDX"
         app_type: "react_native"
         sfdx: true
+        e: android-react-native
     - test-android:
         name: "SmartSyncExplorerReactNative (Android) SFDX"
         app_type: *SmartSyncExplorerReactNative
         template: true
         sfdx: true
+        e: android-react-native
     # - test-ios:
     #     name: "iOS 13 SFDX"
     #     e:
@@ -104,13 +108,21 @@ aliases:
         sfdx: true
 
 executors:
-  linux:
+  android:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
       - image: circleci/android:api-29-node
     environment:
       - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      - FASTLANE_SKIP_UPDATE_CHECK: true
+  android-react-native:
+    working_directory: ~/SalesforceMobileSDK-UITests
+    docker:
+      - image: circleci/android:api-29-node
+    environment:
+      - TERM: "dumb"
+      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx1-1024m -XX:+HeapDumpOnOutOfMemoryError"'
       - FASTLANE_SKIP_UPDATE_CHECK: true
   mac:
     parameters:
@@ -128,7 +140,7 @@ executors:
 version: 2.1
 jobs:
   test-android:
-    executor: linux
+    executor: << parameters.e >>
     parameters:
       app_type: 
         type: string
@@ -139,6 +151,9 @@ jobs:
       sfdx:
         type: boolean
         default: false
+      e:
+        type: executor
+        default: "android"
     steps:
       - checkout
       - run: 

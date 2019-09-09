@@ -75,10 +75,10 @@ class LoginTests: XCTestCase {
             waitForExpectations(timeout: timeout, handler: nil)
             XCTAssert(title.exists, appLoadError)
         case .reactNative:
+            sleep(30)
             let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         case .smartSyncSwift:
-            sleep(30)
             let title = app.navigationBars["SmartSync Explorer"].otherElements["SmartSync Explorer"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
