@@ -69,8 +69,7 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     generate_command.concat(' --use-sfdx')
   end
   
-  # result = silence_output(true) { system(generate_command) }
-  result = system(generate_command)
+  result = silence_output(true) { system(generate_command) }
   UI.user_error!('Test app was not successfully created.') unless(result)
 end
 
