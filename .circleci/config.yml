@@ -251,11 +251,11 @@ jobs:
             when: always
         - run:
             name: Test SmartSync Swift Template
-            command: cd .circleci && fastlane ios template:*SmartSyncExplorerSwift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
         - run:
             name: Test SmartSync React Native Template
-            command: cd .circleci && fastlane ios template:*SmartSyncExplorerReactNative device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
         - store_artifacts:
             path: test_output
