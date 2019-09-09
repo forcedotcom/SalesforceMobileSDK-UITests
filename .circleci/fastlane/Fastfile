@@ -289,15 +289,15 @@ end
 def silence_output(silence_error = false)
   begin
     stderr, stdout = $stderr.clone, $stdout.clone
-    $stderr.reopen(File.new('/dev/null', 'w'))
-    $stdout.reopen(File.new('/dev/null', 'w')) if silence_error
+    $stderr.reopen(File.new('/dev/null', 'w')) if silence_error
+    $stdout.reopen(File.new('/dev/null', 'w'))
     yield
   rescue Exception => e
     $stdout.reopen(stdout)
-    $stderr.reopen(stderr) if silence_error
+    $stderr.reopen(stderr)
   ensure
     $stdout.reopen(stdout)
-    $stderr.reopen(stderr) if silence_error
+    $stderr.reopen(stderr)
   end
 end
 
