@@ -10,6 +10,7 @@ else
     npm install -g cordova@8.1.2
     cordova telemetry off
     sudo gem install cocoapods
+    sudo npm install plist
 fi
 
 git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Package.git

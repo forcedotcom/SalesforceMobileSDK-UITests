@@ -32,6 +32,13 @@ aliases:
         app_type: *SmartSyncExplorerReactNative
         template: true 
         e: android-react-native
+    - test-android:
+        name: "Advanced Auth"
+        app_type: "native"
+    - test-android:
+        name: "Passcode"
+        app_type: "native"
+        passcode: true
     # - test-ios:
     #     name: "iOS 13"
     #     e:
@@ -151,6 +158,12 @@ jobs:
       sfdx:
         type: boolean
         default: false
+      adv_auth:
+        type: boolean
+        default: false
+      passcode:
+        type: boolean
+        default: false
       e:
         type: executor
         default: "android"
@@ -203,7 +216,7 @@ jobs:
           steps:
             - run:
                 name: Test << parameters.app_type >> Android
-                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
+                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>" adv_auth:"<< parameters.adv_auth >>" passcode:"<< parameters.passcode >>"
                 when: always
       - run: 
           name: Copy test results data
@@ -230,11 +243,11 @@ jobs:
             type: string
         device:
             type: string
-        e:
-            type: executor
         sfdx:
           type: boolean
           default: false
+        e:
+          type: executor
       steps:
         - checkout
         - run: *setup
@@ -272,6 +285,12 @@ jobs:
             name: Test SmartSync React Native Template
             command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
+        - run:
+            name: Test Advanced Auth
+            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >> sfdx:"<< parameters.sfdx>>" adv_auth:true
+        - run:
+            name: Test Password
+            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >> sfdx:"<< parameters.sfdx>>" passcode:true
         - store_artifacts:
             path: test_output
         - store_test_results:

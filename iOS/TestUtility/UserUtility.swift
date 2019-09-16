@@ -38,8 +38,7 @@ class UserUtility {
     var password = ""
 
     init() {
-        username = ProcessInfo.processInfo.environment["USERNAME"]!
-        if(username.isEmpty) {
+        if (ProcessInfo.processInfo.environment["USERNAME"]!.isEmpty) {
             username = "circleci@mobilesdk.com"
         }
         password = ProcessInfo.processInfo.environment["PASSWORD"]!

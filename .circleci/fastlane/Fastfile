@@ -5,26 +5,33 @@ $default_consumer_key = '3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQ
 $default_redirect_uri = 'testsfdc:///mobilesdk/detect/oauth/done'
 $passcode_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tm3FUd9g7z5OQNsZVd5QxWGnUavJG6q1RaNugeQF4A8lELyXQsNJ8deynMFoO'
 $passcode_redirect_uri = 'mobilesdk://auth/passcode'
+$adv_auth_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmyfUanAsJ6rWLQniOaec1Ks6YBBYFaJSfMREVJdPeRxTneqgoSxdswYvb9vP'
+$adv_auth_redirect_uri = 'com.mobilesdk.advauth:///oauth/success'
+$android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.LoginActivity'
+
+App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
 lane :ios do |options|
-  app_path, bundle_name = base_ios_test_setup(options)
+  app_info = base_ios_test_setup(options)
+  test_class = options[:passcode] ? 'TestPasscode' : 'TestLogin'
 
-  install_ios_app(app_path)
-  run_ios_tests(bundle_name, 'LoginTests', nil)
+  install_ios_app(app_info)
+  run_ios_tests(test_class, app_info.package_name, app_info.xcargs)
 end
 
 lane :android do |options|
   Dir.chdir('../../')
 
-  app_path, package_name = base_android_test_setup(options)
+  app_info = base_android_test_setup(options)
   
-  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests'
+  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.'
+  test_class.concat(options[:passcode] ? 'passcode.PasscodeTests' : 'login.LoginTests')
   if $is_ci
-    run_android_tests_firebase(test_class, package_name, app_path)
+    run_android_tests_firebase(test_class, app_info)
   else
-    system("$ANDROID_HOME/platform-tools/adb uninstall #{package_name}")
-    install_android_app(app_path, (package_name.include?('react')))  
-    run_android_tests(test_class, package_name)
+    system("$ANDROID_HOME/platform-tools/adb uninstall #{app_info.package_name}")
+    install_android_app(app_info.app_path, (app_info.package_name.include?('react')))  
+    run_android_tests(test_class, app_info.package_name, app_info.xcargs)
   end
 end
 
@@ -77,6 +84,7 @@ end
 # Android Helper Functions
 #
 def base_android_test_setup(options)
+  $is_ci = options[:firebase] != nil
   $password = get_password
   run_type = options[:type]
   template = options[:template]
@@ -85,6 +93,7 @@ def base_android_test_setup(options)
   passcode = options[:passcode]
   adv_auth = options[:adv_auth]
   UI.user_error!('Please specify either passcode or adv_auth.') if(passcode and adv_auth)
+  args = adv_auth ? ["advAuth=true"] : []
   rerun = options[:rerun]
 
   if template 
@@ -93,7 +102,7 @@ def base_android_test_setup(options)
   end
 
   # "native" is an illegal word for android package
-  app_name = template ? templateName : (run_type == 'native' ? 'native_java' : run_type)
+  app_name = 'android'.concat(template ? templateName : run_type).gsub('_', '')
   package_name = "com.salesforce.#{app_name}"
 
   generate_app('android', run_type, template, sfdx) unless rerun
@@ -115,13 +124,14 @@ def base_android_test_setup(options)
     end
   end
 
+  app_info = App_Info.new('android', app_name, app_path, package_name, args)
   if passcode 
-    change_connected_app('android', app_path, $passcode_consumer_key, $passcode_redirect_uri)
+    change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
   elsif adv_auth
-    change_connected_app('android', app_path, $adv_auth_consumer_key, $adv_auth_redirect_uri)
+    setup_adv_auth(app_info)
   end
-
-  return app_path, package_name
+  
+  return app_info
 end
 
 def install_android_app(app_path, release = nil)
@@ -138,24 +148,27 @@ def run_android_tests(test_class, package_name, addition_ops = nil)
   class_param =  "-Pandroid.testInstrumentationRunnerArguments.class=#{test_class}"
   package_param = "-Pandroid.testInstrumentationRunnerArguments.packageName=#{package_name}"
   password_param = "-Pandroid.testInstrumentationRunnerArguments.password=#{$password}"
-  addition_ops = '' unless addition_ops
+  optional_vars = ''
+  addition_ops.each { |op| optional_vars.concat("-Pandroid.testInstrumentationRunnerArguments.#{op} ") } if addition_ops
 
   Dir.chdir('./Android/') do
     UI.header 'Run Tests Locally'
     
     begin
       system("$ANDROID_HOME/platform-tools/adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'")
-      result = system("./gradlew #{class_param} #{package_param} #{password_param} #{addition_ops} connectedAndroidTest")
+      result = system("./gradlew #{class_param} #{package_param} #{password_param} #{optional_vars} connectedAndroidTest")
     ensure
       UI.test_failure!('Tests failed.') unless(result)
     end
   end
 end
 
-def run_android_tests_firebase(test_class, package_name, app_path, addition_ops = nil)
+def run_android_tests_firebase(test_class, app_info)
   # Get app type for categorizing test results
-  app_type = package_name.split('.').last
+  app_type = app_info.app_name.split('android').last
   apk_path = app_type.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
+  optional_vars = ''
+  app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
   Dir.chdir('./Android/') do
     UI.message 'Compile Tests'
@@ -166,7 +179,7 @@ def run_android_tests_firebase(test_class, package_name, app_path, addition_ops 
     testResult = system("gcloud firebase test android run \
       --project mobile-apps-firebase-test \
       --type instrumentation \
-      --app=../#{app_path}app/build/outputs/apk/#{apk_path} \
+      --app=../#{app_info.app_path}app/build/outputs/apk/#{apk_path} \
       --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
       --device model=NexusLowRes,version=28,locale=en,orientation=portrait  \
       --device model=NexusLowRes,version=27,locale=en,orientation=portrait  \
@@ -177,7 +190,7 @@ def run_android_tests_firebase(test_class, package_name, app_path, addition_ops 
       --results-dir=UITest-#{app_type}  \
       --results-history-name=UITest-#{app_type}  \
       --results-dir=UITest-#{app_type}-#{ENV['CIRCLE_BUILD_NUM']}  \
-      --environment-variables class=#{test_class},packageName=#{package_name},password=#{$password},firebase=true   \
+      --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars}   \
       --no-performance-metrics --no-auto-google-login")
       UI.test_failure!('Tests failed.') unless testResult
   end
@@ -199,13 +212,14 @@ def base_ios_test_setup(options)
   UI.user_error!('Please specify either passcode or adv_auth.') if(passcode and adv_auth)
   rerun = options[:rerun]
   xcode_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
+  xcargs = []
 
   if template 
     templateName = template.split('/').last.split('#').first
     templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
   end
 
-  app_name = template ? templateName : "#{run_type}"
+  app_name = 'ios'.concat(template ? templateName : "#{run_type}").gsub('_', '')
   system("rm -rf ../../test_output/#{app_name}")
   bundle_name = app_name.include?('hybrid') ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
 
@@ -244,34 +258,34 @@ def base_ios_test_setup(options)
     system("xcrun simctl boot #{sim_id}")
     system("open #{xcode_path} --args -CurrentDeviceUDID #{sim_id}")
 
+    app_info = App_Info.new('ios', app_name, app_path, bundle_name, xcargs)
     if passcode 
-      change_connected_app('ios', app_path, $passcode_consumer_key, $passcode_redirect_uri)
+      change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
     elsif adv_auth
-      change_connected_app('ios', app_path, $adv_auth_consumer_key, $adv_auth_redirect_uri)
+      setup_adv_auth(app_info)
+      xcargs.push("ADV_AUTH=true")
     end
 
-    return '../../' + app_path, bundle_name
+    return app_info
   end
 end
 
-def install_ios_app(app_path, release = nil)
-  puts "app_path: " + app_path
-  app_name = app_path.split('/')[3]
-  puts "App Name: " + app_name
-  Dir.chdir(app_path) do
+def install_ios_app(app_info, release = nil)
+  # app_name = app_path.split('/')[3]
+  Dir.chdir('../../' + app_info.app_path) do
     UI.important 'Build for Simulator'
-    silence_output { system("xcodebuild build -scheme #{app_name} -workspace #{app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData") }
+    silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData") }
 
     UI.important 'Installing App on Simulator'
-    system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/#{app_name}.app")
+    system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/#{app_info.app_name}.app")
   end
 end
 
-def run_ios_tests(bundle_name, test_scheme, xcargs = nil)
+def run_ios_tests(test_scheme, bundle_name, xcargs)
   xcargs_string = ''
   xcargs.each { |arg| xcargs_string += "'#{arg}' " } unless xcargs.nil?
   app_type = bundle_name.split('.').last
- 
+
   Dir.chdir('../../iOS/') do
     destination = "#{$sim_name} (" + `instruments -s devices | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
     begin
@@ -313,46 +327,88 @@ def react_native_setup(app_path)
   end
 end
 
-def change_connected_app(os, app_path, consumer_key, redirect_uri, old_key = nil, old_uri = nil)
+def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, old_uri = nil)
   old_key = $default_consumer_key unless old_key
   old_uri = $default_redirect_uri unless old_uri
-  source_path = app_path.clone
-
-  puts "app_path: " + app_path
+  config_path = app_info.app_path.clone
+  android_build = 'assemble'
 
   # Determine iOS/Android
-  if os == 'android'
-    if app_path.include?('react')
-      source_path.concat('app/src/main/res/values/bootconfig.xml')
-    else
-      source_path.concat('app/res/values/bootconfig.xml')
+  if app_info.os == 'android'
+    case app_info.app_name
+    when 'androidnative', 'androidnativekotlin'
+      config_path.concat('app/res/values/bootconfig.xml')
+    when 'androidhybridlocal', 'androidhybridremote'
+      config_path.concat('../../www/bootconfig.json')
+    when 'androidreactnative', 'androidsmartsyncreactnative'
+      config_path.concat('app/src/main/res/values/bootconfig.xml')
+      android_build = 'assembleRelease'  
     end
   else
-    if app_path.include?('swift')
-      source_path.concat('/AppDelegate.m')
-    elsif app_path.include?('native')
-      source_path.concat('/AppDelegate.swift')
-    elsif app_path.include?('hybrid')
-      source_path.concat('/www/bootconfig.json')
-    elsif app_path.include?('react')
-      source_path.concat('/react_native/bootconfig.plist')
+    case app_info.app_name
+    when 'ioshybridlocal', 'ioshybridremote'
+      config_path.concat('www/bootconfig.json')
+    else
+      config_path.concat(app_info.app_name + '/bootconfig.plist')
     end
   end
 
-  puts "source path: " + source_path
-
-  modify_source(source_path, old_key, consumer_key)
-  modify_source(source_path, old_uri, redirect_uri)
+  modify_source(config_path, old_key, consumer_key)
+  modify_source(config_path, old_uri, redirect_uri)
 
   UI.important 'Rebuilding with modified source files'
-  Dir.chdir(app_path) do
-    if os == 'android'
-      silence_output { system('./gradlew assemble --no-daemon') }
+  Dir.chdir(app_info.app_path) do
+    if app_info.os == 'android'
+      result = silence_output { system("./gradlew #{android_build} --no-daemon") }
+      UI.build_failure!('Failed to rebuild with modified source files.') unless result
     end
   end
 end
 
-def modify_source(source_path, old_code, new_code)
-  modified_souce_code = File.read(source_path).sub(old_code, new_code)
-  File.open(source_path, 'w') { |file| file.puts modified_souce_code }
+def setup_adv_auth(app_info)
+  scheme, path = $adv_auth_redirect_uri.split('://')
+
+  if app_info.os == 'android'
+    manifest_path = app_info.app_path + 'app/'
+    case app_info.app_name
+    when 'androidnative', 'androidnativekotlin'
+      servers_path = app_info.app_path + '/mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
+      manifest_path.concat('AndroidManifest.xml')
+    when 'androidhybridlocal', 'androidhybridremote'
+      manifest_path.concat('AndroidManifest.xml')
+      servers_path = app_info.app_path + 'SalesforceSDK/res/xml/servers.xml'
+    when 'androidreactnative', 'androidsmartsyncreactnative'
+      manifest_path.concat('src/main/AndroidManifest.xml')
+      servers_path = app_info.app_path + '../mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
+    end
+
+    # Uncomment single single instance in AndroidManifest
+    modify_source(manifest_path, $android_login_activity, '-->' + $android_login_activity)
+    # Replace scheme and path
+    modify_source(manifest_path, 'testsfdc', scheme)
+    modify_source(manifest_path, '/mobilesdk/detect/oauth/done', path)
+
+    # Change connection
+    modify_source(servers_path, 'login', 'msdk-dev-ed.my')
+  else
+    plist_path = app_info.app_path + app_info.app_name 
+    case app_info.app_name
+    when 'iosnative', 'iosnativeswift', 'iosreactnative', 'iossmartsyncreactnative'
+      plist_path.concat('/Info.plist')
+    when 'ioshybridlocal', 'ioshybridremote'
+      plist_path.concat(app_info.app_name + '-Info.plist')
+    end
+
+    plist = Plist.parse_xml(plist_path)
+    plist["CFBundleURLTypes"] = [{"CFBundleURLName" => scheme}, {"CFBundleURLSchemes" => [scheme]}] 
+    plist["SFDCOAuthLoginHost"] = "msdk-dev-ed.my.salesforce.com"
+    File.open(plist_path, 'w') { |file| file.puts plist.to_plist } 
+  end
+
+  change_connected_app(app_info, $adv_auth_consumer_key, $adv_auth_redirect_uri)
+end
+
+def modify_source(config_path, old_code, new_code)
+  modified_souce_code = File.read(config_path).gsub(old_code, new_code)
+  File.open(config_path, 'w') { |file| file.puts modified_souce_code }
 end

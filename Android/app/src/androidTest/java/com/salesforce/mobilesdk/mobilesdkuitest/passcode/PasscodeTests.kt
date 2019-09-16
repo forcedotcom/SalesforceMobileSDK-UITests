@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2019-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,23 +24,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.mobilesdk.mobilesdkuitest.login
+package com.salesforce.mobilesdk.mobilesdkuitest.passcode
 
+import PageObjects.passcodepageobjects.PasscodePageObject
+import android.os.Build
 import pageobjects.*
 import testutility.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.runner.RunWith
 import org.junit.Before
 import org.junit.Test
+import org.junit.Assert
 import pageobjects.loginpageobjects.LoginPageObject
 import pageobjects.loginpageobjects.AuthorizationPageObject
 import pageobjects.testapppageobjects.*
 
 /**
- * Created by bpage on 2/2/18.
+ * Created by bpage on 9/8/19.
  */
 @RunWith(AndroidJUnit4::class)
-class LoginTests {
+class PasscodeTests {
     private var app = TestApplication()
     private var userUtil = UserUtility()
     private var username = userUtil.username
@@ -52,15 +55,38 @@ class LoginTests {
     }
 
     @Test
-    fun testLogin() {
+    fun testCreatePasscode() {
         val loginPage = LoginPageObject()
         loginPage.setUsername(username)
         loginPage.setPassword(password)
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllow()
+        val passcodeScreen = PasscodePageObject(app)
+
+        // TODO: Remove this when min version increases to API 24
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+            Thread.sleep(8000)
+        }
+
+        Assert.assertEquals("Passcode title incorrect.", "Passcode", passcodeScreen.getTitleText())
+        Assert.assertEquals("Passcode create instructions incorrect.", "Create a passcode", passcodeScreen.getText())
+        Assert.assertEquals("Passcode initial state incorrect.", "Passcode is 5 alphanumeric characters long.", passcodeScreen.getPasscode())
+        Assert.assertFalse("Logout button should not be shown.", passcodeScreen.isLogutButtonVisible())
+
+        //Type some of the passcode
+        passcodeScreen.enterPasscode("123")
+        Assert.assertEquals("Passcode entered incorrect.", 3, passcodeScreen.getTypedLength())
+
+        // Finish entering passcode
+        passcodeScreen.enterPasscode("12345")
+        Thread.sleep(1000)
+        Assert.assertEquals("Passcode verify instruction incorrect.", "Verify passcode", passcodeScreen.getText())
+
+        // Verify Passcode
+        passcodeScreen.enterPasscode("12345")
 
         when (app.type) {
-            AppType.NATIVE_JAVA, AppType.NATIVE_KOTLIN ->
+            AppType.NATIVE, AppType.NATIVE_KOTLIN ->
                 NativeAppPageObject(app).assertAppLoads()
             AppType.HYBRID_LOCAL ->
                 HybridLocalAppPageObject(app).assertAppLoads()
@@ -68,6 +94,7 @@ class LoginTests {
                 HybridRemoteAppPageObject(app).assertAppLoads()
             AppType.REACT_NATIVE, AppType.SMART_SYNC_EXPLORER_REACT_NATIVE ->
                 ReactNativeAppPageObject(app).assertAppLoads()
+            else -> Assert.fail("Unknown App Type")
         }
     }
 }

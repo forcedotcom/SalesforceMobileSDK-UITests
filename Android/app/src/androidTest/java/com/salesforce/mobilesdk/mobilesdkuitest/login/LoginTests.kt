@@ -24,37 +24,53 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.testapppageobjects
+package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import android.content.Context
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.core.app.ApplicationProvider
-import android.content.Intent
-import pageobjects.AppType
+import pageobjects.*
+import testutility.*
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert
+import org.junit.runner.RunWith
+import org.junit.Before
+import org.junit.Test
+import pageobjects.loginpageobjects.*
+import pageobjects.testapppageobjects.*
 
 /**
- * Created by bpage on 2/21/18.
+ * Created by bpage on 2/2/18.
  */
+@RunWith(AndroidJUnit4::class)
+class LoginTests {
+    private var app = TestApplication()
+    private var userUtil = UserUtility()
+    private var username = userUtil.username
+    private var password = userUtil.password
 
-class TestApplication {
-    val packageName = InstrumentationRegistry.getArguments().get("packageName") as String
-    val name = packageName.split(".").last()
-    val advAuth = InstrumentationRegistry.getArguments().get("advAuth")?.let { (it as String).toBoolean() } ?: false
-    val type = when (name) {
-        "androidnative" -> AppType.NATIVE
-        "androidnativekotlin" -> AppType.NATIVE_KOTLIN
-        "androidhybridlocal" -> AppType.HYBRID_LOCAL
-        "androidhybridremote" -> AppType.HYBRID_REMOTE
-        "androidreactnative" -> AppType.REACT_NATIVE
-        "androidreactnativesmartsyncexplorer" -> AppType.SMART_SYNC_EXPLORER_REACT_NATIVE
-        else -> AppType.UNKNOWN
+    @Before
+    fun setupTestApp() {
+        app.launch()
     }
 
-    fun launch() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+    @Test
+    fun testLogin() {
+        Assert.assertEquals("Wrong browser is used for login.", app.advAuth, ChromePageObject().isAdvAuth())
 
-        intent!!.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        context.startActivity(intent)
+        val loginPage = LoginPageObject()
+        loginPage.setUsername(username)
+        loginPage.setPassword(password)
+        loginPage.tapLogin()
+        AuthorizationPageObject().tapAllow()
+
+        when (app.type) {
+            AppType.NATIVE, AppType.NATIVE_KOTLIN ->
+                NativeAppPageObject(app).assertAppLoads()
+            AppType.HYBRID_LOCAL ->
+                HybridLocalAppPageObject(app).assertAppLoads()
+            AppType.HYBRID_REMOTE ->
+                HybridRemoteAppPageObject(app).assertAppLoads()
+            AppType.REACT_NATIVE, AppType.SMART_SYNC_EXPLORER_REACT_NATIVE ->
+                ReactNativeAppPageObject(app).assertAppLoads()
+            else -> Assert.fail("Unknown App Type")
+        }
     }
 }

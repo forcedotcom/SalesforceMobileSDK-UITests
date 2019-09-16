@@ -55,19 +55,30 @@ class LoginTests: XCTestCase {
         let app = TestApplication()
         let loginPage = LoginPageObject(testApp: app)
         let authPage = AuthorizationPageObject(testApp: app)
-        
+        let isAdvAuth = app.advAuth
         app.launch()
+        
+        if (isAdvAuth) {
+            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            let alertMessage = springboard.alerts["“\(app.name)” Wants to Use “salesforce.com” to Sign In"]
+            _ = alertMessage.waitForExistence(timeout: timeout)
+            springboard.buttons["Continue"].tap()
+        }
+        
         loginPage.setUsername(name: username)
         loginPage.setPassword(password: password)
         loginPage.tapLogin()
-        authPage.tapAllow()
+        
+        if !isAdvAuth {
+            authPage.tapAllow()
+        }
         
         // Assert App loads
-        switch app.appType {
+        switch app.type {
         case .nativeObjC, .nativeSwift:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .hybridLocal, .hyrbidRemote:
-            let titleText = (app.appType == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
+            let titleText = (app.type == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
             let title = app.staticTexts[titleText]
             let exists = NSPredicate(format: "exists == 1")
             

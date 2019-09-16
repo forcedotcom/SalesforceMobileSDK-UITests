@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2019-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,37 +24,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.testapppageobjects
+package pageobjects.loginpageobjects
 
-import android.content.Context
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.core.app.ApplicationProvider
-import android.content.Intent
-import pageobjects.AppType
+import androidx.test.uiautomator.UiSelector
+import android.util.Log
+import pageobjects.BasePageObject
 
 /**
- * Created by bpage on 2/21/18.
+ * Created by bpage on 9/12/19.
  */
+class ChromePageObject : BasePageObject() {
 
-class TestApplication {
-    val packageName = InstrumentationRegistry.getArguments().get("packageName") as String
-    val name = packageName.split(".").last()
-    val advAuth = InstrumentationRegistry.getArguments().get("advAuth")?.let { (it as String).toBoolean() } ?: false
-    val type = when (name) {
-        "androidnative" -> AppType.NATIVE
-        "androidnativekotlin" -> AppType.NATIVE_KOTLIN
-        "androidhybridlocal" -> AppType.HYBRID_LOCAL
-        "androidhybridremote" -> AppType.HYBRID_REMOTE
-        "androidreactnative" -> AppType.REACT_NATIVE
-        "androidreactnativesmartsyncexplorer" -> AppType.SMART_SYNC_EXPLORER_REACT_NATIVE
-        else -> AppType.UNKNOWN
+    fun isAdvAuth(): Boolean {
+        val continueButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/terms_accept"))
+        val noButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/negative_button"))
+        val toolbar = device.findObject(UiSelector().resourceId("com.android.chrome:id/toolbar"))
+
+        if (continueButton.waitForExists(timeout)) {
+            Log.i("uia", "Accepting chrome terms and signing in.")
+            continueButton.click()
+            noButton.waitForExists(timeout)
+            noButton.click()
+        }
+
+        return toolbar.waitForExists(timeout)
     }
 
-    fun launch() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+    fun dismissSavePasswordDialog() {
+        val infobar = device.findObject(UiSelector().resourceId("com.android.chrome:id/infobar_message"))
+        val neverButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/button_secondary"))
+        infobar.waitForExists(timeout)
+        if (neverButton.waitForExists(timeout)) {
+            neverButton.click()
+        }
+    }
 
-        intent!!.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        context.startActivity(intent)
+    fun tapCloseButton() {
+        val closeButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/close_button"))
+        if (closeButton.waitForExists(timeout)) {
+            closeButton.click()
+        }
     }
 }
