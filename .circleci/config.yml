@@ -39,6 +39,7 @@ aliases:
         name: "Passcode"
         app_type: "native"
         passcode: true
+    # TODO: Add Xcode 11/iOS 13 when more stable cmd line tools are released.
     # - test-ios:
     #     name: "iOS 13"
     #     e:
@@ -89,6 +90,7 @@ aliases:
         template: true
         sfdx: true
         e: android-react-native
+    # TODO: Add Xcode 11/iOS 13 when more stable cmd line tools are released.
     # - test-ios:
     #     name: "iOS 13 SFDX"
     #     e:
@@ -208,7 +210,7 @@ jobs:
           condition: << parameters.template >>
           steps:
             - run:
-                name: Test Android Template Test
+                name: Test Android Template
                 command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
                 when: always
       - unless:
@@ -288,9 +290,11 @@ jobs:
         - run:
             name: Test Advanced Auth
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >> sfdx:"<< parameters.sfdx>>" adv_auth:true
+            when: always
         - run:
             name: Test Password
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >> sfdx:"<< parameters.sfdx>>" passcode:true
+            when: always
         - store_artifacts:
             path: test_output
         - store_test_results:
