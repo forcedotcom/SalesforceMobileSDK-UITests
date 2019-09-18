@@ -84,7 +84,7 @@ end
 # Android Helper Functions
 #
 def base_android_test_setup(options)
-  $is_ci = options[:firebase] != nil
+  $is_ci = true if options[:firebase] 
   $password = get_password
   run_type = options[:type]
   template = options[:template]
