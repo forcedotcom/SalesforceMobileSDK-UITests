@@ -101,7 +101,6 @@ def base_android_test_setup(options)
     templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
   end
 
-  # "native" is an illegal word for android package
   app_name = 'android'.concat(template ? templateName : run_type).gsub('_', '')
   package_name = "com.salesforce.#{app_name}"
 
@@ -144,12 +143,12 @@ def install_android_app(app_path, release = nil)
   end
 end
 
-def run_android_tests(test_class, package_name, addition_ops = nil)
+def run_android_tests(test_class, package_name, test_ops = nil)
   class_param =  "-Pandroid.testInstrumentationRunnerArguments.class=#{test_class}"
   package_param = "-Pandroid.testInstrumentationRunnerArguments.packageName=#{package_name}"
   password_param = "-Pandroid.testInstrumentationRunnerArguments.password=#{$password}"
   optional_vars = ''
-  addition_ops.each { |op| optional_vars.concat("-Pandroid.testInstrumentationRunnerArguments.#{op} ") } if addition_ops
+  test_ops.each { |op| optional_vars.concat("-Pandroid.testInstrumentationRunnerArguments.#{op} ") } if test_ops
 
   Dir.chdir('./Android/') do
     UI.header 'Run Tests Locally'
@@ -170,6 +169,12 @@ def run_android_tests_firebase(test_class, app_info)
   optional_vars = ''
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
+  devices = ''
+  min = test_class.include?('Passcode') ? 24 : 23
+  for api_level in min..28 do
+    devices.concat("--device model=NexusLowRes,version=#{api_level},locale=en,orientation=portrait \\")
+  end
+
   Dir.chdir('./Android/') do
     UI.message 'Compile Tests'
     buildResult = system("./gradlew app:assembleAndroidTest")
@@ -181,12 +186,7 @@ def run_android_tests_firebase(test_class, app_info)
       --type instrumentation \
       --app=../#{app_info.app_path}app/build/outputs/apk/#{apk_path} \
       --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
-      --device model=NexusLowRes,version=28,locale=en,orientation=portrait  \
-      --device model=NexusLowRes,version=27,locale=en,orientation=portrait  \
-      --device model=NexusLowRes,version=26,locale=en,orientation=portrait  \
-      --device model=NexusLowRes,version=25,locale=en,orientation=portrait  \
-      --device model=NexusLowRes,version=24,locale=en,orientation=portrait  \
-      --device model=NexusLowRes,version=23,locale=en,orientation=portrait  \
+      #{devices}
       --results-dir=UITest-#{app_type}  \
       --results-history-name=UITest-#{app_type}  \
       --results-dir=UITest-#{app_type}-#{ENV['CIRCLE_BUILD_NUM']}  \
