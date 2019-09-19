@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2019-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,36 +24,49 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.testapppageobjects
+package PageObjects.passcodepageobjects
 
 import androidx.test.uiautomator.UiSelector
-import android.util.Log
-import org.junit.Assert
-import pageobjects.AppType
 import pageobjects.BasePageObject
+import pageobjects.testapppageobjects.TestApplication
 
 /**
- * Created by bpage on 3/6/18.
+ * Created by bpage on 9/7/19.
  */
+class PasscodePageObject(private val app: TestApplication) : BasePageObject() {
+    private val packageName = app.packageName
+    private val passcodeTitleId = "${packageName}:id/sf__passcode_title"
+    private val passcodeInstructionsId = "${packageName}:id/sf__passcode_instructions"
+    private val passcodeFieldId ="${packageName}:id/sf__passcode_text"
+    private val logoutButtonId = "${packageName}:id/sf__passcode_logout_button"
 
-class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObject() {
-
-    init {
-        timeout *= 3
+    fun getTitleText(): String {
+        return device.findObject(UiSelector().resourceId(passcodeTitleId)).text
     }
 
-    fun assertAppLoads() {
-        val alertWindow = device.findObject(UiSelector().resourceId("android:id/alertTitle"))
-        if (alertWindow.exists()) {
-            Log.i("uia", "React Native requesting overlay permission.")
-            // Tap Continue Button
-            device.findObject(UiSelector().resourceId("android:id/button1")).click()
-            Thread.sleep(timeout)
-        }
+    fun getText(): String {
+        return device.findObject(UiSelector().resourceId(passcodeInstructionsId)).text
+    }
 
-        val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
-        val title = device.findObject(UiSelector().className("android.widget.TextView").index(0))
-        title.waitForExists(timeout * 5)
-        Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
+    fun enterPasscode(passcode: String) {
+        val passcodeField = device.findObject(UiSelector().resourceId(passcodeFieldId))
+        passcodeField.setText(passcode)
+    }
+
+    fun getPasscode(): String {
+        return device.findObject(UiSelector().resourceId(passcodeFieldId)).text
+    }
+
+    // Due to accessibility passcode will report "Passcode is 5 alphanumeric characters long." instead of 0
+    fun getTypedLength(): Int {
+        return device.findObject(UiSelector().resourceId(passcodeFieldId)).text.length
+    }
+
+    fun isLogutButtonVisible(): Boolean {
+        return device.findObject(UiSelector().resourceId(logoutButtonId)).exists()
+    }
+
+    fun tapLogoutButton() {
+        device.findObject(UiSelector().resourceId(logoutButtonId)).click()
     }
 }

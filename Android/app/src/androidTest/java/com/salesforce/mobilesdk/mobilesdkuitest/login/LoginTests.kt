@@ -24,17 +24,53 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-//
-//  AppType.swift
-//  MobileSDKUITest
-//
-//  Created by Brandon Page on 3/2/18.
-//
+package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import Foundation
+import pageobjects.*
+import testutility.*
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert
+import org.junit.runner.RunWith
+import org.junit.Before
+import org.junit.Test
+import pageobjects.loginpageobjects.*
+import pageobjects.testapppageobjects.*
 
-class AppType {
-    enum AppType {
-        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, smartSyncSwift, smartSyncReact
+/**
+ * Created by bpage on 2/2/18.
+ */
+@RunWith(AndroidJUnit4::class)
+class LoginTests {
+    private var app = TestApplication()
+    private var userUtil = UserUtility()
+    private var username = userUtil.username
+    private var password = userUtil.password
+
+    @Before
+    fun setupTestApp() {
+        app.launch()
+    }
+
+    @Test
+    fun testLogin() {
+        Assert.assertEquals("Wrong browser is used for login.", app.advAuth, ChromePageObject().isAdvAuth())
+
+        val loginPage = LoginPageObject()
+        loginPage.setUsername(username)
+        loginPage.setPassword(password)
+        loginPage.tapLogin()
+        AuthorizationPageObject().tapAllow()
+
+        when (app.type) {
+            AppType.NATIVE, AppType.NATIVE_KOTLIN ->
+                NativeAppPageObject(app).assertAppLoads()
+            AppType.HYBRID_LOCAL ->
+                HybridLocalAppPageObject(app).assertAppLoads()
+            AppType.HYBRID_REMOTE ->
+                HybridRemoteAppPageObject(app).assertAppLoads()
+            AppType.REACT_NATIVE, AppType.SMART_SYNC_EXPLORER_REACT_NATIVE ->
+                ReactNativeAppPageObject(app).assertAppLoads()
+            else -> Assert.fail("Unknown App Type")
+        }
     }
 }

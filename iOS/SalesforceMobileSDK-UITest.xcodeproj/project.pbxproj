@@ -10,8 +10,10 @@
 		A3045A28203E241B0028F46F /* TestApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A27203E241B0028F46F /* TestApplication.swift */; };
 		A3045A2A203E26AD0028F46F /* LoginPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A29203E26AD0028F46F /* LoginPageObject.swift */; };
 		A3045A2C203E2F420028F46F /* AuthorizationPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */; };
+		A32B5136232B2869004D0549 /* PasscodePageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32B5135232B2869004D0549 /* PasscodePageObject.swift */; };
 		A38B56D92049CE00008D53A2 /* AppType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38B56D82049CE00008D53A2 /* AppType.swift */; };
 		A39442FB2024D440006022F8 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39442FA2024D440006022F8 /* LoginTests.swift */; };
+		A3EE8184232BEE3D000421CC /* PasscodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3EE8183232BEE3D000421CC /* PasscodeTests.swift */; };
 		A3F06182206DC48100ADA1DD /* UserUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F06181206DC48100ADA1DD /* UserUtility.swift */; };
 /* End PBXBuildFile section */
 
@@ -19,10 +21,12 @@
 		A3045A27203E241B0028F46F /* TestApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestApplication.swift; sourceTree = "<group>"; };
 		A3045A29203E26AD0028F46F /* LoginPageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginPageObject.swift; sourceTree = "<group>"; };
 		A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationPageObject.swift; sourceTree = "<group>"; };
+		A32B5135232B2869004D0549 /* PasscodePageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PasscodePageObject.swift; path = PageObjects/PasscodePageObjects/PasscodePageObject.swift; sourceTree = SOURCE_ROOT; };
 		A34A749F20239B4E00846B32 /* SalesforceMobileSDK-UITest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SalesforceMobileSDK-UITest.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A38B56D82049CE00008D53A2 /* AppType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppType.swift; sourceTree = "<group>"; };
 		A39442FA2024D440006022F8 /* LoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginTests.swift; sourceTree = "<group>"; };
 		A39F9D4B2024CD5100251414 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A3EE8183232BEE3D000421CC /* PasscodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PasscodeTests.swift; path = PageObjects/PasscodePageObjects/PasscodeTests.swift; sourceTree = SOURCE_ROOT; };
 		A3F06181206DC48100ADA1DD /* UserUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserUtility.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -40,6 +44,7 @@
 		A3045A26203E23580028F46F /* PageObjects */ = {
 			isa = PBXGroup;
 			children = (
+				A32B5134232B2826004D0549 /* New Group */,
 				A3F06183206DCA2D00ADA1DD /* LoginPageObjects */,
 				A38B56D82049CE00008D53A2 /* AppType.swift */,
 				A3045A27203E241B0028F46F /* TestApplication.swift */,
@@ -47,9 +52,18 @@
 			path = PageObjects;
 			sourceTree = "<group>";
 		};
+		A32B5134232B2826004D0549 /* New Group */ = {
+			isa = PBXGroup;
+			children = (
+				A32B5135232B2869004D0549 /* PasscodePageObject.swift */,
+			);
+			path = "New Group";
+			sourceTree = "<group>";
+		};
 		A34A746A202281AC00846B32 = {
 			isa = PBXGroup;
 			children = (
+				A3EE8182232BEE06000421CC /* New Group */,
 				A3F06180206DC46900ADA1DD /* TestUtility */,
 				A3045A26203E23580028F46F /* PageObjects */,
 				A39442F92024D3FD006022F8 /* Login */,
@@ -72,6 +86,14 @@
 				A39442FA2024D440006022F8 /* LoginTests.swift */,
 			);
 			path = Login;
+			sourceTree = "<group>";
+		};
+		A3EE8182232BEE06000421CC /* New Group */ = {
+			isa = PBXGroup;
+			children = (
+				A3EE8183232BEE3D000421CC /* PasscodeTests.swift */,
+			);
+			path = "New Group";
 			sourceTree = "<group>";
 		};
 		A3F06180206DC46900ADA1DD /* TestUtility */ = {
@@ -118,7 +140,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0920;
-				LastUpgradeCheck = 0920;
+				LastUpgradeCheck = 1100;
 				TargetAttributes = {
 					A34A749E20239B4E00846B32 = {
 						CreatedOnToolsVersion = 9.2;
@@ -132,6 +154,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = A34A746A202281AC00846B32;
 			productRefGroup = A34A74A020239B4E00846B32 /* Products */;
@@ -159,7 +182,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3045A28203E241B0028F46F /* TestApplication.swift in Sources */,
+				A32B5136232B2869004D0549 /* PasscodePageObject.swift in Sources */,
 				A38B56D92049CE00008D53A2 /* AppType.swift in Sources */,
+				A3EE8184232BEE3D000421CC /* PasscodeTests.swift in Sources */,
 				A3045A2C203E2F420028F46F /* AuthorizationPageObject.swift in Sources */,
 				A3F06182206DC48100ADA1DD /* UserUtility.swift in Sources */,
 				A39442FB2024D440006022F8 /* LoginTests.swift in Sources */,
@@ -173,7 +198,34 @@
 		A34A746F202281AC00846B32 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -181,6 +233,31 @@
 		A34A7470202281AC00846B32 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				SWIFT_VERSION = 5.0;
 			};

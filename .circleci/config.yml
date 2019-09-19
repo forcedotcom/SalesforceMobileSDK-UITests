@@ -1,4 +1,10 @@
 aliases:
+  # Templates
+  - &SmartSyncExplorerSwift
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev      
+  - &SmartSyncExplorerReactNative
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev
+
   - &setup
     name: Setup
     command: ./install.sh
@@ -17,14 +23,30 @@ aliases:
     - test-android:
         name: "Hybrid Remote (Android)"
         app_type: "hybrid_remote"
-# TODO: Add iOS 13 back when it xctest is more stable
-#    - test-ios:
-#        name: iOS 13
-#        e:
-#          name: mac
-#          xcode: "11.0.0"
-#        device: "iPhone XR"
-#        ios_version: "13.0"
+    - test-android:
+        name: "React Native (Android)"
+        app_type: "react_native"
+        e: android-react-native
+    - test-android:
+        name: "SmartSyncExplorerReactNative (Android)"
+        app_type: *SmartSyncExplorerReactNative
+        template: true 
+        e: android-react-native
+    - test-android:
+        name: "Advanced Auth"
+        app_type: "native"
+    - test-android:
+        name: "Passcode"
+        app_type: "native"
+        passcode: true
+    # TODO: Add Xcode 11/iOS 13 when more stable cmd line tools are released.
+    # - test-ios:
+    #     name: "iOS 13"
+    #     e:
+    #       name: mac
+    #       xcode: "11.0.0"
+    #     device: "iPhone XR"
+    #     ios_version: "13.0"    
     - test-ios:
         name: iOS 12
         e:
@@ -57,15 +79,26 @@ aliases:
         name: "Hybrid Remote (Android) SFDX"
         app_type: "hybrid_remote"
         sfdx: true
-# TODO: Add iOS 13 back when it xctest is more stable
-#    - test-ios:
-#        name: "iOS 13 SFDX"
-#        e:
-#          name: mac
-#          xcode: "11.0.0"
-#        device: "iPhone XR"
-#        ios_version: "13.0"
-#        sfdx: true
+    - test-android:
+        name: "React Native (Android) SFDX"
+        app_type: "react_native"
+        sfdx: true
+        e: android-react-native
+    - test-android:
+        name: "SmartSyncExplorerReactNative (Android) SFDX"
+        app_type: *SmartSyncExplorerReactNative
+        template: true
+        sfdx: true
+        e: android-react-native
+    # TODO: Add Xcode 11/iOS 13 when more stable cmd line tools are released.
+    # - test-ios:
+    #     name: "iOS 13 SFDX"
+    #     e:
+    #       name: mac
+    #       xcode: "11.0.0"
+    #     device: "iPhone XR"
+    #     ios_version: "13.0"
+    #     sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
         e:
@@ -84,13 +117,21 @@ aliases:
         sfdx: true
 
 executors:
-  linux:
+  android:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
       - image: circleci/android:api-29-node
     environment:
       - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      - FASTLANE_SKIP_UPDATE_CHECK: true
+  android-react-native:
+    working_directory: ~/SalesforceMobileSDK-UITests
+    docker:
+      - image: circleci/android:api-29-node
+    environment:
+      - TERM: "dumb"
+      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx1024m -XX:+HeapDumpOnOutOfMemoryError"'
       - FASTLANE_SKIP_UPDATE_CHECK: true
   mac:
     parameters:
@@ -108,14 +149,26 @@ executors:
 version: 2.1
 jobs:
   test-android:
-    executor: linux
+    executor: << parameters.e >>
     parameters:
       app_type: 
         type: string
         default: "native"
+      template:
+        type: boolean
+        default: false
       sfdx:
         type: boolean
         default: false
+      adv_auth:
+        type: boolean
+        default: false
+      passcode:
+        type: boolean
+        default: false
+      e:
+        type: executor
+        default: "android"
     steps:
       - checkout
       - run: 
@@ -153,10 +206,20 @@ jobs:
                 command: |
                   sudo npm install -g sfdx-cli
                   sudo chown -R `whoami` $HOME/.config/
-      - run:
-          name: Test << parameters.app_type >> Android
-          command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
-          when: always
+      - when:
+          condition: << parameters.template >>
+          steps:
+            - run:
+                name: Test Android Template
+                command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
+                when: always
+      - unless:
+          condition: << parameters.template >>
+          steps:
+            - run:
+                name: Test << parameters.app_type >> Android
+                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>" adv_auth:"<< parameters.adv_auth >>" passcode:"<< parameters.passcode >>"
+                when: always
       - run: 
           name: Copy test results data
           command: |
@@ -182,11 +245,11 @@ jobs:
             type: string
         device:
             type: string
-        e:
-            type: executor
         sfdx:
           type: boolean
           default: false
+        e:
+          type: executor
       steps:
         - checkout
         - run: *setup
@@ -211,6 +274,26 @@ jobs:
         - run:
             name: Test Hyrbid Remote App
             command: cd .circleci && fastlane ios type:hybrid_remote device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+        - run:
+            name: Test React Native App
+            command: cd .circleci && fastlane ios type:react_native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+        - run:
+            name: Test SmartSync Swift Template
+            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+        - run:
+            name: Test SmartSync React Native Template
+            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always        
+        - run:
+            name: Test Advanced Auth
+            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >> sfdx:"<< parameters.sfdx>>" adv_auth:true
+            when: always
+        - run:
+            name: Test Password
+            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >> sfdx:"<< parameters.sfdx>>" passcode:true
             when: always
         - store_artifacts:
             path: test_output

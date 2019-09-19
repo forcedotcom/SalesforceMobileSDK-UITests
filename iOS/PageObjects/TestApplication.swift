@@ -36,23 +36,31 @@ import XCTest
 
 class TestApplication: XCUIApplication {
     var bundleString = ""
-    var appType: AppType.AppType = .nativeObjC
+    var type: AppType.AppType = .nativeObjC
+    var advAuth = false
+    var name: String
     
     override init() {
         // Get the Test App Bundle from command line arg
         bundleString = ProcessInfo.processInfo.environment["TEST_APP_BUNDLE"]!
+        name = String(bundleString.split(separator: ".").last!)
+        advAuth = (ProcessInfo.processInfo.environment["ADV_AUTH"] != "")
         
         switch bundleString {
-        case "com.salesforce.App-native-ios":
-            appType = .nativeObjC
-        case "com.salesforce.App-native-swift-ios":
-            appType = .nativeSwift
-        case "com.salesforce.hybrid_local":
-            appType = .hybridLocal
-        case "com.salesforce.hybrid_remote":
-            appType = .hyrbidRemote
-        case "com.salesforce.App-react-native-ios":
-            appType = .reactNative
+        case "com.salesforce.iosnative":
+            type = .nativeObjC
+        case "com.salesforce.iosnativeswift":
+            type = .nativeSwift
+        case "com.salesforce.ioshybridlocal":
+            type = .hybridLocal
+        case "com.salesforce.ioshybridremote":
+            type = .hyrbidRemote
+        case "com.salesforce.iosreactnative":
+            type = .reactNative
+        case "com.salesforce.iossmartsyncexplorerswift":
+            type = .smartSyncSwift
+        case "com.salesforce.iossmartsyncexplorerreactnative":
+            type = .smartSyncReact
         default:
             assert(false, "Unknown AppType.")
         }
@@ -62,9 +70,5 @@ class TestApplication: XCUIApplication {
     
     override func launch() {
         super.launch()
-        
-        if(appType == .reactNative) {
-            sleep(30)
-        }
     }
 }

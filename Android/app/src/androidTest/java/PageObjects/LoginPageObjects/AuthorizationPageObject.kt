@@ -37,6 +37,12 @@ import pageobjects.BasePageObject
 class AuthorizationPageObject : BasePageObject() {
 
     fun tapAllow() {
+        val chromePageObject = ChromePageObject()
+        val advAuth = chromePageObject.isAdvAuth()
+        if (advAuth) {
+            chromePageObject.dismissSavePasswordDialog()
+        }
+
         val allowButton = if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.Button").index(0))
         }
@@ -52,5 +58,14 @@ class AuthorizationPageObject : BasePageObject() {
         webview2.scroll(Direction.DOWN, 0.5f)
         allowButton.click()
         Thread.sleep(timeout)
+
+        /*
+         *  TODO: This is an issue we have no control over, remove this if fixed by Google.
+         *  If chrome doesn't redirect to the app by itself, close it by tapping back.
+         */
+        if (advAuth and allowButton.waitForExists(timeout)) {
+            Log.i("uia", "Chrome Custom Tab did not close properly, manually tapping back.")
+            chromePageObject.tapCloseButton()
+        }
     }
 }

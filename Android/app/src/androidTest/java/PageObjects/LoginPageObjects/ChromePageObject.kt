@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2019-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,17 +24,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-//
-//  AppType.swift
-//  MobileSDKUITest
-//
-//  Created by Brandon Page on 3/2/18.
-//
+package pageobjects.loginpageobjects
 
-import Foundation
+import androidx.test.uiautomator.UiSelector
+import android.util.Log
+import pageobjects.BasePageObject
 
-class AppType {
-    enum AppType {
-        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, smartSyncSwift, smartSyncReact
+/**
+ * Created by bpage on 9/12/19.
+ */
+class ChromePageObject : BasePageObject() {
+
+    fun isAdvAuth(): Boolean {
+        val continueButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/terms_accept"))
+        val noButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/negative_button"))
+        val toolbar = device.findObject(UiSelector().resourceId("com.android.chrome:id/toolbar"))
+
+        if (continueButton.waitForExists(timeout)) {
+            Log.i("uia", "Accepting chrome terms and signing in.")
+            continueButton.click()
+            noButton.waitForExists(timeout)
+            noButton.click()
+        }
+
+        return toolbar.waitForExists(timeout)
+    }
+
+    fun dismissSavePasswordDialog() {
+        val infobar = device.findObject(UiSelector().resourceId("com.android.chrome:id/infobar_message"))
+        val neverButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/button_secondary"))
+        infobar.waitForExists(timeout)
+        if (neverButton.waitForExists(timeout)) {
+            neverButton.click()
+        }
+    }
+
+    fun tapCloseButton() {
+        val closeButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/close_button"))
+        if (closeButton.waitForExists(timeout)) {
+            closeButton.click()
+        }
     }
 }
