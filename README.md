@@ -14,7 +14,7 @@ examples:
 
        fastlane android type:native_kotlin passcode:true
 
-       fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev
+       fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 
 ----------
 

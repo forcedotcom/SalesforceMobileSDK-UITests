@@ -340,7 +340,7 @@ def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, ol
       config_path.concat('app/res/values/bootconfig.xml')
     when 'androidhybridlocal', 'androidhybridremote'
       config_path.concat('../../www/bootconfig.json')
-    when 'androidreactnative', 'androidsmartsyncreactnative'
+    when 'androidreactnative', 'androidmobilesyncreactnative'
       config_path.concat('app/src/main/res/values/bootconfig.xml')
       android_build = 'assembleRelease'  
     end
@@ -377,7 +377,7 @@ def setup_adv_auth(app_info)
     when 'androidhybridlocal', 'androidhybridremote'
       manifest_path.concat('AndroidManifest.xml')
       servers_path = app_info.app_path + 'SalesforceSDK/res/xml/servers.xml'
-    when 'androidreactnative', 'androidsmartsyncreactnative'
+    when 'androidreactnative', 'androidmobilesyncreactnative'
       manifest_path.concat('src/main/AndroidManifest.xml')
       servers_path = app_info.app_path + '../mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
     end
@@ -393,7 +393,7 @@ def setup_adv_auth(app_info)
   else
     plist_path = app_info.app_path + app_info.app_name 
     case app_info.app_name
-    when 'iosnative', 'iosnativeswift', 'iosreactnative', 'iossmartsyncreactnative'
+    when 'iosnative', 'iosnativeswift', 'iosreactnative', 'iosmobilesyncreactnative'
       plist_path.concat('/Info.plist')
     when 'ioshybridlocal', 'ioshybridremote'
       plist_path.concat(app_info.app_name + '-Info.plist')

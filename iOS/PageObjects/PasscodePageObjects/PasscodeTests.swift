@@ -37,7 +37,7 @@ class PasscodeTests: XCTestCase {
     private var username = UserUtility().username
     private var password = UserUtility().password
     private var appLoadError = "App did not load."
-    private var smartSyncError = "SmartSync did not pull data."
+    private var smartSyncError = "MobileSync did not pull data."
     private var timeout:double_t = 30
     private let reactNativeUsers = "Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"
     private let sampleAppTitle = "Mobile SDK Sample App"
@@ -87,10 +87,10 @@ class PasscodeTests: XCTestCase {
             let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         case .smartSyncSwift:
-            let title = app.navigationBars["SmartSync Explorer"].otherElements["SmartSync Explorer"]
+            let title = app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
-            // Check SmartSync Works
+            // Check MobileSync Works
             _ = app.tables.cells.firstMatch.waitForExistence(timeout: 3)
             XCTAssertGreaterThan(app.tables.cells.count, 0, smartSyncError)
         case .smartSyncReact:

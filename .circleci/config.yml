@@ -1,9 +1,9 @@
 aliases:
   # Templates
-  - &SmartSyncExplorerSwift
-    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev      
-  - &SmartSyncExplorerReactNative
-    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev
+  - &MobileSyncExplorerSwift
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev      
+  - &MobileSyncExplorerReactNative
+    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
 
   - &setup
     name: Setup
@@ -28,8 +28,8 @@ aliases:
         app_type: "react_native"
         e: android-react-native
     - test-android:
-        name: "SmartSyncExplorerReactNative (Android)"
-        app_type: *SmartSyncExplorerReactNative
+        name: "MobileSyncExplorerReactNative (Android)"
+        app_type: *MobileSyncExplorerReactNative
         template: true 
         e: android-react-native
     - test-android:
@@ -85,8 +85,8 @@ aliases:
         sfdx: true
         e: android-react-native
     - test-android:
-        name: "SmartSyncExplorerReactNative (Android) SFDX"
-        app_type: *SmartSyncExplorerReactNative
+        name: "MobileSyncExplorerReactNative (Android) SFDX"
+        app_type: *MobileSyncExplorerReactNative
         template: true
         sfdx: true
         e: android-react-native
@@ -280,12 +280,12 @@ jobs:
             command: cd .circleci && fastlane ios type:react_native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
         - run:
-            name: Test SmartSync Swift Template
-            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            name: Test MobileSync Swift Template
+            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
         - run:
-            name: Test SmartSync React Native Template
-            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/SmartSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            name: Test MobileSync React Native Template
+            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
         - run:
             name: Test Advanced Auth
