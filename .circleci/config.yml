@@ -39,28 +39,20 @@ aliases:
         name: "Passcode"
         app_type: "native"
         passcode: true
-    # TODO: Add Xcode 11/iOS 13 when more stable cmd line tools are released.
-    # - test-ios:
-    #     name: "iOS 13"
-    #     e:
-    #       name: mac
-    #       xcode: "11.0.0"
-    #     device: "iPhone XR"
-    #     ios_version: "13.0"    
+    - test-ios:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.0.0"
+        device: "iPhone XR"
+        ios_version: "13.0"    
     - test-ios:
         name: iOS 12
         e:
           name: mac
-          xcode: "10.2.1"
+          xcode: "11.0.0"
         device: "iPhone XR"
-        ios_version: "12.2"
-    - test-ios:
-        name: iOS 11
-        e: 
-          name: mac
-          xcode: "10.2.1"
-        device: "iPhone X"
-        ios_version: "11.4"
+        ios_version: "12.4"
 
   - &all-jobs-sfdx
     - test-android:
@@ -90,30 +82,21 @@ aliases:
         template: true
         sfdx: true
         e: android-react-native
-    # TODO: Add Xcode 11/iOS 13 when more stable cmd line tools are released.
-    # - test-ios:
-    #     name: "iOS 13 SFDX"
-    #     e:
-    #       name: mac
-    #       xcode: "11.0.0"
-    #     device: "iPhone XR"
-    #     ios_version: "13.0"
-    #     sfdx: true
+    - test-ios:
+        name: "iOS 13 SFDX"
+        e:
+          name: mac
+          xcode: "11.0.0"
+        device: "iPhone XR"
+        ios_version: "13.0"
+        sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
         e:
           name: mac
-          xcode: "10.2.1"
+          xcode: "11.0.0"
         device: "iPhone XR"
-        ios_version: "12.2"
-        sfdx: true
-    - test-ios:
-        name: "iOS 11 SFDX"
-        e:
-          name: mac
-          xcode: "10.2.1"
-        device: "iPhone X"
-        ios_version: "11.4"
+        ios_version: "12.4"
         sfdx: true
 
 executors:
