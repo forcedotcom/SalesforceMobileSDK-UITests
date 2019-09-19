@@ -94,7 +94,7 @@ aliases:
         name: "iOS 12 SFDX"
         e:
           name: mac
-          xcode: "11.0.0"
+          xcode: "10.3.0"
         device: "iPhone XR"
         ios_version: "12.4"
         sfdx: true
@@ -120,7 +120,6 @@ executors:
     parameters:
       xcode:
         type: string
-        default: "11.0.0"
     working_directory: ~/SalesforceMobileSDK-UITests
     macos:
       xcode: << parameters.xcode >>
