@@ -226,13 +226,13 @@ def base_ios_test_setup(options)
   if device
     device.gsub!(' ', '-')
   else
-    device = 'iPhone-XR'
+    device = 'iPhone-11'
   end
 
   if ios
     ios.gsub!('.', '-')
   else
-    ios = '12-4'
+    ios = '13-0'
   end
 
   system("xcrun simctl delete #{$sim_name}") or true
