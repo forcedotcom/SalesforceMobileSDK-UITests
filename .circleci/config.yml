@@ -41,18 +41,10 @@ aliases:
         passcode: true
     - test-ios:
         name: "iOS 13"
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "13.0"    
+        e: ios13
     - test-ios:
         name: iOS 12
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "12.4"
+        e: ios12
 
   - &all-jobs-sfdx
     - test-android:
@@ -84,19 +76,11 @@ aliases:
         e: android-react-native
     - test-ios:
         name: "iOS 13 SFDX"
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "13.0"
+        e: ios13
         sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
-        e:
-          name: mac
-          xcode: "11.0.0"
-        device: "iPhone XR"
-        ios_version: "12.4"
+        e: ios12
         sfdx: true
 
 executors:
@@ -116,18 +100,24 @@ executors:
       - TERM: "dumb"
       - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx1024m -XX:+HeapDumpOnOutOfMemoryError"'
       - FASTLANE_SKIP_UPDATE_CHECK: true
-  mac:
-    parameters:
-      xcode:
-        type: string
-        default: "11.0.0"
+  ios12:
     working_directory: ~/SalesforceMobileSDK-UITests
     macos:
-      xcode: << parameters.xcode >>
+      xcode: "10.3.0"
+    device: "iPhone XR"
+    ios_version: "12.4"
     shell: /bin/bash --login -eo pipefail
     environment:
       - FASTLANE_SKIP_UPDATE_CHECK: true
-    
+  ios13:
+    working_directory: ~/SalesforceMobileSDK-UITests
+    macos:
+      xcode: "11.0.0"
+    device: "iPhone 11"
+    ios_version: "13.0"
+    shell: /bin/bash --login -eo pipefail
+    environment:
+      - FASTLANE_SKIP_UPDATE_CHECK: true
 
 version: 2.1
 jobs:
