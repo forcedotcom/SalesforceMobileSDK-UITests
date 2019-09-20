@@ -57,9 +57,9 @@ class TestApplication: XCUIApplication {
             type = .hyrbidRemote
         case "com.salesforce.iosreactnative":
             type = .reactNative
-        case "com.salesforce.iossmartsyncexplorerswift":
+        case "com.salesforce.iosmobilesyncexplorerswift":
             type = .smartSyncSwift
-        case "com.salesforce.iossmartsyncexplorerreactnative":
+        case "com.salesforce.iosmobilesyncexplorerreactnative":
             type = .smartSyncReact
         default:
             assert(false, "Unknown AppType.")

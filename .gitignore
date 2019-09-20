@@ -79,3 +79,6 @@ Android/screenshots/
 iOS/SalesforceMobileSDK-UITest.xcodeproj/project.xcworkspace/xcuserdata/
 iOS/SalesforceMobileSDK-UITest.xcodeproj/xcuserdata/
 */xcuserdata
+
+# Npm
+node_modules/

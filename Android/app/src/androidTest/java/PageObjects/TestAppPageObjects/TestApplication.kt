@@ -46,7 +46,7 @@ class TestApplication {
         "androidhybridlocal" -> AppType.HYBRID_LOCAL
         "androidhybridremote" -> AppType.HYBRID_REMOTE
         "androidreactnative" -> AppType.REACT_NATIVE
-        "androidsmartsyncexplorerreactnative" -> AppType.SMART_SYNC_EXPLORER_REACT_NATIVE
+        "androidmobilesyncexplorerreactnative" -> AppType.MOBILE_SYNC_EXPLORER_REACT_NATIVE
         else -> AppType.UNKNOWN
     }
 

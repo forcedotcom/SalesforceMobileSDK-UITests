@@ -68,7 +68,7 @@ class LoginTests {
                 HybridLocalAppPageObject(app).assertAppLoads()
             AppType.HYBRID_REMOTE ->
                 HybridRemoteAppPageObject(app).assertAppLoads()
-            AppType.REACT_NATIVE, AppType.SMART_SYNC_EXPLORER_REACT_NATIVE ->
+            AppType.REACT_NATIVE, AppType.MOBILE_SYNC_EXPLORER_REACT_NATIVE ->
                 ReactNativeAppPageObject(app).assertAppLoads()
             else -> Assert.fail("Unknown App Type")
         }
