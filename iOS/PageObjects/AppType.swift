@@ -35,6 +35,6 @@ import Foundation
 
 class AppType {
     enum AppType {
-        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, smartSyncSwift, smartSyncReact
+        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, mobileSyncSwift, mobileSyncReact
     }
 }
