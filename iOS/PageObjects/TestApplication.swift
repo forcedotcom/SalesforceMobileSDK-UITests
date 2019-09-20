@@ -58,9 +58,9 @@ class TestApplication: XCUIApplication {
         case "com.salesforce.iosreactnative":
             type = .reactNative
         case "com.salesforce.iosmobilesyncexplorerswift":
-            type = .smartSyncSwift
+            type = .mobileSyncSwift
         case "com.salesforce.iosmobilesyncexplorerreactnative":
-            type = .smartSyncReact
+            type = .mobileSyncReact
         default:
             assert(false, "Unknown AppType.")
         }
