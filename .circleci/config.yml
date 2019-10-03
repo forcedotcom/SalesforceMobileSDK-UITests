@@ -44,15 +44,15 @@ aliases:
         e:
           name: mac
           xcode: "11.0.0"
-        device: "iPhone XR"
+        device: "iPhone 11"
         ios_version: "13.0"    
     - test-ios:
         name: iOS 12
         e:
           name: mac
-          xcode: "10.3.0"
+          xcode: "11.0.0"
         device: "iPhone XR"
-        ios_version: "12.4"
+        ios_version: "12.2"
 
   - &all-jobs-sfdx
     - test-android:
@@ -94,9 +94,9 @@ aliases:
         name: "iOS 12 SFDX"
         e:
           name: mac
-          xcode: "10.3.0"
+          xcode: "11.0.0"
         device: "iPhone XR"
-        ios_version: "12.4"
+        ios_version: "12.2"
         sfdx: true
 
 executors:

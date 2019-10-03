@@ -20,7 +20,7 @@ examples:
 
 #### Platform Differences
 
-iOS exclusive options: `device:<"iPhone X"/iPhone-8/etc>`, `ios:<12.4/12-4/etc>`.
+iOS exclusive options: `device:<"iPhone X"/iPhone-8/etc>`, `ios:<12.2/12-4/etc>`.
 
 Android exclusive options: `firebase:<true/false>`.
 
