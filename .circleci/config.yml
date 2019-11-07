@@ -93,7 +93,7 @@ aliases:
         e:
           name: mac
           xcode: "11.2.0"
-        device: "iPhone 11"
+        device: "iPhone XR"
         ios_version: "12.2"  
     - test-ios-passcode:
         name: "iOS 13 Passcode"
@@ -107,7 +107,7 @@ aliases:
         e:
           name: mac
           xcode: "11.2.0"
-        device: "iPhone 11"
+        device: "iPhone XR"
         ios_version: "12.2" 
 
 
@@ -200,7 +200,7 @@ aliases:
         e:
           name: mac
           xcode: "11.2.0"
-        device: "iPhone 11"
+        device: "iPhone XR"
         ios_version: "12.2"  
         sfdx: true
     - test-ios-passcode:
@@ -216,7 +216,7 @@ aliases:
         e:
           name: mac
           xcode: "11.2.0"
-        device: "iPhone 11"
+        device: "iPhone XR"
         ios_version: "12.2" 
         sfdx: true
 
