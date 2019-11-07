@@ -40,61 +40,75 @@ aliases:
         app_type: "native"
         passcode: true
     - test-ios-native:
-        name: "iOS 13"
+        name: "iOS 13 Native"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
         ios_version: "13.2"    
     - test-ios-native:
-        name: iOS 12
+        name: "iOS 12 Native"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone XR"
         ios_version: "12.2"
     - test-ios-hybrid:
-        name: "iOS 13"
+        name: "iOS 13 Hybrid"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
         ios_version: "13.2"    
     - test-ios-hybrid:
-        name: iOS 12
+        name: "iOS 12 Hybrid"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone XR"
         ios_version: "12.2"
     - test-ios-templates:
-        name: "iOS 13"
+        name: "iOS 13 Templates"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
         ios_version: "13.2"    
     - test-ios-templates:
-        name: iOS 12
+        name: "iOS 12 Templates"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone XR"
         ios_version: "12.2"
     - test-ios-adv-auth:
-        name: "iOS 13"
+        name: "iOS 13 Adv Auth"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"    
+    - test-ios-adv-auth:
+        name: "iOS 12 Adv Auth"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "12.2"  
+    - test-ios-passcode:
+        name: "iOS 13 Passcode"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
         ios_version: "13.2"    
     - test-ios-passcode:
-        name: iOS 12
+        name: "iOS 12 Passcode"
         e:
           name: mac
           xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        device: "iPhone 11"
+        ios_version: "12.2" 
 
 
   - &all-jobs-sfdx
@@ -126,23 +140,15 @@ aliases:
         sfdx: true
         e: android-react-native
     - test-ios-native:
-        name: "iOS 13 SFDX"
+        name: "iOS 13 Native SFDX"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
-        ios_version: "13.2"
+        ios_version: "13.2"    
         sfdx: true
     - test-ios-native:
-        name: "iOS 13"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"  
-        sfdx: true  
-    - test-ios-native:
-        name: iOS 12
+        name: "iOS 12 Native SFDX"
         e:
           name: mac
           xcode: "11.2.0"
@@ -150,15 +156,15 @@ aliases:
         ios_version: "12.2"
         sfdx: true
     - test-ios-hybrid:
-        name: "iOS 13"
+        name: "iOS 13 Hybrid SFDX"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
-        ios_version: "13.2"   
-        sfdx: true 
+        ios_version: "13.2"    
+        sfdx: true
     - test-ios-hybrid:
-        name: iOS 12
+        name: "iOS 12 Hybrid SFDX"
         e:
           name: mac
           xcode: "11.2.0"
@@ -166,15 +172,15 @@ aliases:
         ios_version: "12.2"
         sfdx: true
     - test-ios-templates:
-        name: "iOS 13"
+        name: "iOS 13 Templates SFDX"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
-        ios_version: "13.2"   
-        sfdx: true 
+        ios_version: "13.2"    
+        sfdx: true
     - test-ios-templates:
-        name: iOS 12
+        name: "iOS 12 Templates SFDX"
         e:
           name: mac
           xcode: "11.2.0"
@@ -182,7 +188,23 @@ aliases:
         ios_version: "12.2"
         sfdx: true
     - test-ios-adv-auth:
-        name: "iOS 13"
+        name: "iOS 13 Adv Auth SFDX"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"    
+        sfdx: true
+    - test-ios-adv-auth:
+        name: "iOS 12 Adv Auth SFDX"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "12.2"  
+        sfdx: true
+    - test-ios-passcode:
+        name: "iOS 13 Passcode SFDX"
         e:
           name: mac
           xcode: "11.2.0"
@@ -190,12 +212,12 @@ aliases:
         ios_version: "13.2"    
         sfdx: true
     - test-ios-passcode:
-        name: iOS 12
+        name: "iOS 12 Passcode SFDX"
         e:
           name: mac
           xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        device: "iPhone 11"
+        ios_version: "12.2" 
         sfdx: true
 
 executors:
