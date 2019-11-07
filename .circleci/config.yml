@@ -43,14 +43,14 @@ aliases:
         name: "iOS 13"
         e:
           name: mac
-          xcode: "11.0.0"
+          xcode: "11.2.0"
         device: "iPhone 11"
-        ios_version: "13.0"    
+        ios_version: "13.2"    
     - test-ios:
         name: iOS 12
         e:
           name: mac
-          xcode: "11.0.0"
+          xcode: "11.2.0"
         device: "iPhone XR"
         ios_version: "12.2"
 
@@ -86,15 +86,15 @@ aliases:
         name: "iOS 13 SFDX"
         e:
           name: mac
-          xcode: "11.0.0"
+          xcode: "11.2.0"
         device: "iPhone 11"
-        ios_version: "13.0"
+        ios_version: "13.2"
         sfdx: true
     - test-ios:
         name: "iOS 12 SFDX"
         e:
           name: mac
-          xcode: "11.0.0"
+          xcode: "11.2.0"
         device: "iPhone XR"
         ios_version: "12.2"
         sfdx: true
@@ -274,7 +274,7 @@ jobs:
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx>>" adv_auth:true
             when: always
         - run:
-            name: Test Password
+            name: Test Passcode
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx>>" passcode:true
             when: always
         - store_artifacts:

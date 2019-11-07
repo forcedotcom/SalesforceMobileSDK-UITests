@@ -232,7 +232,7 @@ def base_ios_test_setup(options)
   if ios
     ios.gsub!('.', '-')
   else
-    ios = '13-0'
+    ios = '13-2'
   end
 
   system("xcrun simctl delete #{$sim_name}") or true

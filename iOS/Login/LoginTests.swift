@@ -83,14 +83,14 @@ class LoginTests: XCTestCase {
             let exists = NSPredicate(format: "exists == 1")
             
             expectation(for: exists, evaluatedWith: title, handler: nil)
-            waitForExpectations(timeout: timeout, handler: nil)
+            waitForExpectations(timeout: timeout * 2, handler: nil)
             XCTAssert(title.exists, appLoadError)
         case .reactNative:
             sleep(30)
             let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         case .mobileSyncSwift:
-            let title = app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
+            let title = app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
             // Check MobileSync Works

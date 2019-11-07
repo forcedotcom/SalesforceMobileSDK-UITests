@@ -43,7 +43,7 @@ class PasscodePageObject: XCUIScreen {
     }
     
     func getNavbarText() -> String {
-        let passcodeTitle = app.navigationBars["Passcode"].otherElements["Passcode"]
+        let passcodeTitle = app.navigationBars["Passcode"].staticTexts["Passcode"]
         _ = passcodeTitle.waitForExistence(timeout: timeout)
         return passcodeTitle.label
     }
