@@ -39,20 +39,63 @@ aliases:
         name: "Passcode"
         app_type: "native"
         passcode: true
-    - test-ios:
+    - test-ios-native:
         name: "iOS 13"
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone 11"
         ios_version: "13.2"    
-    - test-ios:
+    - test-ios-native:
         name: iOS 12
         e:
           name: mac
           xcode: "11.2.0"
         device: "iPhone XR"
         ios_version: "12.2"
+    - test-ios-hybrid:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"    
+    - test-ios-hybrid:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone XR"
+        ios_version: "12.2"
+    - test-ios-templates:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"    
+    - test-ios-templates:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone XR"
+        ios_version: "12.2"
+    - test-ios-adv-auth:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"    
+    - test-ios-passcode:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone XR"
+        ios_version: "12.2"
+
 
   - &all-jobs-sfdx
     - test-android:
@@ -82,7 +125,7 @@ aliases:
         template: true
         sfdx: true
         e: android-react-native
-    - test-ios:
+    - test-ios-native:
         name: "iOS 13 SFDX"
         e:
           name: mac
@@ -90,8 +133,64 @@ aliases:
         device: "iPhone 11"
         ios_version: "13.2"
         sfdx: true
-    - test-ios:
-        name: "iOS 12 SFDX"
+    - test-ios-native:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"  
+        sfdx: true  
+    - test-ios-native:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone XR"
+        ios_version: "12.2"
+        sfdx: true
+    - test-ios-hybrid:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"   
+        sfdx: true 
+    - test-ios-hybrid:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone XR"
+        ios_version: "12.2"
+        sfdx: true
+    - test-ios-templates:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"   
+        sfdx: true 
+    - test-ios-templates:
+        name: iOS 12
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone XR"
+        ios_version: "12.2"
+        sfdx: true
+    - test-ios-adv-auth:
+        name: "iOS 13"
+        e:
+          name: mac
+          xcode: "11.2.0"
+        device: "iPhone 11"
+        ios_version: "13.2"    
+        sfdx: true
+    - test-ios-passcode:
+        name: iOS 12
         e:
           name: mac
           xcode: "11.2.0"
@@ -220,7 +319,7 @@ jobs:
           path: firebase/results
           when: always
 
-  test-ios:
+  test-ios-native:
       executor: << parameters.e >>
       parameters:
         ios_version: 
@@ -249,6 +348,28 @@ jobs:
             name: Test Native Swift App
             command: xcrun swift -version && cd .circleci && fastlane ios type:native_swift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
+
+  test-ios-hybrid:
+      executor: << parameters.e >>
+      parameters:
+        ios_version: 
+            type: string
+        device:
+            type: string
+        sfdx:
+          type: boolean
+          default: false
+        e:
+          type: executor
+      steps:
+        - checkout
+        - run: *setup
+        - when:
+            condition: << parameters.sfdx >>
+            steps:
+              - run:
+                  name: Install SFDX
+                  command: npm install -g sfdx-cli
         - run:
             name: Test Hybrid Local App
             command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
@@ -261,6 +382,28 @@ jobs:
             name: Test React Native App
             command: cd .circleci && fastlane ios type:react_native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
+
+  test-ios-templates:
+      executor: << parameters.e >>
+      parameters:
+        ios_version: 
+            type: string
+        device:
+            type: string
+        sfdx:
+          type: boolean
+          default: false
+        e:
+          type: executor
+      steps:
+        - checkout
+        - run: *setup
+        - when:
+            condition: << parameters.sfdx >>
+            steps:
+              - run:
+                  name: Install SFDX
+                  command: npm install -g sfdx-cli
         - run:
             name: Test MobileSync Swift Template
             command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
@@ -269,10 +412,54 @@ jobs:
             name: Test MobileSync React Native Template
             command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
+
+  test-ios-adv-auth:
+      executor: << parameters.e >>
+      parameters:
+        ios_version: 
+            type: string
+        device:
+            type: string
+        sfdx:
+          type: boolean
+          default: false
+        e:
+          type: executor
+      steps:
+        - checkout
+        - run: *setup
+        - when:
+            condition: << parameters.sfdx >>
+            steps:
+              - run:
+                  name: Install SFDX
+                  command: npm install -g sfdx-cli
         - run:
             name: Test Advanced Auth
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx>>" adv_auth:true
             when: always
+
+  test-ios-passcode:
+      executor: << parameters.e >>
+      parameters:
+        ios_version: 
+            type: string
+        device:
+            type: string
+        sfdx:
+          type: boolean
+          default: false
+        e:
+          type: executor
+      steps:
+        - checkout
+        - run: *setup
+        - when:
+            condition: << parameters.sfdx >>
+            steps:
+              - run:
+                  name: Install SFDX
+                  command: npm install -g sfdx-cli
         - run:
             name: Test Passcode
             command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx>>" passcode:true

@@ -38,7 +38,7 @@ class LoginTests: XCTestCase {
     private var password = UserUtility().password
     private var appLoadError = "App did not load."
     private var mobileSyncError = "MobileSync did not pull data."
-    private var timeout:double_t = 30
+    private var timeout:double_t = 60
     private let reactNativeUsers = "Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"
     private let sampleAppTitle = "Mobile SDK Sample App"
     
@@ -83,7 +83,7 @@ class LoginTests: XCTestCase {
             let exists = NSPredicate(format: "exists == 1")
             
             expectation(for: exists, evaluatedWith: title, handler: nil)
-            waitForExpectations(timeout: timeout * 2, handler: nil)
+            waitForExpectations(timeout: timeout, handler: nil)
             XCTAssert(title.exists, appLoadError)
         case .reactNative:
             sleep(30)
@@ -94,7 +94,7 @@ class LoginTests: XCTestCase {
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
             // Check MobileSync Works
-            _ = app.tables.cells.firstMatch.waitForExistence(timeout: 3)
+            _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
             XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
         case .mobileSyncReact:
             sleep(30)
