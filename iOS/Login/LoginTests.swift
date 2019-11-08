@@ -78,6 +78,7 @@ class LoginTests: XCTestCase {
         case .nativeObjC, .nativeSwift:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .hybridLocal, .hyrbidRemote:
+            sleep(10)
             let titleText = (app.type == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
             let title = app.staticTexts[titleText]
             let exists = NSPredicate(format: "exists == 1")
@@ -90,7 +91,10 @@ class LoginTests: XCTestCase {
             let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         case .mobileSyncSwift:
-            let title = app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"]
+            // TODO: Remove this when min iOS version is 13
+            let title = ((UIDevice.current.systemVersion as NSString).floatValue >= 13.0) ?
+                app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"] :
+                app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
             // Check MobileSync Works
