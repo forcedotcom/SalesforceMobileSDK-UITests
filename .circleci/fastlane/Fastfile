@@ -170,9 +170,10 @@ def run_android_tests_firebase(test_class, app_info)
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
   devices = ''
-  min = test_class.include?('Passcode') ? 24 : 23
+  min = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
   for api_level in min..28 do
-    devices.concat("--device model=NexusLowRes,version=#{api_level},locale=en,orientation=portrait \\")
+    model = (api_level > 25) ? 'Pixel2' : 'NexusLowRes'
+    devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
   end
 
   Dir.chdir('./Android/') do
