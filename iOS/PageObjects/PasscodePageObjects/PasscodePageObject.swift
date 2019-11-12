@@ -43,7 +43,9 @@ class PasscodePageObject: XCUIScreen {
     }
     
     func getNavbarText() -> String {
-        let passcodeTitle = app.navigationBars["Passcode"].otherElements["Passcode"]
+        // TODO: Remove this when min iOS version is 13
+        let passcodeTitle = ((UIDevice.current.systemVersion as NSString).floatValue >= 13.0) ?
+            app.navigationBars["Passcode"].staticTexts["Passcode"] : app.navigationBars["Passcode"].otherElements["Passcode"]
         _ = passcodeTitle.waitForExistence(timeout: timeout)
         return passcodeTitle.label
     }

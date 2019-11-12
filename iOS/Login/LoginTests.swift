@@ -38,7 +38,7 @@ class LoginTests: XCTestCase {
     private var password = UserUtility().password
     private var appLoadError = "App did not load."
     private var mobileSyncError = "MobileSync did not pull data."
-    private var timeout:double_t = 30
+    private var timeout:double_t = 60
     private let reactNativeUsers = "Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"
     private let sampleAppTitle = "Mobile SDK Sample App"
     
@@ -78,6 +78,7 @@ class LoginTests: XCTestCase {
         case .nativeObjC, .nativeSwift:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .hybridLocal, .hyrbidRemote:
+            sleep(10)
             let titleText = (app.type == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
             let title = app.staticTexts[titleText]
             let exists = NSPredicate(format: "exists == 1")
@@ -90,11 +91,14 @@ class LoginTests: XCTestCase {
             let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
             XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
         case .mobileSyncSwift:
-            let title = app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
+            // TODO: Remove this when min iOS version is 13
+            let title = ((UIDevice.current.systemVersion as NSString).floatValue >= 13.0) ?
+                app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"] :
+                app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
             // Check MobileSync Works
-            _ = app.tables.cells.firstMatch.waitForExistence(timeout: 3)
+            _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
             XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
         case .mobileSyncReact:
             sleep(30)
