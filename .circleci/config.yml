@@ -1,9 +1,18 @@
 aliases:
-  # Templates
-  - &MobileSyncExplorerSwift
-    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev      
   - &MobileSyncExplorerReactNative
     https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
+  - &newest-ios-env
+    e:
+      name: mac
+      xcode: "11.2.1"
+    device: "iPhone 11"
+    ios_version: "13.2"      
+  - &target-ios-env
+    e:
+      name: mac
+      xcode: "11.2.1"
+    device: "iPhone XR"
+    ios_version: "12.2"
 
   - &setup
     name: Setup
@@ -41,74 +50,34 @@ aliases:
         passcode: true
     - test-ios-native:
         name: "iOS 13 Native"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env
     - test-ios-native:
         name: "iOS 12 Native"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        <<: *target-ios-env
     - test-ios-hybrid:
         name: "iOS 13 Hybrid"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env   
     - test-ios-hybrid:
         name: "iOS 12 Hybrid"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        <<: *target-ios-env
     - test-ios-templates:
         name: "iOS 13 Templates"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env    
     - test-ios-templates:
         name: "iOS 12 Templates"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        <<: *target-ios-env
     - test-ios-adv-auth:
         name: "iOS 13 Adv Auth"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env   
     - test-ios-adv-auth:
         name: "iOS 12 Adv Auth"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"  
+        <<: *target-ios-env  
     - test-ios-passcode:
         name: "iOS 13 Passcode"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env   
     - test-ios-passcode:
         name: "iOS 12 Passcode"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2" 
+        <<: *target-ios-env 
 
 
   - &all-jobs-sfdx
@@ -141,83 +110,43 @@ aliases:
         e: android-react-native
     - test-ios-native:
         name: "iOS 13 Native SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env  
         sfdx: true
     - test-ios-native:
         name: "iOS 12 Native SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        <<: *target-ios-env
         sfdx: true
     - test-ios-hybrid:
         name: "iOS 13 Hybrid SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env  
         sfdx: true
     - test-ios-hybrid:
         name: "iOS 12 Hybrid SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        <<: *target-ios-env
         sfdx: true
     - test-ios-templates:
         name: "iOS 13 Templates SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env    
         sfdx: true
     - test-ios-templates:
         name: "iOS 12 Templates SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"
+        <<: *target-ios-env
         sfdx: true
     - test-ios-adv-auth:
         name: "iOS 13 Adv Auth SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env    
         sfdx: true
     - test-ios-adv-auth:
         name: "iOS 12 Adv Auth SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2"  
+        <<: *target-ios-env  
         sfdx: true
     - test-ios-passcode:
         name: "iOS 13 Passcode SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone 11"
-        ios_version: "13.2"    
+        <<: *newest-ios-env    
         sfdx: true
     - test-ios-passcode:
         name: "iOS 12 Passcode SFDX"
-        e:
-          name: mac
-          xcode: "11.2.0"
-        device: "iPhone XR"
-        ios_version: "12.2" 
+        <<: *target-ios-env
         sfdx: true
 
 executors:
@@ -415,6 +344,9 @@ jobs:
         sfdx:
           type: boolean
           default: false
+        is_ios_13:
+          type: boolean
+          default: false
         e:
           type: executor
       steps:
@@ -434,6 +366,13 @@ jobs:
             name: Test MobileSync React Native Template
             command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
+        - when:
+            condition: << parameters.is_ios_13 >>
+            steps:
+              - run:
+                  name: Test iOS 13 NativeSwift Template
+                  command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/iOS13NativeSwiftTemplate\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+                  when: always  
 
   test-ios-adv-auth:
       executor: << parameters.e >>

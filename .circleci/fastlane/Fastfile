@@ -217,6 +217,12 @@ def base_ios_test_setup(options)
 
   if template 
     templateName = template.split('/').last.split('#').first
+    if templateName.start_with?('iOS')
+      templateName = templateName[3, templateName.length]
+    end
+    if templateName.end_with?('Template')
+      templateName = templateName[0, templateName.length - 8]
+    end
     templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
   end
 

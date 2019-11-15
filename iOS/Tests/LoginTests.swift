@@ -25,16 +25,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 //
-//  AppType.swift
+//  LoginTest.swift
 //  MobileSDKUITest
 //
-//  Created by Brandon Page on 3/2/18.
+//  Created by Brandon Page on 2/2/18.
 //
 
-import Foundation
+import XCTest
 
-class AppType {
-    enum AppType {
-        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, mobileSyncSwift, mobileSyncReact
+class LoginTests: BaseSDKTest {
+    
+    func testLogin() {
+        let app = TestApplication()
+        let loginPage = LoginPageObject(testApp: app)
+        let authPage = AuthorizationPageObject(testApp: app)
+        let isAdvAuth = app.advAuth
+        app.launch()
+        
+        if (isAdvAuth) {
+            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            let alertMessage = springboard.alerts["“\(app.name)” Wants to Use “salesforce.com” to Sign In"]
+            _ = alertMessage.waitForExistence(timeout: timeout)
+            springboard.buttons["Continue"].tap()
+        }
+        
+        loginPage.setUsername(name: username)
+        loginPage.setPassword(password: password)
+        loginPage.tapLogin()
+        
+        if !isAdvAuth {
+            authPage.tapAllow()
+        }
+        
+        // Assert App loads
+        assertAppLoads(app: app)
     }
 }
