@@ -62,7 +62,8 @@ aliases:
         <<: *target-ios-env
     - test-ios-templates:
         name: "iOS 13 Templates"
-        <<: *newest-ios-env    
+        <<: *newest-ios-env   
+        is_ios_13: true  
     - test-ios-templates:
         name: "iOS 12 Templates"
         <<: *target-ios-env
@@ -127,6 +128,7 @@ aliases:
     - test-ios-templates:
         name: "iOS 13 Templates SFDX"
         <<: *newest-ios-env    
+        is_ios_13: true 
         sfdx: true
     - test-ios-templates:
         name: "iOS 12 Templates SFDX"
