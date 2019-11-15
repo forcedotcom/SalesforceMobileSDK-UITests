@@ -36,9 +36,13 @@ import XCTest
 
 class TestApplication: XCUIApplication {
     var bundleString = ""
-    var type: AppType.AppType = .nativeObjC
+    var type: AppType = .nativeObjC
     var advAuth = false
     var name: String
+    
+    enum AppType {
+        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, mobileSyncSwift, mobileSyncReact, iOS13Swift
+    }
     
     override init() {
         // Get the Test App Bundle from command line arg
@@ -61,6 +65,8 @@ class TestApplication: XCUIApplication {
             type = .mobileSyncSwift
         case "com.salesforce.iosmobilesyncexplorerreactnative":
             type = .mobileSyncReact
+        case "com.salesforce.ios13nativeswift":
+            type = .iOS13Swift
         default:
             assert(false, "Unknown AppType.")
         }

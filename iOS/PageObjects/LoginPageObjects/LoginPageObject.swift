@@ -43,6 +43,7 @@ class LoginPageObject: XCUIScreen {
     }
     
     func setUsername(name: String) -> Void {
+        sleep(3)
         let nameField = app.descendants(matching: .textField).element
         _ = nameField.waitForExistence(timeout: timeout * 12)
         nameField.tap()

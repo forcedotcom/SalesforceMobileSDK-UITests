@@ -33,14 +33,7 @@
 
 import XCTest
 
-class PasscodeTests: XCTestCase {
-    private var username = UserUtility().username
-    private var password = UserUtility().password
-    private var appLoadError = "App did not load."
-    private var mobileSyncError = "MobileSync did not pull data."
-    private var timeout:double_t = 30
-    private let reactNativeUsers = "Automated Process Brandon Page circleci Integration User Security User Chatter Expert Mobile SDK Sample App"
-    private let sampleAppTitle = "Mobile SDK Sample App"
+class PasscodeTests: BaseSDKTest {
     private let instructionsError = "Passcode instructions incorrect."
     
     override func setUp() {
@@ -71,33 +64,7 @@ class PasscodeTests: XCTestCase {
         passcodePage.enterPasscode(passcode: "12345")
         
         // Assert App loads
-        switch app.type {
-        case .nativeObjC, .nativeSwift:
-            XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
-        case .hybridLocal, .hyrbidRemote:
-            let titleText = (app.type == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
-            let title = app.staticTexts[titleText]
-            let exists = NSPredicate(format: "exists == 1")
-            
-            expectation(for: exists, evaluatedWith: title, handler: nil)
-            waitForExpectations(timeout: timeout, handler: nil)
-            XCTAssert(title.exists, appLoadError)
-        case .reactNative:
-            sleep(30)
-            let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
-            XCTAssert(titleElement.waitForExistence(timeout: timeout), appLoadError)
-        case .mobileSyncSwift:
-            let title = app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
-            XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
-            
-            // Check MobileSync Works
-            _ = app.tables.cells.firstMatch.waitForExistence(timeout: 3)
-            XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
-        case .mobileSyncReact:
-            sleep(30)
-            let title = app
-            XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
-        }
+        assertAppLoads(app: app)
     }
 
 }
