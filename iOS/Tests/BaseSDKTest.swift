@@ -87,9 +87,17 @@ class BaseSDKTest: XCTestCase {
             let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
             
+            // Accounts List
              _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
-             XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
+             XCTAssertGreaterThan(app.tables.cells.count, 0, "Swift UI did not load Account List.")
+            
+            // Contacts List
+            app.tables.cells.element(boundBy: 0).tap()
+            XCTAssertGreaterThan(app.tables.cells.count, 0, "RestClient did not retrieve Contacts for Account.")
+            
+            // Contact Details
+            app.tables.cells.element(boundBy: 0).tap()
+            XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
         }
-
     }
 }
