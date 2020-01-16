@@ -12,6 +12,9 @@
 bin/
 gen/
 out/
+DerivedData/
+Carthage/
+CarthageTest/Cartfile.resolved
 
 # Gradle files
 .gradle/
@@ -79,6 +82,8 @@ Android/screenshots/
 iOS/SalesforceMobileSDK-UITest.xcodeproj/project.xcworkspace/xcuserdata/
 iOS/SalesforceMobileSDK-UITest.xcodeproj/xcuserdata/
 */xcuserdata
+CarthageTest/CarthageTest.xcodeproj/project.xcworkspace/xcuserdata/
+CarthageTest/CarthageTest.xcodeproj/xcuserdata/
 
 # Npm
 node_modules/
