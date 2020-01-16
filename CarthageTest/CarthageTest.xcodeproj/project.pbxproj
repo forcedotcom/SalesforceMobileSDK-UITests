@@ -91,7 +91,6 @@
 				A391012B23CF743400883A88 /* Sources */,
 				A391012C23CF743400883A88 /* Frameworks */,
 				A391012D23CF743400883A88 /* Resources */,
-				A33C58B023CF9C3400E184CF /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -148,34 +147,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		A33C58B023CF9C3400E184CF /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/Carthage/Build/iOS/SalesforceAnalytics.framework",
-				"$(SRCROOT)/Carthage/Build/iOS/SalesforceSDKCore.framework",
-				"$(SRCROOT)/Carthage/Build/iOS/SmartStore.framework",
-				"$(SRCROOT)/Carthage/Build/iOS/SmartStore.framework",
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/$(FRAMEWORKS_FOLDER_PATH)/SalesforceAnalytics.framework",
-				"$(SRCROOT)/$(FRAMEWORKS_FOLDER_PATH)/SalesforceSDKCore.framework",
-				"$(SRCROOT)/$(FRAMEWORKS_FOLDER_PATH)/SmartStore.framework",
-				"$(SRCROOT)/$(FRAMEWORKS_FOLDER_PATH)/MobileSync.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n/usr/local/bin/carthage copy-frameworks\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A391012B23CF743400883A88 /* Sources */ = {
