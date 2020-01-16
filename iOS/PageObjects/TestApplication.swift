@@ -41,7 +41,7 @@ class TestApplication: XCUIApplication {
     var name: String
     
     enum AppType {
-        case nativeObjC, nativeSwift, hybridLocal, hyrbidRemote, reactNative, mobileSyncSwift, mobileSyncReact, iOS13Swift, carthage
+        case nativeObjC, nativeSwift, hybridLocal, hybridRemote, reactNative, mobileSyncSwift, mobileSyncReact, iOS13Swift, carthage
     }
     
     override init() {
@@ -58,7 +58,7 @@ class TestApplication: XCUIApplication {
         case "com.salesforce.ioshybridlocal":
             type = .hybridLocal
         case "com.salesforce.ioshybridremote":
-            type = .hyrbidRemote
+            type = .hybridRemote
         case "com.salesforce.iosreactnative":
             type = .reactNative
         case "com.salesforce.iosmobilesyncexplorerswift":
