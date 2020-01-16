@@ -54,7 +54,7 @@ class BaseSDKTest: XCTestCase {
     
     func assertAppLoads(app: TestApplication) {
         switch app.type {
-        case .nativeObjC, .nativeSwift:
+        case .nativeObjC, .nativeSwift, .carthage:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .hybridLocal, .hyrbidRemote:
             sleep(10)
