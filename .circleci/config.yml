@@ -79,6 +79,12 @@ aliases:
     - test-ios-passcode:
         name: "iOS 12 Passcode"
         <<: *target-ios-env 
+    - test-carthage:
+        name: "iOS 13 Carthage"
+        <<: *newest-ios-env  
+    - test-carthage:
+        name: "iOS 12 Carthage"
+        <<: *target-ios-env  
 
 
   - &all-jobs-sfdx
@@ -432,6 +438,32 @@ jobs:
         - store_test_results:
             path: test_output
 
+  test-carthage:
+    executor: << parameters.e >>
+    parameters:
+      ios_version: 
+          type: string
+      device:
+          type: string
+      sfdx:
+        type: boolean
+        default: false
+      e:
+        type: executor
+    steps:
+      - checkout
+      - run: *setup
+      - run:
+          name: Install Carthage
+          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install carthage
+      - run:
+          name: Test Carthage
+          command: cd .circleci && fastlane test_carthage device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
+          when: always
+      - store_artifacts:
+          path: test_output
+      - store_test_results:
+          path: test_output
 
 workflows:
   pr:

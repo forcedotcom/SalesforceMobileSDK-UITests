@@ -54,9 +54,9 @@ class BaseSDKTest: XCTestCase {
     
     func assertAppLoads(app: TestApplication) {
         switch app.type {
-        case .nativeObjC, .nativeSwift:
+        case .nativeObjC, .nativeSwift, .carthage:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
-        case .hybridLocal, .hyrbidRemote:
+        case .hybridLocal, .hybridRemote:
             sleep(10)
             let titleText = (app.type == .hybridLocal) ? "Contacts" : "Salesforce Mobile SDK Test"
             let title = app.staticTexts[titleText]
