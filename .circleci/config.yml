@@ -4,7 +4,7 @@ aliases:
   - &newest-ios-env
     e:
       name: mac
-      xcode: "11.4"
+      xcode: "11.4.0"
     device: "iPhone 11"
     ios_version: "13.4"      
   - &target-ios-env
@@ -259,24 +259,27 @@ jobs:
                 name: Test Android Template
                 command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:<< parameters.sfdx >>
                 when: always
-      - when:
-          condition: << parameters.complex_hybrid >>
-          steps:
-            - run:
-                name: Test Android Complex Hybrid - Account Editor
-                command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
-                when: always
-            - run:
-                name: Test Android Complex Hybrid - Mobile Sync Explorer
-                command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
-                when: always
       - unless:
-          condition: << parameters.template >> || << parameters.complex_hybrid >>
+          condition: << parameters.template >>
           steps:
-            - run:
-                name: Test << parameters.app_type >> Android
-                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
-                when: always
+            - when:
+                condition: << parameters.complex_hybrid >>
+                steps:
+                  - run:
+                      name: Test Android Complex Hybrid - Account Editor
+                      command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
+                      when: always
+                  - run:
+                      name: Test Android Complex Hybrid - Mobile Sync Explorer
+                      command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
+                      when: always
+            - unless: 
+                condition: << parameters.complex_hybrid >>
+                steps:
+                  - run:
+                      name: Test << parameters.app_type >> Android
+                      command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
+                      when: always
       - run: 
           name: Copy test results data
           command: |
