@@ -4,13 +4,13 @@ aliases:
   - &newest-ios-env
     e:
       name: mac
-      xcode: "11.2.1"
+      xcode: "11.4"
     device: "iPhone 11"
-    ios_version: "13.2"      
+    ios_version: "13.4"      
   - &target-ios-env
     e:
       name: mac
-      xcode: "11.2.1"
+      xcode: "11.4"
     device: "iPhone XR"
     ios_version: "12.2"
 
@@ -29,6 +29,10 @@ aliases:
     - test-android:
         name: "Hybrid Local (Android)"
         app_type: "hybrid_local"
+    - test-android:
+        name: "Complex Hybrid (Android)"
+        app_type: "hybrid_local"
+        complex_hybrid: true
     - test-android:
         name: "Hybrid Remote (Android)"
         app_type: "hybrid_remote"
@@ -60,6 +64,12 @@ aliases:
     - test-ios-hybrid:
         name: "iOS 12 Hybrid"
         <<: *target-ios-env
+    - test-ios-complex-hybrid:
+        name: "iOS 13 Complex Hybrid"
+        <<: *newest-ios-env   
+    - test-ios-complex-hybrid:
+        name: "iOS 12 Complex Hybrid"
+        <<: *target-ios-env  
     - test-ios-templates:
         name: "iOS 13 Templates"
         <<: *newest-ios-env   
@@ -101,6 +111,11 @@ aliases:
         app_type: "hybrid_local"
         sfdx: true
     - test-android:
+        name: "Complex Hybrid (Android) SFDX"
+        app_type: "hybrid_local"
+        complex_hybrid: true
+        sfdx: true
+    - test-android:
         name: "Hybrid Remote (Android) SFDX"
         app_type: "hybrid_remote"
         sfdx: true
@@ -130,6 +145,14 @@ aliases:
     - test-ios-hybrid:
         name: "iOS 12 Hybrid SFDX"
         <<: *target-ios-env
+        sfdx: true
+    - test-ios-complex-hybrid:
+        name: "iOS 13 Complex Hybrid SFDX"
+        <<: *newest-ios-env   
+        sfdx: true
+    - test-ios-complex-hybrid:
+        name: "iOS 12 Complex Hybrid SFDX"
+        <<: *target-ios-env  
         sfdx: true
     - test-ios-templates:
         name: "iOS 13 Templates SFDX"
@@ -163,17 +186,17 @@ executors:
     docker:
       - image: circleci/android:api-29-node
     environment:
-      - TERM: "dumb"
-      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
-      - FASTLANE_SKIP_UPDATE_CHECK: true
+      TERM: "dumb"
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
   android-react-native:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
       - image: circleci/android:api-29-node
     environment:
-      - TERM: "dumb"
-      - GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError"'
-      - FASTLANE_SKIP_UPDATE_CHECK: true
+      TERM: "dumb"
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError"'
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
   mac:
     parameters:
       xcode:
@@ -183,7 +206,7 @@ executors:
       xcode: << parameters.xcode >>
     shell: /bin/bash --login -eo pipefail
     environment:
-      - FASTLANE_SKIP_UPDATE_CHECK: true
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
     
 
 version: 2.1
@@ -206,31 +229,14 @@ jobs:
       passcode:
         type: boolean
         default: false
+      complex_hybrid:
+        type: boolean
+        default: false
       e:
         type: executor
         default: "android"
     steps:
       - checkout
-      - run: 
-          name: Update Git
-          command:  |
-            git --version
-            sudo apt-get update
-            sudo apt-get install \
-              build-essential flex bison \
-              libreadline6-dev zlib1g-dev \
-              libssl-dev \
-              libcurl4-gnutls-dev \
-              libexpat1-dev \
-              tcl tk \
-              tcl-dev gettext \
-              asciidoc \
-              docbook2x
-            wget https://www.kernel.org/pub/software/scm/git/git-2.13.0.tar.gz
-            tar -xvzf git-2.13.0.tar.gz
-            cd git-2.13.0
-            sudo ./configure
-            sudo make && sudo make install
       - run: *setup
       - run: 
           name: Authorize gcloud and set config defaults
@@ -251,14 +257,25 @@ jobs:
           steps:
             - run:
                 name: Test Android Template
-                command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>"
+                command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:<< parameters.sfdx >>
+                when: always
+      - when:
+          condition: << parameters.complex_hybrid >>
+          steps:
+            - run:
+                name: Test Android Complex Hybrid - Account Editor
+                command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
+                when: always
+            - run:
+                name: Test Android Complex Hybrid - Mobile Sync Explorer
+                command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
                 when: always
       - unless:
-          condition: << parameters.template >>
+          condition: << parameters.template >> || << parameters.complex_hybrid >>
           steps:
             - run:
                 name: Test << parameters.app_type >> Android
-                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:"<< parameters.sfdx >>" adv_auth:"<< parameters.adv_auth >>" passcode:"<< parameters.passcode >>"
+                command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
                 when: always
       - run: 
           name: Copy test results data
@@ -273,10 +290,8 @@ jobs:
           when: always
       - store_artifacts:
           path: firebase
-          when: always
       - store_test_results:
           path: firebase/results
-          when: always
 
   test-ios-native:
       executor: << parameters.e >>
@@ -340,6 +355,36 @@ jobs:
         - run:
             name: Test React Native App
             command: cd .circleci && fastlane ios type:react_native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+
+  test-ios-complex-hybrid:
+      executor: << parameters.e >>
+      parameters:
+        ios_version: 
+            type: string
+        device:
+            type: string
+        sfdx:
+          type: boolean
+          default: false
+        e:
+          type: executor
+      steps:
+        - checkout
+        - run: *setup
+        - when:
+            condition: << parameters.sfdx >>
+            steps:
+              - run:
+                  name: Install SFDX
+                  command: npm install -g sfdx-cli
+        - run:
+            name: Test Hybrid Account Editor
+            command: cd .circleci && fastlane ios type:hybrid_local complexHybrid:accounteditor device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+            when: always
+        - run:
+            name: Test Hybrid Mobile Sync Explorer
+            command: cd .circleci && fastlane ios type:hybrid_local complexHybrid:mobilesyncexplorer device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always
 
   test-ios-templates:

@@ -37,7 +37,6 @@ import pageobjects.BasePageObject
 class HybridRemoteAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        Thread.sleep(timeout * 2)
         // TODO: Update when min version increases to API 28
         val title = if (!hasOldWebview or (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)) {
             device.findObject(UiSelector().className("android.view.View").text("Salesforce Mobile SDK Test"))

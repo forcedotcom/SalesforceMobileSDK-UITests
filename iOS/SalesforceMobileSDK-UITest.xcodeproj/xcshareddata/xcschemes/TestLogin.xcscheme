@@ -26,25 +26,8 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      codeCoverageEnabled = "YES"
-      shouldUseLaunchSchemeArgsEnv = "NO">
-      <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "A34A749E20239B4E00846B32"
-               BuildableName = "SalesforceMobileSDK-UITest.xctest"
-               BlueprintName = "SalesforceMobileSDK-UITest"
-               ReferencedContainer = "container:SalesforceMobileSDK-UITest.xcodeproj">
-            </BuildableReference>
-            <SkippedTests>
-               <Test
-                  Identifier = "PasscodeTests">
-               </Test>
-            </SkippedTests>
-         </TestableReference>
-      </Testables>
+      shouldUseLaunchSchemeArgsEnv = "NO"
+      codeCoverageEnabled = "YES">
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
@@ -67,6 +50,11 @@
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
+            key = "COMPLEX_HYBRID"
+            value = "${COMPLEX_HYBRID}"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
             key = "TEST_APP_BUNDLE"
             value = "$(TEST_APP_BUNDLE)"
             isEnabled = "YES">
@@ -82,8 +70,23 @@
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
-      <AdditionalOptions>
-      </AdditionalOptions>
+      <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A34A749E20239B4E00846B32"
+               BuildableName = "SalesforceMobileSDK-UITest.xctest"
+               BlueprintName = "SalesforceMobileSDK-UITest"
+               ReferencedContainer = "container:SalesforceMobileSDK-UITest.xcodeproj">
+            </BuildableReference>
+            <SkippedTests>
+               <Test
+                  Identifier = "PasscodeTests">
+               </Test>
+            </SkippedTests>
+         </TestableReference>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -104,8 +107,6 @@
             ReferencedContainer = "container:SalesforceMobileSDK-UITest.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
-      <AdditionalOptions>
-      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

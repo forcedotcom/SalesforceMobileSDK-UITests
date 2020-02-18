@@ -39,6 +39,7 @@ class TestApplication: XCUIApplication {
     var type: AppType = .nativeObjC
     var advAuth = false
     var name: String
+    var complexHybrid: String
     
     enum AppType {
         case nativeObjC, nativeSwift, hybridLocal, hybridRemote, reactNative, mobileSyncSwift, mobileSyncReact, iOS13Swift, carthage
@@ -49,6 +50,7 @@ class TestApplication: XCUIApplication {
         bundleString = ProcessInfo.processInfo.environment["TEST_APP_BUNDLE"]!
         name = String(bundleString.split(separator: ".").last!)
         advAuth = (ProcessInfo.processInfo.environment["ADV_AUTH"] != "")
+        complexHybrid = (ProcessInfo.processInfo.environment["COMPLEX_HYBRID"] ?? "")
         
         switch bundleString {
         case "com.salesforce.iosnative":

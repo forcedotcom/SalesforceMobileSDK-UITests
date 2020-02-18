@@ -40,6 +40,7 @@ class TestApplication {
     val packageName = InstrumentationRegistry.getArguments().get("packageName") as String
     val name = packageName.split(".").last()
     val advAuth = InstrumentationRegistry.getArguments().get("advAuth")?.let { (it as String).toBoolean() } ?: false
+    val complexHybrid = InstrumentationRegistry.getArguments().get("complexHybrid")?.let { (it as String) } ?: ""
     val type = when (name) {
         "androidnative" -> AppType.NATIVE
         "androidnativekotlin" -> AppType.NATIVE_KOTLIN

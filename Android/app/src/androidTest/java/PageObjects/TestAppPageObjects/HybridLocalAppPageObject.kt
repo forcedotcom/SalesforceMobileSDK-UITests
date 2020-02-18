@@ -27,6 +27,7 @@
 package pageobjects.testapppageobjects
 
 import android.os.Build
+import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
 import pageobjects.BasePageObject
@@ -37,15 +38,27 @@ import pageobjects.BasePageObject
 class HybridLocalAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        Thread.sleep(timeout * 2)
-        // TODO: Update when min version increases to API 28
-        val title = if (!hasOldWebview or (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)) {
-            device.findObject(UiSelector().className("android.view.View").text("Contacts"))
+        val titleString = if (app.complexHybrid == "accounteditor") "Accounts" else "Contacts"
+        verifyInWebView(titleString)
+
+        if (app.complexHybrid == "accounteditor") {
+            verifyInWebView("New 0013u000011EMiVAAW Cached")
+        } else if (app.complexHybrid == "mobilesyncexplorer") {
+            verifyInWebView("JB John Bond VP, Facilities Facilities")
         } else {
-            device.findObject(UiSelector().className("android.view.View").descriptionContains("Contacts"))
+                verifyInWebView("SwiftTestsiOS601942975.185514")
+        }
+    }
+
+    private fun verifyInWebView(text: String) {
+        // TODO: Update when min version increases to API 28
+        val webElement = if (!hasOldWebview or (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)) {
+            device.findObject(UiSelector().className("android.view.View").text(text))
+        } else {
+            device.findObject(UiSelector().className("android.view.View").descriptionContains(text))
         }
 
-        title.waitForExists(timeout * 5)
-        Assert.assertTrue("App did not successfully testLogin.", title.exists())
+        webElement.waitForExists(timeout * 5)
+        Assert.assertTrue("App did not successfully load.", webElement.exists())
     }
 }

@@ -16,7 +16,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-11'
-$default_ios = '13-2'
+$default_ios = '13-4'
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
@@ -150,6 +150,7 @@ def base_android_test_setup(options)
   UI.user_error!('Please specify either passcode or adv_auth.') if(passcode and adv_auth)
   args = adv_auth ? ["advAuth=true"] : []
   rerun = options[:rerun]
+  complexHybrid = options[:complexHybrid]
 
   if template 
     templateName = template.split('/').last.split('#').first
@@ -163,7 +164,17 @@ def base_android_test_setup(options)
   app_path = Dir.glob("tmp*").last.concat("/#{app_name}/")
 
   if app_name.downcase.include?('hybrid')
-    app_path.concat('platforms/android/')
+    if complexHybrid 
+      setup_complex_hybrid(complexHybrid, app_path)
+      app_path.concat('platforms/android/')
+      UI.important 'Rebuilding with modified source files'
+      Dir.chdir(app_path) do
+        result = silence_output { system("./gradlew assemble --no-daemon") }
+        UI.build_failure!('Failed to rebuild with modified source files.') unless result
+      end
+    elsif
+      app_path.concat('platforms/android/')
+    end     
   elsif app_name.downcase.include?('react')
     react_native_setup(app_path)
     app_path.concat('android/')
@@ -183,6 +194,11 @@ def base_android_test_setup(options)
     change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
   elsif adv_auth
     setup_adv_auth(app_info)
+  end
+
+  if complexHybrid
+    args.push("complexHybrid=#{complexHybrid}")
+    UI.important('args: ' + args.inspect())
   end
   
   return app_info
@@ -268,6 +284,7 @@ def base_ios_test_setup(options)
   UI.user_error!('Please specify either passcode or adv_auth.') if(passcode and adv_auth)
   rerun = options[:rerun]
   xcargs = []
+  complexHybrid = options[:complexHybrid]
 
   if template 
     templateName = template.split('/').last.split('#').first
@@ -290,6 +307,7 @@ def base_ios_test_setup(options)
     app_path = Dir.glob("tmp*").first.concat("/#{app_name}/")
 
     if app_name.include?('hybrid')
+      setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
     elsif app_name.include?('react')
       react_native_setup(app_path)
@@ -306,6 +324,10 @@ def base_ios_test_setup(options)
     elsif adv_auth
       setup_adv_auth(app_info)
       xcargs.push("ADV_AUTH=true")
+    end
+
+    if complexHybrid
+      xcargs.push("COMPLEX_HYBRID=#{complexHybrid}")
     end
 
     return app_info
@@ -475,4 +497,17 @@ end
 def modify_source(config_path, old_code, new_code)
   modified_souce_code = File.read(config_path).gsub(old_code, new_code)
   File.open(config_path, 'w') { |file| file.puts modified_souce_code }
+end
+
+def setup_complex_hybrid(complexHybrid, app_path)
+  silence_output(true) { system('git clone git@github.com:forcedotcom/SalesforceMobileSDK-Shared.git') 
+  Dir.chdir('SalesforceMobileSDK-Shared') do
+    system('git checkout dev')
+    system("ls ../#{app_path}/www/")
+    system("cp -RL ./samples/#{complexHybrid}/* ../#{app_path}/www/")
+    system("ls ../#{app_path}/www/")
+  end
+  Dir.chdir(app_path) do
+    system('cordova prepare') 
+  end }
 end

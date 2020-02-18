@@ -57,6 +57,11 @@
             value = "$(ADV_AUTH)"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "COMPLEX_HYBRID"
+            value = "${COMPLEX_HYBRID}"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
       <Testables>
          <TestableReference
