@@ -10,7 +10,7 @@ aliases:
   - &target-ios-env
     e:
       name: mac
-      xcode: "11.4"
+      xcode: "11.4.0"
     device: "iPhone XR"
     ios_version: "12.2"
 
