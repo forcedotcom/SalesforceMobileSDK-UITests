@@ -67,6 +67,7 @@ forcehybrid-*.tgz
 forcedroid-*.tgz
 forceios-*.tgz
 forcereact-*.tgz
+sfdx-mobilesdk-plugin-*.tgz
 
 # Temp Directory for Builing Apps
 tmp*/
