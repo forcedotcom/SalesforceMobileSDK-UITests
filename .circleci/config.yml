@@ -415,10 +415,6 @@ jobs:
                   name: Install SFDX
                   command: npm install -g sfdx-cli
         - run:
-            name: Test MobileSync Swift Template
-            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-        - run:
             name: Test MobileSync React Native Template
             command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
@@ -429,6 +425,10 @@ jobs:
                   name: Test iOS 13 NativeSwift Template
                   command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/iOS13NativeSwiftTemplate\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
                   when: always  
+              - run:
+                  name: Test MobileSync Swift Template
+                  command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+                  when: always
 
   test-ios-adv-auth:
       executor: << parameters.e >>

@@ -355,7 +355,6 @@ def start_emulator(device, ios)
     ios = $default_ios
   end
 
-  # Create Device
   system("xcrun simctl delete #{$sim_name}") or true
   UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
@@ -370,8 +369,17 @@ def install_ios_app(app_info, release = nil)
     UI.important 'Build for Simulator'
     silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData -quiet") }
 
+    # xcodebuild's derivedDataPath is nondeterministic.
+    build_path = ''
+    if Dir.exists?('./Build/')
+      build_path = './Build/'
+    elsif Dir.exists?('./DerivedData/Build/')
+      build_path = './DerivedData/Build/'
+    else
+      UI.build_failure!("#{app_info.app_name}.app could not be found.")
+    end
     UI.important 'Installing App on Simulator'
-    silence_output { system("xcrun simctl install booted ./Build/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
+    silence_output { system("xcrun simctl install booted #{build_path}/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
   end
 end
 
