@@ -16,7 +16,13 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-11'
-$default_ios = '13-4'
+$default_ios = '13-6'
+
+#
+# Defualt Android Firebase Info
+# 
+$min_api = 23
+$max_api = 29
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
@@ -180,12 +186,13 @@ def base_android_test_setup(options)
     app_path.concat('android/')
 
     Dir.chdir(app_path) do
-    UI.important 'Building Release APK for React Native' 
-      silence_output{ 
-        system('./gradlew assembleRelease --no-daemon')
-        system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
-        system('echo "test12\n" | jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk react')
-      }
+    UI.important 'Building Release APK for React Native'
+    build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
+    silence_output{ 
+      system('./gradlew assembleRelease --no-daemon')
+      system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
+      system('echo "test12\n" | ' + "#{build_tools_dir}/apksigner sign --ks uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk")
+    }
     end
   end
 
@@ -241,8 +248,9 @@ def run_android_tests_firebase(test_class, app_info)
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
   devices = ''
-  min = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
-  for api_level in min..28 do
+  # TODO: Remove this when min_api is greater than 23.
+  $min_api = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
+  for api_level in $min_api..$max_api do
     model = (api_level > 25) ? 'Pixel2' : 'NexusLowRes'
     devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
   end
@@ -360,10 +368,10 @@ end
 def install_ios_app(app_info, release = nil)
   Dir.chdir('../../' + app_info.app_path) do
     UI.important 'Build for Simulator'
-    silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData") }
+    silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData -quiet") }
 
     UI.important 'Installing App on Simulator'
-    system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/#{app_info.app_name}.app")
+    silence_output { system("xcrun simctl install booted ./Build/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
   end
 end
 

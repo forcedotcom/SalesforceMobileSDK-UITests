@@ -71,7 +71,7 @@ class BaseSDKTest: XCTestCase {
                 verifyInWebView(app: app, text: "SwiftTestsiOS601942975.185514") 
             }
         case .reactNative:
-            let titleElement = app.otherElements.matching(identifier: sampleAppTitle).staticTexts[sampleAppTitle]
+            let titleElement = app.otherElements[sampleAppTitle].firstMatch
             XCTAssert(titleElement.waitForExistence(timeout: timeout * 2), appLoadError)
         case .mobileSyncSwift:
             // TODO: Remove this when min iOS version is 13
@@ -81,8 +81,9 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
-            _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
-            XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
+            // TODO:  Update this to be less fragile.  Unfortunately tables, cells, buttons, staticTexts counts all return 0.
+            let contact = app.tables.cells.buttons["John Bond\nVP, Facilities"]
+            XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
             let title = app.otherElements.matching(identifier: "Contacts").staticTexts["Contacts"]
             XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)

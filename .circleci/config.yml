@@ -4,15 +4,15 @@ aliases:
   - &newest-ios-env
     e:
       name: mac
-      xcode: "11.4.0"
+      xcode: "11.6.0"
     device: "iPhone 11"
-    ios_version: "13.4"      
+    ios_version: "13.6"      
   - &target-ios-env
     e:
       name: mac
-      xcode: "11.4.0"
+      xcode: "11.6.0"
     device: "iPhone XR"
-    ios_version: "12.2"
+    ios_version: "12.4"
 
   - &setup
     name: Setup

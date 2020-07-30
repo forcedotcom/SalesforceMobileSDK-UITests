@@ -52,7 +52,7 @@ class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObjec
         }
 
         val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
-        val title = device.findObject(UiSelector().className("android.widget.TextView").index(0))
+        val title = device.findObject(UiSelector().className("android.view.View").index(2))
         title.waitForExists(timeout * 5)
         Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
     }
