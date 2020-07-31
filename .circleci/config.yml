@@ -244,14 +244,11 @@ jobs:
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
-      - when:
-          condition: << parameters.sfdx >>
-          steps:
-            - run:
-                name: Install SFDX
-                command: |
-                  sudo npm install -g sfdx-cli
-                  sudo chown -R `whoami` $HOME/.config/
+      - run:
+          name: Install SFDX
+          command: |
+            sudo npm install -g sfdx-cli
+            sudo chown -R `whoami` $HOME/.config/
       - when:
           condition: << parameters.template >>
           steps:
@@ -341,12 +338,9 @@ jobs:
       steps:
         - checkout
         - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
+        - run:
+            name: Install SFDX
+            command: npm install -g sfdx-cli
         - run:
             name: Test Hybrid Local App
             command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
@@ -375,12 +369,9 @@ jobs:
       steps:
         - checkout
         - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
+        - run:
+            name: Install SFDX
+            command: npm install -g sfdx-cli
         - run:
             name: Test Hybrid Account Editor
             command: cd .circleci && fastlane ios type:hybrid_local complexHybrid:accounteditor device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
