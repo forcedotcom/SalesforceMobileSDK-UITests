@@ -163,7 +163,8 @@ def base_android_test_setup(options)
     templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
   end
 
-  app_name = 'android'.concat(template ? templateName : run_type).gsub('_', '')
+  app_type = template ? templateName : run_type
+  app_name = 'android'.concat(app_type).gsub('_', '')
   package_name = "com.salesforce.#{app_name}"
 
   generate_app('android', run_type, template, sfdx) unless rerun
@@ -196,7 +197,7 @@ def base_android_test_setup(options)
     end
   end
 
-  app_info = App_Info.new('android', app_name, app_path, package_name, args)
+  app_info = App_Info.new('android', app_type, app_path, package_name, args)
   if passcode 
     change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
   elsif adv_auth
@@ -241,9 +242,7 @@ def run_android_tests(test_class, package_name, test_ops = nil)
 end
 
 def run_android_tests_firebase(test_class, app_info)
-  # Get app type for categorizing test results
-  app_type = app_info.app_name.split('android').last
-  apk_path = app_type.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
+  apk_path = app_info.app_name.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
   optional_vars = ''
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
@@ -267,9 +266,9 @@ def run_android_tests_firebase(test_class, app_info)
       --app=../#{app_info.app_path}app/build/outputs/apk/#{apk_path} \
       --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
       #{devices}
-      --results-dir=UITest-#{app_type}  \
-      --results-history-name=UITest-#{app_type}  \
-      --results-dir=UITest-#{app_type}-#{ENV['CIRCLE_BUILD_NUM']}  \
+      --results-dir=UITest-#{app_info.app_name}  \
+      --results-history-name=UITest-#{app_info.app_name}  \
+      --results-dir=UITest-#{app_info.app_name}-#{ENV['CIRCLE_BUILD_NUM']}  \
       --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars}   \
       --no-performance-metrics --no-auto-google-login")
       UI.test_failure!('Tests failed.') unless testResult
@@ -438,11 +437,11 @@ def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, ol
   # Determine iOS/Android
   if app_info.os == 'android'
     case app_info.app_name
-    when 'androidnative', 'androidnativekotlin'
+    when 'native', 'native_kotlin'
       config_path.concat('app/res/values/bootconfig.xml')
-    when 'androidhybridlocal', 'androidhybridremote'
+    when 'hybrid_local', 'hybrid_remote'
       config_path.concat('../../www/bootconfig.json')
-    when 'androidreactnative', 'androidmobilesyncreactnative'
+    when 'react_native', 'mobile_sync_react_native'
       config_path.concat('app/src/main/res/values/bootconfig.xml')
       android_build = 'assembleRelease'  
     end
@@ -473,13 +472,13 @@ def setup_adv_auth(app_info)
   if app_info.os == 'android'
     manifest_path = app_info.app_path + 'app/'
     case app_info.app_name
-    when 'androidnative', 'androidnativekotlin'
+    when 'native', 'native_kotlin'
       servers_path = app_info.app_path + '/mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
       manifest_path.concat('AndroidManifest.xml')
-    when 'androidhybridlocal', 'androidhybridremote'
+    when 'hybrid_local', 'hybrid_remote'
       manifest_path.concat('AndroidManifest.xml')
       servers_path = app_info.app_path + 'SalesforceSDK/res/xml/servers.xml'
-    when 'androidreactnative', 'androidmobilesyncreactnative'
+    when 'react_native', 'mobile_sync_react_native'
       manifest_path.concat('src/main/AndroidManifest.xml')
       servers_path = app_info.app_path + '../mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
     end

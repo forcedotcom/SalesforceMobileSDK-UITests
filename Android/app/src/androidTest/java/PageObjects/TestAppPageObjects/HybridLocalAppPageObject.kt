@@ -42,7 +42,7 @@ class HybridLocalAppPageObject(private val app: TestApplication) : BasePageObjec
         verifyInWebView(titleString)
 
         if (app.complexHybrid == "accounteditor") {
-            verifyInWebView("New 0013u000011EMiVAAW Cached")
+            verifyInWebView("New 0013u000017W4aIAAS Cached")
         } else if (app.complexHybrid == "mobilesyncexplorer") {
             verifyInWebView("JB John Bond VP, Facilities Facilities")
         } else {
