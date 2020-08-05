@@ -85,7 +85,7 @@ class BaseSDKTest: XCTestCase {
             let contact = app.tables.cells.buttons["John Bond\nVP, Facilities"]
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
-            let title = app.otherElements.matching(identifier: "Contacts").staticTexts["Contacts"]
+            let title = app.otherElements["Contacts"].firstMatch
             XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
         case .iOS13Swift:
             let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
