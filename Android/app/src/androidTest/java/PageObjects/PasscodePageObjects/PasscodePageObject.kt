@@ -50,7 +50,7 @@ class PasscodePageObject(private val app: TestApplication) : BasePageObject() {
 
     fun enterPasscode(passcode: String) {
         val passcodeField = device.findObject(UiSelector().resourceId(passcodeFieldId))
-        passcodeField.setText(passcode)
+        passcodeField.text = passcode
     }
 
     fun getPasscode(): String {

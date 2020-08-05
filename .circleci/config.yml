@@ -4,15 +4,15 @@ aliases:
   - &newest-ios-env
     e:
       name: mac
-      xcode: "11.4.0"
+      xcode: "11.6.0"
     device: "iPhone 11"
-    ios_version: "13.4"      
+    ios_version: "13.6"      
   - &target-ios-env
     e:
       name: mac
-      xcode: "11.4.0"
+      xcode: "11.6.0"
     device: "iPhone XR"
-    ios_version: "12.2"
+    ios_version: "12.4"
 
   - &setup
     name: Setup
@@ -244,14 +244,11 @@ jobs:
             echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project mobile-apps-firebase-test
-      - when:
-          condition: << parameters.sfdx >>
-          steps:
-            - run:
-                name: Install SFDX
-                command: |
-                  sudo npm install -g sfdx-cli
-                  sudo chown -R `whoami` $HOME/.config/
+      - run:
+          name: Install SFDX
+          command: |
+            sudo npm install -g sfdx-cli
+            sudo chown -R `whoami` $HOME/.config/
       - when:
           condition: << parameters.template >>
           steps:
@@ -341,12 +338,9 @@ jobs:
       steps:
         - checkout
         - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
+        - run:
+            name: Install SFDX
+            command: npm install -g sfdx-cli
         - run:
             name: Test Hybrid Local App
             command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
@@ -375,12 +369,9 @@ jobs:
       steps:
         - checkout
         - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
+        - run:
+            name: Install SFDX
+            command: npm install -g sfdx-cli
         - run:
             name: Test Hybrid Account Editor
             command: cd .circleci && fastlane ios type:hybrid_local complexHybrid:accounteditor device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
@@ -415,10 +406,6 @@ jobs:
                   name: Install SFDX
                   command: npm install -g sfdx-cli
         - run:
-            name: Test MobileSync Swift Template
-            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-        - run:
             name: Test MobileSync React Native Template
             command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
             when: always        
@@ -429,6 +416,10 @@ jobs:
                   name: Test iOS 13 NativeSwift Template
                   command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/iOS13NativeSwiftTemplate\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
                   when: always  
+              - run:
+                  name: Test MobileSync Swift Template
+                  command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
+                  when: always
 
   test-ios-adv-auth:
       executor: << parameters.e >>

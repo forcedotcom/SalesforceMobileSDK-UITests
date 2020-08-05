@@ -27,23 +27,49 @@
 package pageobjects.testapppageobjects
 
 import android.os.Build
+import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
+import pageobjects.AppType
 import pageobjects.BasePageObject
 
 /**
  * Created by bpage on 2/26/18.
  */
-class HybridRemoteAppPageObject(private val app: TestApplication) : BasePageObject() {
+class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        // TODO: Update when min version increases to API 28
-        val title = if (!hasOldWebview or (Build.VERSION.SDK_INT > Build.VERSION_CODES.O_MR1)) {
-            device.findObject(UiSelector().className("android.view.View").text("Salesforce Mobile SDK Test"))
+        val content: String
+        if (app.type == AppType.HYBRID_REMOTE) {
+            content = "Salesforce Mobile SDK Test"
         } else {
-            device.findObject(UiSelector().className("android.view.View").descriptionContains("Salesforce Mobile SDK Test"))
+            val titleString = if (app.complexHybrid == "accounteditor") "Accounts" else "Contacts"
+            verifyInWebView(titleString)
+
+            content = when (app.complexHybrid) {
+                "accounteditor" -> {
+                    "New 0013u000017W4aIAAS Cached"
+                }
+                "mobilesyncexplorer" -> {
+                    "JB John Bond VP, Facilities Facilities"
+                }
+                else -> {
+                    "SwiftTestsiOS601942975.185514"
+                }
+            }
         }
-        title.waitForExists(timeout * 5)
-        Assert.assertTrue("App did not successfully login.", title.exists())
+
+        verifyInWebView(content)
+    }
+
+
+    private fun verifyInWebView(text: String) {
+        var webElement = device.findObject(UiSelector().className("android.view.View").text(text))
+        if (!webElement.waitForExists(timeout * 5)) {
+            webElement = device.findObject(UiSelector().descriptionContains(text))
+            webElement.waitForExists(timeout * 5)
+        }
+
+        Assert.assertTrue("App did not successfully load.", webElement.exists())
     }
 }

@@ -16,7 +16,13 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-11'
-$default_ios = '13-4'
+$default_ios = '13-6'
+
+#
+# Defualt Android Firebase Info
+# 
+$min_api = 23
+$max_api = 29
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
@@ -157,7 +163,8 @@ def base_android_test_setup(options)
     templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
   end
 
-  app_name = 'android'.concat(template ? templateName : run_type).gsub('_', '')
+  app_type = template ? templateName : run_type
+  app_name = 'android'.concat(app_type).gsub('_', '')
   package_name = "com.salesforce.#{app_name}"
 
   generate_app('android', run_type, template, sfdx) unless rerun
@@ -180,16 +187,17 @@ def base_android_test_setup(options)
     app_path.concat('android/')
 
     Dir.chdir(app_path) do
-    UI.important 'Building Release APK for React Native' 
-      silence_output{ 
-        system('./gradlew assembleRelease --no-daemon')
-        system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
-        system('echo "test12\n" | jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk react')
-      }
+    UI.important 'Building Release APK for React Native'
+    build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
+    silence_output{ 
+      system('./gradlew assembleRelease --no-daemon')
+      system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
+      system('echo "test12\n" | ' + "#{build_tools_dir}/apksigner sign --ks uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk")
+    }
     end
   end
 
-  app_info = App_Info.new('android', app_name, app_path, package_name, args)
+  app_info = App_Info.new('android', app_type, app_path, package_name, args)
   if passcode 
     change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
   elsif adv_auth
@@ -234,15 +242,14 @@ def run_android_tests(test_class, package_name, test_ops = nil)
 end
 
 def run_android_tests_firebase(test_class, app_info)
-  # Get app type for categorizing test results
-  app_type = app_info.app_name.split('android').last
-  apk_path = app_type.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
+  apk_path = app_info.app_name.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
   optional_vars = ''
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
   devices = ''
-  min = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
-  for api_level in min..28 do
+  # TODO: Remove this when min_api is greater than 23.
+  $min_api = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
+  for api_level in $min_api..$max_api do
     model = (api_level > 25) ? 'Pixel2' : 'NexusLowRes'
     devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
   end
@@ -259,9 +266,9 @@ def run_android_tests_firebase(test_class, app_info)
       --app=../#{app_info.app_path}app/build/outputs/apk/#{apk_path} \
       --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
       #{devices}
-      --results-dir=UITest-#{app_type}  \
-      --results-history-name=UITest-#{app_type}  \
-      --results-dir=UITest-#{app_type}-#{ENV['CIRCLE_BUILD_NUM']}  \
+      --results-dir=UITest-#{app_info.app_name}  \
+      --results-history-name=UITest-#{app_info.app_name}  \
+      --results-dir=UITest-#{app_info.app_name}-#{ENV['CIRCLE_BUILD_NUM']}  \
       --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars}   \
       --no-performance-metrics --no-auto-google-login")
       UI.test_failure!('Tests failed.') unless testResult
@@ -347,7 +354,6 @@ def start_emulator(device, ios)
     ios = $default_ios
   end
 
-  # Create Device
   system("xcrun simctl delete #{$sim_name}") or true
   UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
@@ -360,10 +366,19 @@ end
 def install_ios_app(app_info, release = nil)
   Dir.chdir('../../' + app_info.app_path) do
     UI.important 'Build for Simulator'
-    silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData") }
+    silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData -quiet") }
 
+    # xcodebuild's derivedDataPath is nondeterministic.
+    build_path = ''
+    if Dir.exists?('./Build/')
+      build_path = './Build/'
+    elsif Dir.exists?('./DerivedData/Build/')
+      build_path = './DerivedData/Build/'
+    else
+      UI.build_failure!("#{app_info.app_name}.app could not be found.")
+    end
     UI.important 'Installing App on Simulator'
-    system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/#{app_info.app_name}.app")
+    silence_output { system("xcrun simctl install booted #{build_path}/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
   end
 end
 
@@ -422,11 +437,11 @@ def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, ol
   # Determine iOS/Android
   if app_info.os == 'android'
     case app_info.app_name
-    when 'androidnative', 'androidnativekotlin'
+    when 'native', 'native_kotlin'
       config_path.concat('app/res/values/bootconfig.xml')
-    when 'androidhybridlocal', 'androidhybridremote'
+    when 'hybrid_local', 'hybrid_remote'
       config_path.concat('../../www/bootconfig.json')
-    when 'androidreactnative', 'androidmobilesyncreactnative'
+    when 'react_native', 'mobile_sync_react_native'
       config_path.concat('app/src/main/res/values/bootconfig.xml')
       android_build = 'assembleRelease'  
     end
@@ -457,13 +472,13 @@ def setup_adv_auth(app_info)
   if app_info.os == 'android'
     manifest_path = app_info.app_path + 'app/'
     case app_info.app_name
-    when 'androidnative', 'androidnativekotlin'
+    when 'native', 'native_kotlin'
       servers_path = app_info.app_path + '/mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
       manifest_path.concat('AndroidManifest.xml')
-    when 'androidhybridlocal', 'androidhybridremote'
+    when 'hybrid_local', 'hybrid_remote'
       manifest_path.concat('AndroidManifest.xml')
       servers_path = app_info.app_path + 'SalesforceSDK/res/xml/servers.xml'
-    when 'androidreactnative', 'androidmobilesyncreactnative'
+    when 'react_native', 'mobile_sync_react_native'
       manifest_path.concat('src/main/AndroidManifest.xml')
       servers_path = app_info.app_path + '../mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
     end

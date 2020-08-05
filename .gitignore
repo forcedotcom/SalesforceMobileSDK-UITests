@@ -82,6 +82,10 @@ Android/screenshots/
 # XCode User Data
 iOS/SalesforceMobileSDK-UITest.xcodeproj/project.xcworkspace/xcuserdata/
 iOS/SalesforceMobileSDK-UITest.xcodeproj/xcuserdata/
+iOS/Index/
+iOS/Logs/
+iOS/ModuleCache.noindex/
+iOS/info.plist
 */xcuserdata
 CarthageTest/CarthageTest.xcodeproj/project.xcworkspace/xcuserdata/
 CarthageTest/CarthageTest.xcodeproj/xcuserdata/

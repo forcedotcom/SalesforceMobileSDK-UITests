@@ -37,7 +37,7 @@ open class BasePageObject {
     val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
     // TODO: Update when min version increases to API 24
-    private var firebase = InstrumentationRegistry.getArguments().get("firebase")
-    val hasOldWebview: Boolean = ((firebase == null) and (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M))
+    private var runningOnFirebase: Boolean = InstrumentationRegistry.getArguments().get("firebase")!= null
+    val hasOldWebview: Boolean = (Build.VERSION.SDK_INT == Build.VERSION_CODES.M) and !runningOnFirebase
     var timeout:Long = 5000
 }
