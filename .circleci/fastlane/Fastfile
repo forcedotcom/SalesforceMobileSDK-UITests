@@ -16,7 +16,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-11'
-$default_ios = '13-6'
+$default_ios = '13-7'
 
 #
 # Defualt Android Firebase Info
@@ -353,7 +353,9 @@ def start_emulator(device, ios)
   else
     ios = $default_ios
   end
+  ios.concat('-0') unless ios.include?('-')
 
+  system("xcrun simctl shutdown #{$sim_name}") or true
   system("xcrun simctl delete #{$sim_name}") or true
   UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
@@ -388,7 +390,7 @@ def run_ios_tests(test_scheme, bundle_name, xcargs)
   app_type = bundle_name.split('.').last
 
   Dir.chdir('../../iOS/') do
-    destination = "#{$sim_name} (" + `instruments -s devices | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
+    destination = "#{$sim_name} (" + `xcrun xctrace list devices 2>&1 | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
     begin
       scan(
         project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',
