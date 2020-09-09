@@ -104,7 +104,7 @@ jobs:
                 condition: << parameters.complex_hybrid >>
                 steps:
                   - run:
-                      # name: Test << parameters.app_type >> Android
+                      name: Test << parameters.app_type >> Android
                       command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
                       when: always
       - run: 
@@ -190,7 +190,7 @@ jobs:
                 steps:
                   - run:
                       name: Test << parameters.app_type >> iOS << parameters.ios_version >>
-                      command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
+                      command: cd .circleci && fastlane ios type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
                       when: always
 
   test-carthage:
