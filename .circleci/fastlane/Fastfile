@@ -15,7 +15,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 #
 # Default iOS Device info
 #
-$default_device = 'iPhone-11'
+$default_device = 'iPhone-8'
 $default_ios = '13-7'
 
 #
@@ -488,7 +488,8 @@ def setup_adv_auth(app_info)
     end
 
     # Uncomment single single instance in AndroidManifest
-    modify_source(manifest_path, $android_login_activity, '-->' + $android_login_activity)
+    uncomment_manifest_block(manifest_path, $android_login_activity)
+    
     # Replace scheme and path
     modify_source(manifest_path, 'testsfdc', scheme)
     modify_source(manifest_path, '/mobilesdk/detect/oauth/done', path)
@@ -516,6 +517,26 @@ end
 def modify_source(config_path, old_code, new_code)
   modified_souce_code = File.read(config_path).gsub(old_code, new_code)
   File.open(config_path, 'w') { |file| file.puts modified_souce_code }
+end
+
+# Start line is the first line of the block to uncomment.
+# The line preceding start line should only include "<!--"
+def uncomment_manifest_block(config_path, start_line)
+  source_array = File.read(config_path).split(/\n+/)
+  start_index = source_array.index {|line| line.include?(start_line)}
+  UI.user_error!('Improper start line for manifest uncomment.') unless (source_array[start_index - 1].strip == '<!--')
+
+  end_index = start_index
+  loop do
+    if (source_array[end_index += 1].include?('-->') or (end_index >= source_array.size - 1))
+      break
+    end
+  end
+
+  UI.user_error!('Improper comment manifest comment block.') unless (source_array[end_index].strip == '-->')
+  source_array.delete_at(end_index)
+  source_array.delete_at(start_index - 1)
+  File.open(config_path, 'w') { |file| file.puts source_array.join("\n") }
 end
 
 def setup_complex_hybrid(complexHybrid, app_path)

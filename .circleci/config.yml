@@ -131,9 +131,6 @@ jobs:
         default: "mac"
       ios_version: 
         type: string
-      device:
-        type: string
-        default: "iPhone 8"
       app_type: 
         type: string
         default: "native"
@@ -198,9 +195,6 @@ jobs:
     parameters:
       ios_version: 
           type: string
-      device:
-          type: string
-          default: "iPhone 8"
       sfdx:
         type: boolean
         default: false
