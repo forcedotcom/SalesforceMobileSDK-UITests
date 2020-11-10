@@ -143,12 +143,9 @@ jobs:
           name: Setup
           command: ./install.sh
           when: always
-      - when:
-          condition: << parameters.sfdx >>
-          steps:
-            - run:
-                name: Install SFDX
-                command: npm install -g sfdx-cli
+      - run:
+          name: Install SFDX
+          command: npm install -g sfdx-cli
       - when:
           condition: << parameters.template >>
           steps:
@@ -156,6 +153,7 @@ jobs:
                 name: Test iOS << parameters.ios_version >> Template
                 command: cd .circleci && fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >>
                 when: always
+                no_output_timeout: 20m
       - unless:
           condition: << parameters.template >>
           steps:
@@ -170,6 +168,7 @@ jobs:
                       name: Test iOS << parameters.ios_version >> Complex Hybrid - Mobile Sync Explorer
                       command: cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
                       when: always
+                      no_output_timeout: 20m
             - unless: 
                 condition: << parameters.complex_hybrid >>
                 steps:

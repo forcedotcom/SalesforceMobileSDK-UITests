@@ -44,12 +44,7 @@ class LoginPageObject : BasePageObject() {
 
     fun setUsername(name: String) {
         val usernameField = if (hasOldWebview) {
-            // TODO: Update when min version increases to API 23
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                device.findObject(UiSelector().className("android.widget.EditText").index(2))
-            } else {
-                device.findObject(UiSelector().className("android.widget.EditText").descriptionContains("Username"))
-            }
+            device.findObject(UiSelector().className("android.widget.EditText").descriptionContains("Username"))
         }
         else {
             device.findObject(UiSelector().resourceId("username"))
@@ -57,19 +52,18 @@ class LoginPageObject : BasePageObject() {
 
         Log.i("uia", "Waiting for username filed to be present.")
         if (hasOldWebview) {
-            assert(usernameField.waitForExists(timeout * 12))
+            assert(usernameField.waitForExists(timeout * 15))
             usernameField.legacySetText(name)
             Thread.sleep(timeout)
         }
         else {
-            assert(usernameField.waitForExists(timeout * 3))
+            assert(usernameField.waitForExists(timeout * 5))
             usernameField.text = name
         }
     }
 
     fun setPassword(password: String) {
-        // TODO: Update when min version increases to API 23
-        val index = if (hasOldWebview or (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1)) 4 else 3
+        val index = if (hasOldWebview) 4 else 3
         val passwordField = if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.EditText").index(index))
         }
@@ -90,7 +84,7 @@ class LoginPageObject : BasePageObject() {
             device.findObject(UiSelector().resourceId("Login"))
         }
 
-        assert(loginButton.waitForExists(timeout * 2))
+        assert(loginButton.waitForExists(timeout * 5))
         loginButton.click()
     }
 }
