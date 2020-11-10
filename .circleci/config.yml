@@ -1,13 +1,9 @@
 anchors:
-  - &latest-xcode "11.7.0"
-  - &latest-ios   "13.7"
-  - &min-ios      "12.2"
-  - &beta-xcode   "12.0.0"
-  - &beta-ios     "14.0"
+  - &latest-xcode "12.1.0"
+  - &latest-ios   "14.1"
+  - &min-ios      "13.5"
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
-  - &iOS13NativeSwiftTemplate
-      https://github.com/forcedotcom/SalesforceMobileSDK-Templates/iOS13NativeSwiftTemplate\#dev
   - &MobileSyncSwiftTemplate
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 
@@ -27,15 +23,7 @@ executors:
     shell: /bin/bash --login -eo pipefail
     environment:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
-  mac-beta:
-    working_directory: ~/SalesforceMobileSDK-UITests
-    macos:
-      xcode: *beta-xcode
-    shell: /bin/bash --login -eo pipefail
-    environment:
-      FASTLANE_SKIP_UPDATE_CHECK: "true"
     
-
 version: 2.1
 jobs:
   test-android:
@@ -274,7 +262,6 @@ workflows:
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
               ios_version: [*min-ios, *latest-ios]
               sfdx: [true, false]
-      # TODO: remove this when min-ios moves to 13.
       - test-ios:
           name: iOS << matrix.ios_version >> MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
           matrix: 
@@ -287,7 +274,7 @@ workflows:
           name: iOS << matrix.ios_version >> Template
           matrix: 
             parameters: 
-              app_type: [*MobileSyncExplorerReactNative, *iOS13NativeSwiftTemplate, *MobileSyncSwiftTemplate]
+              app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
               ios_version: [*latest-ios]
               template: [true]
       - test-ios:
@@ -313,38 +300,3 @@ workflows:
           matrix:
             parameters: 
               ios_version: [*min-ios, *latest-ios]
-      # iOS 14 beta jobs
-      - test-ios:
-          name: iOS << matrix.ios_version >> beta << matrix.app_type >>
-          matrix:
-            parameters: 
-              app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
-              ios_version: [*beta-ios]
-              e: ["mac-beta"]
-      - test-ios:
-          name: iOS << matrix.ios_version >> beta Template
-          matrix: 
-            parameters: 
-              app_type: [*MobileSyncExplorerReactNative, *iOS13NativeSwiftTemplate, *MobileSyncSwiftTemplate]
-              ios_version: [*beta-ios]
-              e: ["mac-beta"]
-              template: [true]
-      - test-ios:
-          name: iOS 14.0 beta Advanced Auth
-          adv_auth: true
-          ios_version: *beta-ios
-          e: "mac-beta"
-      - test-ios:
-          name: iOS 14.0 beta Passcode
-          passcode: true
-          ios_version: *beta-ios
-          e: "mac-beta"
-      - test-ios:
-          name: iOS 14.0 beta Complex Hybrid
-          complex_hybrid: true
-          ios_version: *beta-ios
-          e: "mac-beta"
-      - test-carthage:
-          name: iOS 14.0 beta Carthage
-          ios_version: *beta-ios
-          e: "mac-beta"

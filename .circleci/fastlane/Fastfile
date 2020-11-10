@@ -16,13 +16,13 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-8'
-$default_ios = '13-7'
+$default_ios = '14-1'
 
 #
 # Defualt Android Firebase Info
 # 
 $min_api = 23
-$max_api = 29
+$max_api = 30
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
@@ -250,8 +250,7 @@ def run_android_tests_firebase(test_class, app_info)
   # TODO: Remove this when min_api is greater than 23.
   $min_api = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
   for api_level in $min_api..$max_api do
-    model = (api_level > 25) ? 'Pixel2' : 'NexusLowRes'
-    devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
+    devices.concat("--device model=NexusLowRes,version=#{api_level},locale=en,orientation=portrait \\")
   end
 
   Dir.chdir('./Android/') do
@@ -391,8 +390,7 @@ def run_ios_tests(test_scheme, bundle_name, xcargs)
   app_type = bundle_name.split('.').last
 
   Dir.chdir('../../iOS/') do
-    # TODO: Change `instruments -s devices` to `xcrun xctrace list devices 2>&1` when no longer supported.
-    destination = "#{$sim_name} (" + `instruments -s devices | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
+    destination = "#{$sim_name} (" + `xcrun xctrace list devices 2>&1 | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
     begin
       scan(
         project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',

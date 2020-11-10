@@ -54,8 +54,23 @@ class BaseSDKTest: XCTestCase {
     
     func assertAppLoads(app: TestApplication) {
         switch app.type {
-        case .nativeObjC, .nativeSwift, .carthage:
+        case .nativeObjC, .carthage:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
+        case .nativeSwift:
+            let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
+            XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
+            
+            // Accounts List
+             _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
+             XCTAssertGreaterThan(app.tables.cells.count, 0, "Swift UI did not load Account List.")
+            
+            // Contacts List
+            app.tables.cells.element(boundBy: 0).tap()
+            XCTAssertGreaterThan(app.tables.cells.count, 0, "RestClient did not retrieve Contacts for Account.")
+            
+            // Contact Details
+            app.tables.cells.element(boundBy: 0).tap()
+            XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
         case .hybridRemote:
             verifyInWebView(app: app, text: "Salesforce Mobile SDK Test")
         case .hybridLocal:
@@ -87,21 +102,6 @@ class BaseSDKTest: XCTestCase {
         case .mobileSyncReact:
             let title = app.otherElements["Contacts"].firstMatch
             XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
-        case .iOS13Swift:
-            let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
-            XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
-            
-            // Accounts List
-             _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
-             XCTAssertGreaterThan(app.tables.cells.count, 0, "Swift UI did not load Account List.")
-            
-            // Contacts List
-            app.tables.cells.element(boundBy: 0).tap()
-            XCTAssertGreaterThan(app.tables.cells.count, 0, "RestClient did not retrieve Contacts for Account.")
-            
-            // Contact Details
-            app.tables.cells.element(boundBy: 0).tap()
-            XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
         }
     }
     
