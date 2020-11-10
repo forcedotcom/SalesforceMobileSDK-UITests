@@ -168,7 +168,7 @@ def base_android_test_setup(options)
   package_name = "com.salesforce.#{app_name}"
 
   generate_app('android', run_type, template, sfdx) unless rerun
-  app_path = Dir.glob("tmp*").last.concat("/#{app_name}/")
+  app_path = Dir.glob("tmp*").sort.last.concat("/#{app_name}/")
 
   if app_name.downcase.include?('hybrid')
     if complexHybrid 
@@ -184,6 +184,7 @@ def base_android_test_setup(options)
     end     
   elsif app_name.downcase.include?('react')
     react_native_setup(app_path)
+    system('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
     app_path.concat('android/')
 
     Dir.chdir(app_path) do
@@ -310,13 +311,15 @@ def base_ios_test_setup(options)
   
   Dir.chdir('../../') do
     generate_app('ios', run_type, template, sfdx) unless rerun
-    app_path = Dir.glob("tmp*").first.concat("/#{app_name}/")
+    app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
 
     if app_name.include?('hybrid')
       setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
     elsif app_name.include?('react')
       react_native_setup(app_path)
+      system('kill -9 `pgrep -f start`')
+      system('npm start&')
       app_path.concat('ios/')
 
       Dir.chdir(app_path) do
@@ -425,8 +428,6 @@ def react_native_setup(app_path)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
     silence_output { system("./install*.js") }
-    system('kill -9 `pgrep -f start`')
-    system('npm start&')
   end
 end
 
