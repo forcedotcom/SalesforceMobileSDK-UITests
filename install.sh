@@ -11,6 +11,7 @@ else
     cordova telemetry off
     sudo gem install cocoapods
     sudo npm install plist
+    sudo chown -R $USER ~/.config
 fi
 
 git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Package.git

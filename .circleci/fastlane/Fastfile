@@ -168,7 +168,7 @@ def base_android_test_setup(options)
   package_name = "com.salesforce.#{app_name}"
 
   generate_app('android', run_type, template, sfdx) unless rerun
-  app_path = Dir.glob("tmp*").sort.last.concat("/#{app_name}/")
+  app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
 
   if app_name.downcase.include?('hybrid')
     if complexHybrid 
