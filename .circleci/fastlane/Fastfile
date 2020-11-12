@@ -184,6 +184,7 @@ def base_android_test_setup(options)
     end     
   elsif app_name.downcase.include?('react')
     react_native_setup(app_path)
+    system('npm i -g react-native')
     system('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
     app_path.concat('android/')
 

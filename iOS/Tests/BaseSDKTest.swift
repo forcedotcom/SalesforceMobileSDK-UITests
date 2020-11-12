@@ -87,12 +87,9 @@ class BaseSDKTest: XCTestCase {
             }
         case .reactNative:
             let titleElement = app.otherElements[sampleAppTitle].firstMatch
-            XCTAssert(titleElement.waitForExistence(timeout: timeout * 2), appLoadError)
+            XCTAssert(titleElement.waitForExistence(timeout: timeout * 3), appLoadError)
         case .mobileSyncSwift:
-            // TODO: Remove this when min iOS version is 13
-            let title = ((UIDevice.current.systemVersion as NSString).floatValue >= 13.0) ?
-                app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"] :
-                app.navigationBars["MobileSync Explorer"].otherElements["MobileSync Explorer"]
+            let title = app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
