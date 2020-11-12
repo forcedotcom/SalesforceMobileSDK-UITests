@@ -183,11 +183,7 @@ def base_android_test_setup(options)
       app_path.concat('platforms/android/')
     end     
   elsif app_name.downcase.include?('react')
-    react_native_setup(app_path)
-    system('sudo npm i -g react-native')
-    system('sudo npm install -i -g --force react-native-cli')
-    system('mkdir android/app/src/main/assets')
-    system('sudo react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+    setup_react_native(app_path)
     app_path.concat('android/')
 
     Dir.chdir(app_path) do
@@ -320,7 +316,7 @@ def base_ios_test_setup(options)
       setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
     elsif app_name.include?('react')
-      react_native_setup(app_path)
+      setup_react_native(app_path)
       app_path.concat('ios/')
 
       Dir.chdir(app_path) do
@@ -425,12 +421,19 @@ def silence_output(silence_error = false)
   end
 end
 
-def react_native_setup(app_path)
+def setup_react_native(app_path)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
     silence_output { system("./install*.js") }
     system('kill -9 `pgrep -f start`')
     system('npm start&')
+
+    if $is_ci
+      system('npm i -g react-native')
+      system('npm install -i -g --force react-native-cli')
+      system('mkdir android/app/src/main/assets')
+      system('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+    end
   end
 end
 

@@ -38,7 +38,7 @@ class LoginPageObject : BasePageObject() {
 
     init {
         if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").index(2)).waitForExists(120000)
+            device.findObject(UiSelector().className("android.widget.EditText").index(2)).waitForExists(timeout * 25)
         }
     }
 
@@ -72,11 +72,12 @@ class LoginPageObject : BasePageObject() {
         }
 
         Log.i("uia", "Waiting for password filed to be present.")
-        assert(passwordField.waitForExists(timeout))
+        assert(passwordField.waitForExists(timeout * 5))
         passwordField.text = password
     }
 
     fun tapLogin() {
+        Thread.sleep(timeout / 2)
         val loginButton = if (hasOldWebview) {
             device.findObject(UiSelector().className("android.widget.Button").index(0))
         }
