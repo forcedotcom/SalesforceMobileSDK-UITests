@@ -1,184 +1,11 @@
-aliases:
+anchors:
+  - &latest-xcode "12.1.0"
+  - &latest-ios   "14.1"
+  - &min-ios      "13.5"
   - &MobileSyncExplorerReactNative
-    https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
-  - &newest-ios-env
-    e:
-      name: mac
-      xcode: "11.6.0"
-    device: "iPhone 11"
-    ios_version: "13.6"      
-  - &target-ios-env
-    e:
-      name: mac
-      xcode: "11.6.0"
-    device: "iPhone XR"
-    ios_version: "12.4"
-
-  - &setup
-    name: Setup
-    command: ./install.sh
-    when: always
-  
-  - &all-jobs
-    - test-android:
-        name: "Java"
-        app_type: "native"
-    - test-android:
-        name: "Kotlin"
-        app_type: "native_kotlin"
-    - test-android:
-        name: "Hybrid Local (Android)"
-        app_type: "hybrid_local"
-    - test-android:
-        name: "Complex Hybrid (Android)"
-        app_type: "hybrid_local"
-        complex_hybrid: true
-    - test-android:
-        name: "Hybrid Remote (Android)"
-        app_type: "hybrid_remote"
-    - test-android:
-        name: "React Native (Android)"
-        app_type: "react_native"
-        e: android-react-native
-    - test-android:
-        name: "MobileSyncExplorerReactNative (Android)"
-        app_type: *MobileSyncExplorerReactNative
-        template: true 
-        e: android-react-native
-    - test-android:
-        name: "Advanced Auth"
-        app_type: "native"
-    - test-android:
-        name: "Passcode"
-        app_type: "native"
-        passcode: true
-    - test-ios-native:
-        name: "iOS 13 Native"
-        <<: *newest-ios-env
-    - test-ios-native:
-        name: "iOS 12 Native"
-        <<: *target-ios-env
-    - test-ios-hybrid:
-        name: "iOS 13 Hybrid"
-        <<: *newest-ios-env   
-    - test-ios-hybrid:
-        name: "iOS 12 Hybrid"
-        <<: *target-ios-env
-    - test-ios-complex-hybrid:
-        name: "iOS 13 Complex Hybrid"
-        <<: *newest-ios-env   
-    - test-ios-complex-hybrid:
-        name: "iOS 12 Complex Hybrid"
-        <<: *target-ios-env  
-    - test-ios-templates:
-        name: "iOS 13 Templates"
-        <<: *newest-ios-env   
-        is_ios_13: true  
-    - test-ios-templates:
-        name: "iOS 12 Templates"
-        <<: *target-ios-env
-    - test-ios-adv-auth:
-        name: "iOS 13 Adv Auth"
-        <<: *newest-ios-env   
-    - test-ios-adv-auth:
-        name: "iOS 12 Adv Auth"
-        <<: *target-ios-env  
-    - test-ios-passcode:
-        name: "iOS 13 Passcode"
-        <<: *newest-ios-env   
-    - test-ios-passcode:
-        name: "iOS 12 Passcode"
-        <<: *target-ios-env 
-    - test-carthage:
-        name: "iOS 13 Carthage"
-        <<: *newest-ios-env  
-    - test-carthage:
-        name: "iOS 12 Carthage"
-        <<: *target-ios-env  
-
-
-  - &all-jobs-sfdx
-    - test-android:
-        name: "Java SFDX"
-        app_type: "native"
-        sfdx: true
-    - test-android:
-        name: "Kotlin SFDX"
-        app_type: "native_kotlin"
-        sfdx: true
-    - test-android:
-        name: "Hybrid Local (Android) SFDX"
-        app_type: "hybrid_local"
-        sfdx: true
-    - test-android:
-        name: "Complex Hybrid (Android) SFDX"
-        app_type: "hybrid_local"
-        complex_hybrid: true
-        sfdx: true
-    - test-android:
-        name: "Hybrid Remote (Android) SFDX"
-        app_type: "hybrid_remote"
-        sfdx: true
-    - test-android:
-        name: "React Native (Android) SFDX"
-        app_type: "react_native"
-        sfdx: true
-        e: android-react-native
-    - test-android:
-        name: "MobileSyncExplorerReactNative (Android) SFDX"
-        app_type: *MobileSyncExplorerReactNative
-        template: true
-        sfdx: true
-        e: android-react-native
-    - test-ios-native:
-        name: "iOS 13 Native SFDX"
-        <<: *newest-ios-env  
-        sfdx: true
-    - test-ios-native:
-        name: "iOS 12 Native SFDX"
-        <<: *target-ios-env
-        sfdx: true
-    - test-ios-hybrid:
-        name: "iOS 13 Hybrid SFDX"
-        <<: *newest-ios-env  
-        sfdx: true
-    - test-ios-hybrid:
-        name: "iOS 12 Hybrid SFDX"
-        <<: *target-ios-env
-        sfdx: true
-    - test-ios-complex-hybrid:
-        name: "iOS 13 Complex Hybrid SFDX"
-        <<: *newest-ios-env   
-        sfdx: true
-    - test-ios-complex-hybrid:
-        name: "iOS 12 Complex Hybrid SFDX"
-        <<: *target-ios-env  
-        sfdx: true
-    - test-ios-templates:
-        name: "iOS 13 Templates SFDX"
-        <<: *newest-ios-env    
-        is_ios_13: true 
-        sfdx: true
-    - test-ios-templates:
-        name: "iOS 12 Templates SFDX"
-        <<: *target-ios-env
-        sfdx: true
-    - test-ios-adv-auth:
-        name: "iOS 13 Adv Auth SFDX"
-        <<: *newest-ios-env    
-        sfdx: true
-    - test-ios-adv-auth:
-        name: "iOS 12 Adv Auth SFDX"
-        <<: *target-ios-env  
-        sfdx: true
-    - test-ios-passcode:
-        name: "iOS 13 Passcode SFDX"
-        <<: *newest-ios-env    
-        sfdx: true
-    - test-ios-passcode:
-        name: "iOS 12 Passcode SFDX"
-        <<: *target-ios-env
-        sfdx: true
+      https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
+  - &MobileSyncSwiftTemplate
+      https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 
 executors:
   android:
@@ -189,26 +16,14 @@ executors:
       TERM: "dumb"
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
-  android-react-native:
-    working_directory: ~/SalesforceMobileSDK-UITests
-    docker:
-      - image: circleci/android:api-29-node
-    environment:
-      TERM: "dumb"
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx512m -XX:+HeapDumpOnOutOfMemoryError"'
-      FASTLANE_SKIP_UPDATE_CHECK: "true"
   mac:
-    parameters:
-      xcode:
-        type: string
     working_directory: ~/SalesforceMobileSDK-UITests
     macos:
-      xcode: << parameters.xcode >>
+      xcode: *latest-xcode
     shell: /bin/bash --login -eo pipefail
     environment:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     
-
 version: 2.1
 jobs:
   test-android:
@@ -237,7 +52,10 @@ jobs:
         default: "android"
     steps:
       - checkout
-      - run: *setup
+      - run: 
+          name: Setup
+          command: ./install.sh
+          when: always
       - run: 
           name: Authorize gcloud and set config defaults
           command:  |
@@ -264,11 +82,11 @@ jobs:
                 steps:
                   - run:
                       name: Test Android Complex Hybrid - Account Editor
-                      command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
+                      command: cd .circleci && fastlane android type:hybrid_local complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
                       when: always
                   - run:
                       name: Test Android Complex Hybrid - Mobile Sync Explorer
-                      command: cd .circleci && fastlane android type:<< parameters.app_type >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
+                      command: cd .circleci && fastlane android type:hybrid_local complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
                       when: always
             - unless: 
                 condition: << parameters.complex_hybrid >>
@@ -293,211 +111,95 @@ jobs:
       - store_test_results:
           path: firebase/results
 
-  test-ios-native:
-      executor: << parameters.e >>
-      parameters:
-        ios_version: 
-            type: string
-        device:
-            type: string
-        sfdx:
-          type: boolean
-          default: false
-        e:
-          type: executor
-      steps:
-        - checkout
-        - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
-        - run:
-            name: Test Native Objective-C App
-            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-        - run:
-            name: Test Native Swift App
-            command: xcrun swift -version && cd .circleci && fastlane ios type:native_swift device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-
-  test-ios-hybrid:
-      executor: << parameters.e >>
-      parameters:
-        ios_version: 
-            type: string
-        device:
-            type: string
-        sfdx:
-          type: boolean
-          default: false
-        e:
-          type: executor
-      steps:
-        - checkout
-        - run: *setup
-        - run:
-            name: Install SFDX
-            command: npm install -g sfdx-cli
-        - run:
-            name: Test Hybrid Local App
-            command: cd .circleci && fastlane ios type:hybrid_local device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-        - run:
-            name: Test Hyrbid Remote App
-            command: cd .circleci && fastlane ios type:hybrid_remote device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-        - run:
-            name: Test React Native App
-            command: cd .circleci && fastlane ios type:react_native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-
-  test-ios-complex-hybrid:
-      executor: << parameters.e >>
-      parameters:
-        ios_version: 
-            type: string
-        device:
-            type: string
-        sfdx:
-          type: boolean
-          default: false
-        e:
-          type: executor
-      steps:
-        - checkout
-        - run: *setup
-        - run:
-            name: Install SFDX
-            command: npm install -g sfdx-cli
-        - run:
-            name: Test Hybrid Account Editor
-            command: cd .circleci && fastlane ios type:hybrid_local complexHybrid:accounteditor device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-        - run:
-            name: Test Hybrid Mobile Sync Explorer
-            command: cd .circleci && fastlane ios type:hybrid_local complexHybrid:mobilesyncexplorer device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always
-
-  test-ios-templates:
-      executor: << parameters.e >>
-      parameters:
-        ios_version: 
-            type: string
-        device:
-            type: string
-        sfdx:
-          type: boolean
-          default: false
-        is_ios_13:
-          type: boolean
-          default: false
-        e:
-          type: executor
-      steps:
-        - checkout
-        - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
-        - run:
-            name: Test MobileSync React Native Template
-            command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-            when: always        
-        - when:
-            condition: << parameters.is_ios_13 >>
-            steps:
-              - run:
-                  name: Test iOS 13 NativeSwift Template
-                  command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/iOS13NativeSwiftTemplate\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-                  when: always  
-              - run:
-                  name: Test MobileSync Swift Template
-                  command: cd .circleci && fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx >>"
-                  when: always
-
-  test-ios-adv-auth:
-      executor: << parameters.e >>
-      parameters:
-        ios_version: 
-            type: string
-        device:
-            type: string
-        sfdx:
-          type: boolean
-          default: false
-        e:
-          type: executor
-      steps:
-        - checkout
-        - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
-        - run:
-            name: Test Advanced Auth
-            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx>>" adv_auth:true
-            when: always
-
-  test-ios-passcode:
-      executor: << parameters.e >>
-      parameters:
-        ios_version: 
-            type: string
-        device:
-            type: string
-        sfdx:
-          type: boolean
-          default: false
-        e:
-          type: executor
-      steps:
-        - checkout
-        - run: *setup
-        - when:
-            condition: << parameters.sfdx >>
-            steps:
-              - run:
-                  name: Install SFDX
-                  command: npm install -g sfdx-cli
-        - run:
-            name: Test Passcode
-            command: cd .circleci && fastlane ios type:native device:"<< parameters.device >>" ios:"<< parameters.ios_version >>" sfdx:"<< parameters.sfdx>>" passcode:true
-            when: always
-        - store_artifacts:
-            path: test_output
-        - store_test_results:
-            path: test_output
+  test-ios:
+    executor: << parameters.e >>
+    parameters:
+      e:
+        type: executor
+        default: "mac"
+      ios_version: 
+        type: string
+      app_type: 
+        type: string
+        default: "native"
+      template:
+        type: boolean
+        default: false
+      adv_auth:
+        type: boolean
+        default: false
+      passcode:
+        type: boolean
+        default: false
+      complex_hybrid:
+        type: boolean
+        default: false
+      sfdx:
+        type: boolean
+        default: false
+    steps:
+      - checkout
+      - run: 
+          name: Setup
+          command: ./install.sh
+          when: always
+      - run:
+          name: Install SFDX
+          command: npm install -g sfdx-cli
+      - when:
+          condition: << parameters.template >>
+          steps:
+            - run:
+                name: Test iOS << parameters.ios_version >> Template
+                command: cd .circleci && fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >>
+                when: always
+                no_output_timeout: 20m
+      - unless:
+          condition: << parameters.template >>
+          steps:
+            - when:
+                condition: << parameters.complex_hybrid >>
+                steps:
+                  - run:
+                      name: Test iOS << parameters.ios_version >> Complex Hybrid - Account Editor
+                      command: cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
+                      when: always
+                  - run:
+                      name: Test iOS << parameters.ios_version >> Complex Hybrid - Mobile Sync Explorer
+                      command: cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
+                      when: always
+            - unless: 
+                condition: << parameters.complex_hybrid >>
+                steps:
+                  - run:
+                      name: Test << parameters.app_type >> iOS << parameters.ios_version >>
+                      command: cd .circleci && fastlane ios type:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
+                      when: always
+                      no_output_timeout: 20m
 
   test-carthage:
     executor: << parameters.e >>
     parameters:
       ios_version: 
           type: string
-      device:
-          type: string
       sfdx:
         type: boolean
         default: false
       e:
         type: executor
+        default: "mac"
     steps:
       - checkout
-      - run: *setup
+      - run: 
+          name: Setup
+          command: ./install.sh
+          when: always
       - run:
           name: Install Carthage
           command: HOMEBREW_NO_AUTO_UPDATE=1 brew install carthage
       - run:
           name: Test Carthage
-          command: cd .circleci && fastlane test_carthage device:"<< parameters.device >>" ios:"<< parameters.ios_version >>"
+          command: cd .circleci && fastlane test_carthage ios:"<< parameters.ios_version >>"
           when: always
       - store_artifacts:
           path: test_output
@@ -507,8 +209,18 @@ jobs:
 workflows:
   pr:
     jobs:
-      *all-jobs
-
+      - test-android:
+          name: Android << matrix.app_type >>
+          matrix:
+            parameters: 
+              app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote", "react_native"]
+      - test-ios:
+          name: iOS << matrix.ios_version >> << matrix.app_type >> 
+          matrix:
+            parameters: 
+              app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
+              ios_version: [*min-ios, *latest-ios]
+              
   # Cron are on a timezone 8 hours ahead of PST
   # Build everything on Saturday Afternoon
   build-all-apps:
@@ -520,15 +232,70 @@ workflows:
               only:
                 - master
     jobs:
-      *all-jobs
-
-  build-all-apps-sfdx:
-    triggers:
-      - schedule:
-          cron: "30 21 * * 6"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      *all-jobs-sfdx
+      - test-android:
+          name: Android << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          matrix:
+            parameters: 
+              app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote", "react_native"]
+              sfdx: [true, false]
+      - test-android:
+          name: Android MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
+          matrix:
+            parameters: 
+              app_type: [*MobileSyncExplorerReactNative]
+              template: [true]
+              sfdx: [true, false]
+      - test-android:
+          name: Android Advanced Auth
+          adv_auth: true
+      - test-android:
+          name: Android Passcode
+          passcode: true
+      - test-android:
+          name: Android Complex Hybrid
+          complex_hybrid: true
+      - test-ios:
+          name: iOS << matrix.ios_version >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          matrix:
+            parameters: 
+              app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
+              ios_version: [*min-ios, *latest-ios]
+              sfdx: [true, false]
+      - test-ios:
+          name: iOS << matrix.ios_version >> MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
+          matrix: 
+            parameters: 
+              app_type: [*MobileSyncExplorerReactNative]
+              ios_version: [*min-ios]
+              template: [true]
+              sfdx: [true, false]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Template
+          matrix: 
+            parameters: 
+              app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
+              ios_version: [*latest-ios]
+              template: [true]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Advanced Auth
+          matrix:
+            parameters:  
+              adv_auth: [true]
+              ios_version: [*min-ios, *latest-ios]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Passcode
+          matrix:
+            parameters:  
+              passcode: [true]
+              ios_version: [*min-ios, *latest-ios]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Complex Hybrid
+          matrix:
+            parameters:  
+              complex_hybrid: [true]
+              ios_version: [*min-ios, *latest-ios]
+      - test-carthage:
+          name: iOS << matrix.ios_version >> Carthage
+          matrix:
+            parameters: 
+              ios_version: [*min-ios, *latest-ios]

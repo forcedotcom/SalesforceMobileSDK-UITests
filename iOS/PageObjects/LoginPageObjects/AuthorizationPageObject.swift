@@ -52,7 +52,7 @@ class AuthorizationPageObject: XCUIScreen {
     
     private func pressButton(lable: String) {
         let button = app.buttons.element(matching: NSPredicate(format: "label CONTAINS '" + lable + "'"))
-        _ = assert(button.waitForExistence(timeout: timeout))
+        assert(button.waitForExistence(timeout: timeout))
         sleep(2)
         button.tap()
     }

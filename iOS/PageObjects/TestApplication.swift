@@ -42,7 +42,7 @@ class TestApplication: XCUIApplication {
     var complexHybrid: String
     
     enum AppType {
-        case nativeObjC, nativeSwift, hybridLocal, hybridRemote, reactNative, mobileSyncSwift, mobileSyncReact, iOS13Swift, carthage
+        case nativeObjC, nativeSwift, hybridLocal, hybridRemote, reactNative, mobileSyncSwift, mobileSyncReact, carthage
     }
     
     override init() {
@@ -67,8 +67,6 @@ class TestApplication: XCUIApplication {
             type = .mobileSyncSwift
         case "com.salesforce.iosmobilesyncexplorerreactnative":
             type = .mobileSyncReact
-        case "com.salesforce.ios13nativeswift":
-            type = .iOS13Swift
         case "com.mobilesdk.CarthageTest":
             type = .carthage
         default:

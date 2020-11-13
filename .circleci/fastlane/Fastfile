@@ -15,14 +15,14 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 #
 # Default iOS Device info
 #
-$default_device = 'iPhone-11'
-$default_ios = '13-6'
+$default_device = 'iPhone-8'
+$default_ios = '14-1'
 
 #
 # Defualt Android Firebase Info
 # 
 $min_api = 23
-$max_api = 29
+$max_api = 30
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
@@ -168,7 +168,7 @@ def base_android_test_setup(options)
   package_name = "com.salesforce.#{app_name}"
 
   generate_app('android', run_type, template, sfdx) unless rerun
-  app_path = Dir.glob("tmp*").last.concat("/#{app_name}/")
+  app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
 
   if app_name.downcase.include?('hybrid')
     if complexHybrid 
@@ -183,7 +183,7 @@ def base_android_test_setup(options)
       app_path.concat('platforms/android/')
     end     
   elsif app_name.downcase.include?('react')
-    react_native_setup(app_path)
+    setup_react_native(app_path)
     app_path.concat('android/')
 
     Dir.chdir(app_path) do
@@ -250,8 +250,7 @@ def run_android_tests_firebase(test_class, app_info)
   # TODO: Remove this when min_api is greater than 23.
   $min_api = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
   for api_level in $min_api..$max_api do
-    model = (api_level > 25) ? 'Pixel2' : 'NexusLowRes'
-    devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
+    devices.concat("--device model=NexusLowRes,version=#{api_level},locale=en,orientation=portrait \\")
   end
 
   Dir.chdir('./Android/') do
@@ -311,13 +310,13 @@ def base_ios_test_setup(options)
   
   Dir.chdir('../../') do
     generate_app('ios', run_type, template, sfdx) unless rerun
-    app_path = Dir.glob("tmp*").first.concat("/#{app_name}/")
+    app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
 
     if app_name.include?('hybrid')
       setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
     elsif app_name.include?('react')
-      react_native_setup(app_path)
+      setup_react_native(app_path)
       app_path.concat('ios/')
 
       Dir.chdir(app_path) do
@@ -353,8 +352,11 @@ def start_emulator(device, ios)
   else
     ios = $default_ios
   end
+  ios.concat('-0') unless ios.include?('-')
 
-  system("xcrun simctl delete #{$sim_name}") or true
+  loop do
+    break unless system("xcrun simctl delete #{$sim_name}")
+  end
   UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
 
@@ -388,7 +390,7 @@ def run_ios_tests(test_scheme, bundle_name, xcargs)
   app_type = bundle_name.split('.').last
 
   Dir.chdir('../../iOS/') do
-    destination = "#{$sim_name} (" + `instruments -s devices | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
+    destination = "#{$sim_name} (" + `xcrun xctrace list devices 2>&1 | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
     begin
       scan(
         project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',
@@ -419,12 +421,19 @@ def silence_output(silence_error = false)
   end
 end
 
-def react_native_setup(app_path)
+def setup_react_native(app_path)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
     silence_output { system("./install*.js") }
     system('kill -9 `pgrep -f start`')
     system('npm start&')
+
+    if $is_ci
+      system('sudo npm i -g react-native')
+      system('sudo npm install -i -g --force react-native-cli')
+      system('mkdir android/app/src/main/assets')
+      system('sudo react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+    end
   end
 end
 
@@ -484,7 +493,8 @@ def setup_adv_auth(app_info)
     end
 
     # Uncomment single single instance in AndroidManifest
-    modify_source(manifest_path, $android_login_activity, '-->' + $android_login_activity)
+    uncomment_manifest_block(manifest_path, $android_login_activity)
+    
     # Replace scheme and path
     modify_source(manifest_path, 'testsfdc', scheme)
     modify_source(manifest_path, '/mobilesdk/detect/oauth/done', path)
@@ -512,6 +522,26 @@ end
 def modify_source(config_path, old_code, new_code)
   modified_souce_code = File.read(config_path).gsub(old_code, new_code)
   File.open(config_path, 'w') { |file| file.puts modified_souce_code }
+end
+
+# Start line is the first line of the block to uncomment.
+# The line preceding start line should only include "<!--"
+def uncomment_manifest_block(config_path, start_line)
+  source_array = File.read(config_path).split(/\n+/)
+  start_index = source_array.index {|line| line.include?(start_line)}
+  UI.user_error!('Improper start line for manifest uncomment.') unless (source_array[start_index - 1].strip == '<!--')
+
+  end_index = start_index
+  loop do
+    if (source_array[end_index += 1].include?('-->') or (end_index >= source_array.size - 1))
+      break
+    end
+  end
+
+  UI.user_error!('Improper comment manifest comment block.') unless (source_array[end_index].strip == '-->')
+  source_array.delete_at(end_index)
+  source_array.delete_at(start_index - 1)
+  File.open(config_path, 'w') { |file| file.puts source_array.join("\n") }
 end
 
 def setup_complex_hybrid(complexHybrid, app_path)
