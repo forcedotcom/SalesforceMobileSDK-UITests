@@ -36,6 +36,8 @@ import pageobjects.BasePageObject
 class NativeAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
+        // This sleep prevents the test from reading the titleBar of the login page 
+        Thread.sleep(timeout / 5)
         val titleBar = device.findObject(UiSelector().className("android.widget.TextView").index(0))
         titleBar.waitForExists(timeout * 5)
         Assert.assertEquals("App did not successfully login.", app.name, titleBar.text)

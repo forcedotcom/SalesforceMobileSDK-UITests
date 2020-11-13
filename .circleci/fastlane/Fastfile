@@ -429,10 +429,10 @@ def setup_react_native(app_path)
     system('npm start&')
 
     if $is_ci
-      system('npm i -g react-native')
-      system('npm install -i -g --force react-native-cli')
+      system('sudo npm i -g react-native')
+      system('sudo npm install -i -g --force react-native-cli')
       system('mkdir android/app/src/main/assets')
-      system('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+      system('sudo react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
     end
   end
 end
