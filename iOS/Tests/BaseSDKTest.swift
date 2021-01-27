@@ -76,8 +76,9 @@ class BaseSDKTest: XCTestCase {
         case .hybridLocal:
             if app.complexHybrid == "accounteditor" {
                 verifyInWebView(app: app, text: "Accounts")
-                verifyInWebView(app: app, text: "New") // Account name
-                verifyInWebView(app: app, text: "0013u000017W4aIAAS") // Account ID
+                // TODO:  Search for an account when xcuitest lets you type into search field
+                // verifyInWebView(app: app, text: "New") // Account name
+                // verifyInWebView(app: app, text: "0013u000017W4aIAAS") // Account ID
             } else if app.complexHybrid == "mobilesyncexplorer" {
                 verifyInWebView(app: app, text: "Contacts")
                 verifyInWebView(app: app, text: "Tim Barr")

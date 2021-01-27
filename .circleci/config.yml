@@ -1,7 +1,7 @@
 anchors:
-  - &latest-xcode "12.1.0"
-  - &latest-ios   "14.1"
-  - &min-ios      "13.5"
+  - &latest-xcode "12.3.0"
+  - &latest-ios   "14.3"
+  - &min-ios      "13.7"
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
   - &MobileSyncSwiftTemplate
@@ -11,7 +11,7 @@ executors:
   android:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
-      - image: circleci/android:api-29-node
+      - image: circleci/android:api-30-node
     environment:
       TERM: "dumb"
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'

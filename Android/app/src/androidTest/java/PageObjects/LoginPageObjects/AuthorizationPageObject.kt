@@ -44,7 +44,7 @@ class AuthorizationPageObject : BasePageObject() {
         }
 
         val allowButton = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.Button").index(0))
+            device.findObject(UiSelector().className(buttonClass).index(0))
         }
         else {
             device.findObject(UiSelector().resourceId("oaapprove"))

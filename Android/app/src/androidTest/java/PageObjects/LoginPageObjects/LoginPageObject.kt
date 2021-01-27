@@ -26,7 +26,6 @@
  */
 package pageobjects.loginpageobjects
 
-import android.os.Build
 import androidx.test.uiautomator.UiSelector
 import android.util.Log
 import pageobjects.BasePageObject
@@ -38,13 +37,13 @@ class LoginPageObject : BasePageObject() {
 
     init {
         if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").index(2)).waitForExists(timeout * 25)
+            device.findObject(UiSelector().className(editTextClass).index(2)).waitForExists(timeout * 25)
         }
     }
 
     fun setUsername(name: String) {
         val usernameField = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").descriptionContains("Username"))
+            device.findObject(UiSelector().className(editTextClass).descriptionContains("Username"))
         }
         else {
             device.findObject(UiSelector().resourceId("username"))
@@ -65,7 +64,7 @@ class LoginPageObject : BasePageObject() {
     fun setPassword(password: String) {
         val index = if (hasOldWebview) 4 else 3
         val passwordField = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").index(index))
+            device.findObject(UiSelector().className(editTextClass).index(index))
         }
         else {
             device.findObject(UiSelector().resourceId("password"))
@@ -79,7 +78,7 @@ class LoginPageObject : BasePageObject() {
     fun tapLogin() {
         Thread.sleep(timeout / 2)
         val loginButton = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.Button").index(0))
+            device.findObject(UiSelector().className(buttonClass).index(0))
         }
         else {
             device.findObject(UiSelector().resourceId("Login"))
