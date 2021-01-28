@@ -16,7 +16,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-8'
-$default_ios = '14-1'
+$default_ios = '14-3'
 
 #
 # Defualt Android Firebase Info

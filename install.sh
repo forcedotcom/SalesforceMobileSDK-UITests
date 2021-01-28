@@ -15,4 +15,5 @@ else
 fi
 
 git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Package.git
-cd SalesforceMobileSDK-Package && node ./install.js
+cd SalesforceMobileSDK-Package && sudo node ./install.js
+sudo gem install fastlane
