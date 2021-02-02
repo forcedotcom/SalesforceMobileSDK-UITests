@@ -16,7 +16,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-8'
-$default_ios = '14-3'
+$default_ios = '14-4'
 
 #
 # Defualt Android Firebase Info
@@ -60,7 +60,8 @@ lane :test_carthage do |options|
 
   Dir.chdir('../../CarthageTest') do
     UI.important('Carthage Bootstrap')
-    carthage_result = system("carthage bootstrap")
+    ENV["XCODE_XCCONFIG_FILE"] = Dir.pwd + "/tmp.xcconfig"
+    carthage_result = system("carthage bootstrap --use-xcframeworks")
     UI.build_failure!("Carthage bootstrap failed.") unless carthage_result
     
     project = Xcodeproj::Project.open('CarthageTest.xcodeproj')
@@ -68,7 +69,7 @@ lane :test_carthage do |options|
     frameworks_group = project.groups.find { |group| group.display_name == 'Frameworks' }
     target = project.targets.first
     frameworks_build_phase = target.build_phases.find { |build_phase| build_phase.to_s == 'FrameworksBuildPhase' }
-    framework_files = Dir.glob('Carthage/Build/iOS/*.framework')
+    framework_files = Dir.glob('Carthage/Build/*.xcframework')
 
     # Add new "Embed Frameworks" build phase to target
     embed_frameworks_build_phase = project.new(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase)
