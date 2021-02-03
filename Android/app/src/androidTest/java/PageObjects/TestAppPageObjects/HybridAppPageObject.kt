@@ -44,9 +44,12 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
             val titleString = if (app.complexHybrid == "accounteditor") "Accounts" else "Contacts"
             verifyInWebView(titleString)
 
-            Thread.sleep(timeout)
-            val search = device.findObject(UiSelector().className(editTextClass))
-            search.legacySetText("New")
+            // Search for account to assert it shows in list.
+            if (app.complexHybrid == "accounteditor") {
+                Thread.sleep(timeout)
+                val search = device.findObject(UiSelector().className(editTextClass))
+                search.legacySetText("New")
+            }
 
             content = when (app.complexHybrid) {
                 "accounteditor" -> {

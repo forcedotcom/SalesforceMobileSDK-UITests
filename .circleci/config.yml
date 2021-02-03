@@ -1,6 +1,6 @@
 anchors:
-  - &latest-xcode "12.3.0"
-  - &latest-ios   "14.3"
+  - &latest-xcode "12.4.0"
+  - &latest-ios   "14.4"
   - &min-ios      "13.7"
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
@@ -202,7 +202,7 @@ jobs:
           when: always
       - run:
           name: Install Carthage
-          command: HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade carthage
+          command: brew upgrade carthage
       - run:
           name: Test Carthage
           command: cd .circleci && fastlane test_carthage ios:"<< parameters.ios_version >>"
