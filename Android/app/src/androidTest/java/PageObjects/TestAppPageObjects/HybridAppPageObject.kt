@@ -26,8 +26,6 @@
  */
 package pageobjects.testapppageobjects
 
-import android.os.Build
-import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
 import pageobjects.AppType
@@ -45,6 +43,13 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
         } else {
             val titleString = if (app.complexHybrid == "accounteditor") "Accounts" else "Contacts"
             verifyInWebView(titleString)
+
+            // Search for account to assert it shows in list.
+            if (app.complexHybrid == "accounteditor") {
+                Thread.sleep(timeout)
+                val search = device.findObject(UiSelector().className(editTextClass))
+                search.legacySetText("New")
+            }
 
             content = when (app.complexHybrid) {
                 "accounteditor" -> {
@@ -64,7 +69,7 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
 
 
     private fun verifyInWebView(text: String) {
-        var webElement = device.findObject(UiSelector().className("android.view.View").text(text))
+        var webElement = device.findObject(UiSelector().className(viewClass).text(text))
         if (!webElement.waitForExists(timeout * 5)) {
             webElement = device.findObject(UiSelector().descriptionContains(text))
             webElement.waitForExists(timeout * 5)

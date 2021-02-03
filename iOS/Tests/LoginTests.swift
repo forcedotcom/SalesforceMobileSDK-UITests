@@ -42,13 +42,6 @@ class LoginTests: BaseSDKTest {
         let isAdvAuth = app.advAuth
         app.launch()
         
-        if isAdvAuth {
-            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-            let alertMessage = springboard.alerts["“\(app.name)” Wants to Use “salesforce.com” to Sign In"]
-            _ = alertMessage.waitForExistence(timeout: timeout)
-            springboard.buttons["Continue"].tap()
-        }
-        
         loginPage.setUsername(name: username)
         loginPage.setPassword(password: password)
         loginPage.tapLogin()
