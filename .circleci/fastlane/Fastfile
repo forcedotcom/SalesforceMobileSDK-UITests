@@ -6,8 +6,6 @@ $sim_name = 'testsim'
 $simulator_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
 $default_consumer_key = '3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa'
 $default_redirect_uri = 'testsfdc:///mobilesdk/detect/oauth/done'
-$passcode_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tm3FUd9g7z5OQNsZVd5QxWGnUavJG6q1RaNugeQF4A8lELyXQsNJ8deynMFoO'
-$passcode_redirect_uri = 'mobilesdk://auth/passcode'
 $adv_auth_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmyfUanAsJ6rWLQniOaec1Ks6YBBYFaJSfMREVJdPeRxTneqgoSxdswYvb9vP'
 $adv_auth_redirect_uri = 'com.mobilesdk.advauth:///oauth/success'
 $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.LoginActivity'
@@ -15,14 +13,14 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 #
 # Default iOS Device info
 #
-$default_device = 'iPhone-8'
-$default_ios = '14-4'
+$default_device = 'iPhone-12'
+$default_ios = '15-0'
 
 #
 # Defualt Android Firebase Info
 # 
-$min_api = 23
-$max_api = 30
+$min_api = 24
+$max_api = 30 
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 
@@ -31,17 +29,14 @@ App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
 #
 lane :ios do |options|
   app_info = base_ios_test_setup(options)
-  test_class = options[:passcode] ? 'TestPasscode' : 'TestLogin'
-
   install_ios_app(app_info)
-  run_ios_tests(test_class, app_info.package_name, app_info.xcargs)
+  run_ios_tests('TestLogin', app_info.package_name, app_info.xcargs)
 end
 
 lane :android do |options|
   Dir.chdir('../../')
   app_info = base_android_test_setup(options)
-  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.'
-  test_class.concat(options[:passcode] ? 'passcode.PasscodeTests' : 'login.LoginTests')
+  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests'
 
   if $is_ci
     run_android_tests_firebase(test_class, app_info)
@@ -152,9 +147,7 @@ def base_android_test_setup(options)
   template = options[:template]
   UI.user_error!('Please specify run type.') unless(run_type or template)
   sfdx = options[:sfdx]
-  passcode = options[:passcode]
   adv_auth = options[:adv_auth]
-  UI.user_error!('Please specify either passcode or adv_auth.') if(passcode and adv_auth)
   args = adv_auth ? ["advAuth=true"] : []
   rerun = options[:rerun]
   complexHybrid = options[:complexHybrid]
@@ -199,9 +192,7 @@ def base_android_test_setup(options)
   end
 
   app_info = App_Info.new('android', app_type, app_path, package_name, args)
-  if passcode 
-    change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
-  elsif adv_auth
+  if adv_auth
     setup_adv_auth(app_info)
   end
 
@@ -248,8 +239,6 @@ def run_android_tests_firebase(test_class, app_info)
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
   devices = ''
-  # TODO: Remove this when min_api is greater than 23.
-  $min_api = test_class.include?('Passcode') ? 24 : 23  # Passcode field can't be automated for API 23.
   for api_level in $min_api..$max_api do
     devices.concat("--device model=NexusLowRes,version=#{api_level},locale=en,orientation=portrait \\")
   end
@@ -286,9 +275,7 @@ def base_ios_test_setup(options)
   sfdx = options[:sfdx]
   device = options[:device]
   ios = options[:ios]
-  passcode = options[:passcode]
   adv_auth = options[:adv_auth]
-  UI.user_error!('Please specify either passcode or adv_auth.') if(passcode and adv_auth)
   rerun = options[:rerun]
   xcargs = []
   complexHybrid = options[:complexHybrid]
@@ -326,9 +313,7 @@ def base_ios_test_setup(options)
     end
 
     app_info = App_Info.new('ios', app_name, app_path, bundle_name, xcargs)
-    if passcode 
-      change_connected_app(app_info, $passcode_consumer_key, $passcode_redirect_uri)
-    elsif adv_auth
+    if adv_auth
       setup_adv_auth(app_info)
       xcargs.push("ADV_AUTH=true")
     end
