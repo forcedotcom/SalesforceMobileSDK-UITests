@@ -62,6 +62,7 @@ jobs:
       - run:
           name: Install SFDX
           command: |
+            sudo chown -R `whoami` /usr/local/
             sudo npm install -g sfdx-cli
             sudo chown -R `whoami` $HOME/.config/
       - when:

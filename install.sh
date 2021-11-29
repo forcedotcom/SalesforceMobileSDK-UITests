@@ -15,6 +15,7 @@ else
     sudo gem install fastlane
     sudo npm install -g typescript
     sudo gem install --no-document fastlane
+    sudo chown -R $USER:$GROUP /Users/distiller/.config/yarn
 fi
 
 git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Package.git
