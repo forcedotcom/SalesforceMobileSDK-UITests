@@ -394,9 +394,11 @@ end
 
 def silence_output(silence_error = false)
   begin
+    Dir.mkdir 'test_output'
+    out_file = $is_ci ? 'test_output/output.txt' : '/dev/null'
     stderr, stdout = $stderr.clone, $stdout.clone
-    $stderr.reopen(File.new('/dev/null', 'w')) if silence_error
-    $stdout.reopen(File.new('/dev/null', 'w'))
+    $stderr.reopen(File.new(out_file, 'w')) if silence_error
+    $stdout.reopen(File.new(out_file, 'w'))
     yield
   rescue Exception => e
     $stdout.reopen(stdout)
