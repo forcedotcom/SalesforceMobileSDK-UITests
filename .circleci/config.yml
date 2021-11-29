@@ -63,7 +63,7 @@ jobs:
           name: Install SFDX
           command: |
             sudo chown -R `whoami` /usr/local/
-            sudo npm install -g sfdx-cli
+            npm install -g sfdx-cli
             sudo chown -R `whoami` $HOME/.config/
       - when:
           condition: << parameters.template >>
@@ -148,7 +148,11 @@ jobs:
           steps:
             - run:
                 name: Test iOS << parameters.ios_version >> Template
-                command: cd .circleci && fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >>
+                command: |
+                  sudo chown -R $USER:$GROUP ~/.npm
+                  sudo chown -R $USER:$GROUP ~/.config
+                  cd .circleci
+                  fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >>
                 when: always
                 no_output_timeout: 20m
       - unless:
@@ -160,12 +164,16 @@ jobs:
                   - run:
                       name: Test iOS << parameters.ios_version >> Complex Hybrid - Account Editor
                       command:  |
+                          sudo chown -R $USER:$GROUP ~/.npm
+                          sudo chown -R $USER:$GROUP ~/.config
                           sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
                           cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
                       when: always
                   - run:
                       name: Test iOS << parameters.ios_version >> Complex Hybrid - Mobile Sync Explorer
                       command:  |
+                          sudo chown -R $USER:$GROUP ~/.npm
+                          sudo chown -R $USER:$GROUP ~/.config
                           sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
                           cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
                       when: always
@@ -175,6 +183,8 @@ jobs:
                   - run:
                       name: Test << parameters.app_type >> iOS << parameters.ios_version >>
                       command:  |
+                          sudo chown -R $USER:$GROUP ~/.npm
+                          sudo chown -R $USER:$GROUP ~/.config
                           sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
                           cd .circleci && fastlane ios type:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >>
                       when: always
