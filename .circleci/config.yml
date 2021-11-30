@@ -1,6 +1,6 @@
 anchors:
-  - &latest-xcode "13.1.0"
-  - &latest-ios   "15.0"
+  - &latest-xcode "13.2.0"
+  - &latest-ios   "15.2"
   - &min-ios      "14.5"
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
