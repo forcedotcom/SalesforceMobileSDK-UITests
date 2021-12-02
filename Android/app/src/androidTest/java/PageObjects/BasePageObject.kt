@@ -38,6 +38,5 @@ open class BasePageObject {
     var timeout:Long = 5000
     val editTextClass = "android.widget.EditText"
     val viewClass = "android.view.View"
-    val buttonClass = "android.widget.Button"
     val textViewClass = "android.widget.TextView"
 }

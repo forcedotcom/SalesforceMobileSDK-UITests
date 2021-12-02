@@ -39,7 +39,7 @@ class LoginPageObject : BasePageObject() {
         val usernameField = device.findObject(UiSelector().resourceId("username"))
 
         Log.i("uia", "Waiting for username filed to be present.")
-        assert(usernameField.waitForExists(timeout * 5))
+        assert(usernameField.waitForExists(timeout * 10))
         usernameField.text = name
     }
 
