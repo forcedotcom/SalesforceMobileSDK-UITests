@@ -5,14 +5,14 @@
 This repo contains tests designed to validate the functionality of apps created using the MobileSDK CLI tools [forcedroid](https://www.npmjs.com/package/forcedroid), [forceios](https://www.npmjs.com/package/forceios), and [forcehybrid](https://www.npmjs.com/package/forcehybrid).  Android and iOS test frameworks exist in their own directories and use separate technologies (UIAutomator and XCUITest, respectively).  However, they share a common fastlane file for end-to-end execution:
 1.  `install.sh`
 2.  From the `.circleci` directory execute: `fastlane <os> (type:<AppType> || template:<TemplateName>) [options]` 
-3.  
-Additional options: `passcode:<true/false>`, `adv_auth:<true/false>`, `sfdx:<true/false>`, `rerun:<true/false>`.
+
+Additional options: `adv_auth:<true/false>`, `sfdx:<true/false>`, `rerun:<true/false>`.
 
 examples: 
 
        fastlane ios type:hybrid_local
 
-       fastlane android type:native_kotlin passcode:true
+       fastlane android type:native_kotlin adv_auth:true
 
        fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 

@@ -26,7 +26,6 @@
  */
 package pageobjects.loginpageobjects
 
-import android.os.Build
 import androidx.test.uiautomator.UiSelector
 import android.util.Log
 import pageobjects.BasePageObject
@@ -36,41 +35,16 @@ import pageobjects.BasePageObject
  */
 class LoginPageObject : BasePageObject() {
 
-    init {
-        if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").index(2)).waitForExists(timeout * 25)
-        }
-    }
-
     fun setUsername(name: String) {
-        val usernameField = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").descriptionContains("Username"))
-        }
-        else {
-            device.findObject(UiSelector().resourceId("username"))
-        }
+        val usernameField = device.findObject(UiSelector().resourceId("username"))
 
         Log.i("uia", "Waiting for username filed to be present.")
-        if (hasOldWebview) {
-            assert(usernameField.waitForExists(timeout * 15))
-            usernameField.legacySetText(name)
-            Thread.sleep(timeout)
-        }
-        else {
-            assert(usernameField.waitForExists(timeout * 5))
-            usernameField.text = name
-        }
+        assert(usernameField.waitForExists(timeout * 10))
+        usernameField.text = name
     }
 
     fun setPassword(password: String) {
-        val index = if (hasOldWebview) 4 else 3
-        val passwordField = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.EditText").index(index))
-        }
-        else {
-            device.findObject(UiSelector().resourceId("password"))
-        }
-
+        val passwordField = device.findObject(UiSelector().resourceId("password"))
         Log.i("uia", "Waiting for password filed to be present.")
         assert(passwordField.waitForExists(timeout * 5))
         passwordField.text = password
@@ -78,13 +52,7 @@ class LoginPageObject : BasePageObject() {
 
     fun tapLogin() {
         Thread.sleep(timeout / 2)
-        val loginButton = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.Button").index(0))
-        }
-        else {
-            device.findObject(UiSelector().resourceId("Login"))
-        }
-
+        val loginButton = device.findObject(UiSelector().resourceId("Login"))
         assert(loginButton.waitForExists(timeout * 5))
         loginButton.click()
     }

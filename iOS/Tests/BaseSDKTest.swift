@@ -76,8 +76,6 @@ class BaseSDKTest: XCTestCase {
         case .hybridLocal:
             if app.complexHybrid == "accounteditor" {
                 verifyInWebView(app: app, text: "Accounts")
-                verifyInWebView(app: app, text: "New") // Account name
-                verifyInWebView(app: app, text: "0013u000017W4aIAAS") // Account ID
             } else if app.complexHybrid == "mobilesyncexplorer" {
                 verifyInWebView(app: app, text: "Contacts")
                 verifyInWebView(app: app, text: "Tim Barr")
@@ -93,8 +91,9 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
-            // TODO:  Update this to be less fragile.  Unfortunately tables, cells, buttons, staticTexts counts all return 0.
-            let contact = app.tables.cells.buttons["John Bond\nVP, Facilities"]
+            let contact = (ProcessInfo().operatingSystemVersion.majorVersion > 13)
+                ? app.tables/*@START_MENU_TOKEN@*/.buttons["John Bond, VP, Facilities"]/*[[".cells[\"John Bond, VP, Facilities\"].buttons[\"John Bond, VP, Facilities\"]",".buttons[\"John Bond, VP, Facilities\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
+                : app.tables.cells.buttons["John Bond\nVP, Facilities"]
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
             let title = app.otherElements["Contacts"].firstMatch

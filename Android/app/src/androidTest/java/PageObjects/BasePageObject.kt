@@ -35,9 +35,8 @@ import androidx.test.uiautomator.UiDevice
  */
 open class BasePageObject {
     val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-
-    // TODO: Update when min version increases to API 24
-    private var runningOnFirebase: Boolean = InstrumentationRegistry.getArguments().get("firebase")!= null
-    val hasOldWebview: Boolean = (Build.VERSION.SDK_INT == Build.VERSION_CODES.M) and !runningOnFirebase
     var timeout:Long = 5000
+    val editTextClass = "android.widget.EditText"
+    val viewClass = "android.view.View"
+    val textViewClass = "android.widget.TextView"
 }

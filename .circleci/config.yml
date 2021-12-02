@@ -1,7 +1,7 @@
 anchors:
-  - &latest-xcode "12.1.0"
-  - &latest-ios   "14.1"
-  - &min-ios      "13.5"
+  - &latest-xcode "13.2.0"
+  - &latest-ios   "15.2"
+  - &min-ios      "14.5"
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
   - &MobileSyncSwiftTemplate
@@ -11,7 +11,7 @@ executors:
   android:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
-      - image: circleci/android:api-29-node
+      - image: circleci/android:api-30-node
     environment:
       TERM: "dumb"
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
@@ -41,9 +41,6 @@ jobs:
       adv_auth:
         type: boolean
         default: false
-      passcode:
-        type: boolean
-        default: false
       complex_hybrid:
         type: boolean
         default: false
@@ -65,7 +62,8 @@ jobs:
       - run:
           name: Install SFDX
           command: |
-            sudo npm install -g sfdx-cli
+            sudo chown -R `whoami` /usr/local/
+            npm install -g sfdx-cli
             sudo chown -R `whoami` $HOME/.config/
       - when:
           condition: << parameters.template >>
@@ -93,7 +91,7 @@ jobs:
                 steps:
                   - run:
                       name: Test << parameters.app_type >> Android
-                      command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
+                      command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >>
                       when: always
       - run: 
           name: Copy test results data
@@ -110,6 +108,8 @@ jobs:
           path: firebase
       - store_test_results:
           path: firebase/results
+      - store_artifacts:
+          path: test_output
 
   test-ios:
     executor: << parameters.e >>
@@ -126,9 +126,6 @@ jobs:
         type: boolean
         default: false
       adv_auth:
-        type: boolean
-        default: false
-      passcode:
         type: boolean
         default: false
       complex_hybrid:
@@ -151,7 +148,10 @@ jobs:
           steps:
             - run:
                 name: Test iOS << parameters.ios_version >> Template
-                command: cd .circleci && fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >>
+                command: |
+                  sudo chown -R $USER:$GROUP ~/.npm
+                  cd .circleci
+                  fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >>
                 when: always
                 no_output_timeout: 20m
       - unless:
@@ -162,20 +162,31 @@ jobs:
                 steps:
                   - run:
                       name: Test iOS << parameters.ios_version >> Complex Hybrid - Account Editor
-                      command: cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
+                      command:  |
+                          sudo chown -R $USER:$GROUP ~/.npm
+                          sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
+                          cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
                       when: always
                   - run:
                       name: Test iOS << parameters.ios_version >> Complex Hybrid - Mobile Sync Explorer
-                      command: cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
+                      command:  |
+                          sudo chown -R $USER:$GROUP ~/.npm
+                          sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
+                          cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios_version >> complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
                       when: always
             - unless: 
                 condition: << parameters.complex_hybrid >>
                 steps:
                   - run:
                       name: Test << parameters.app_type >> iOS << parameters.ios_version >>
-                      command: cd .circleci && fastlane ios type:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >> passcode:<< parameters.passcode >>
+                      command:  |
+                          sudo chown -R $USER:$GROUP ~/.npm
+                          sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
+                          cd .circleci && fastlane ios type:<< parameters.app_type >> ios:<< parameters.ios_version >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >>
                       when: always
                       no_output_timeout: 20m
+      - store_artifacts:
+          path: test_output
 
   test-carthage:
     executor: << parameters.e >>
@@ -196,7 +207,7 @@ jobs:
           when: always
       - run:
           name: Install Carthage
-          command: HOMEBREW_NO_AUTO_UPDATE=1 brew install carthage
+          command: brew upgrade carthage
       - run:
           name: Test Carthage
           command: cd .circleci && fastlane test_carthage ios:"<< parameters.ios_version >>"
@@ -249,9 +260,6 @@ workflows:
           name: Android Advanced Auth
           adv_auth: true
       - test-android:
-          name: Android Passcode
-          passcode: true
-      - test-android:
           name: Android Complex Hybrid
           complex_hybrid: true
       - test-ios:
@@ -281,12 +289,6 @@ workflows:
           matrix:
             parameters:  
               adv_auth: [true]
-              ios_version: [*min-ios, *latest-ios]
-      - test-ios:
-          name: iOS << matrix.ios_version >> Passcode
-          matrix:
-            parameters:  
-              passcode: [true]
               ios_version: [*min-ios, *latest-ios]
       - test-ios:
           name: iOS << matrix.ios_version >> Complex Hybrid

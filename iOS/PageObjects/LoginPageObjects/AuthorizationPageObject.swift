@@ -34,7 +34,7 @@
 import Foundation
 import XCTest
 
-class AuthorizationPageObject: XCUIScreen {
+class AuthorizationPageObject {
     let app:XCUIApplication
     let timeout:double_t = 60
     

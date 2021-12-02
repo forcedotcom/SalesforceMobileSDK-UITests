@@ -43,19 +43,13 @@ class AuthorizationPageObject : BasePageObject() {
             chromePageObject.dismissSavePasswordDialog()
         }
 
-        val allowButton = if (hasOldWebview) {
-            device.findObject(UiSelector().className("android.widget.Button").index(0))
-        }
-        else {
-            device.findObject(UiSelector().resourceId("oaapprove"))
-        }
-
+        val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
         Log.i("uia", "Waiting for allow button to be present.")
         assert(allowButton.waitForExists(timeout * 5))
 
-        val webview2 = device.wait(Until.findObject(By.clazz("android.webkit.WebView")), timeout)
+        val webview = device.wait(Until.findObject(By.clazz("android.webkit.WebView")), timeout)
         Log.i("uia", "Scrolling webview.")
-        webview2.scroll(Direction.DOWN, 0.5f)
+        webview.scroll(Direction.DOWN, 0.5f)
         allowButton.click()
         Thread.sleep(timeout)
 

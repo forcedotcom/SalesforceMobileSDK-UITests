@@ -34,7 +34,7 @@
 import Foundation
 import XCTest
 
-class LoginPageObject: XCUIScreen {
+class LoginPageObject {
     let app:XCUIApplication
     let timeout:double_t = 5
     
