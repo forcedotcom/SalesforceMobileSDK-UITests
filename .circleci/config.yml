@@ -1,33 +1,32 @@
-anchors:
-  - &latest-xcode "13.2.0"
-  - &latest-ios   "15.2"
-  - &min-ios      "14.5"
+aliases:
+#  Xcode version announcments can be found here: https://discuss.circleci.com/c/announcements/
+#  Each post contains a full image manifest, including iOS runtimes, devices, CocoaPods version, etc.
+  - &latest-xcode      "13.4.1"
+  - &latest-ios        "15.5"
+  - &min-ios           "14.5"
+  - &min-ios-device    "iPhone 12"
+  - &latest-android    "cimg/android:2022.09.2-node"
+  - &invalid           ""
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
   - &MobileSyncSwiftTemplate
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 
+  - &install-android-build-tools-32
+    name: Install Android Build Tools 32.0.0
+    command: sdkmanager --install "build-tools;32.0.0"
+
+version: 2.1
 executors:
-  android:
+  linux:
     working_directory: ~/SalesforceMobileSDK-UITests
     docker:
-      - image: circleci/android:api-30-node
+      - image: *latest-android
     environment:
-      TERM: "dumb"
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"'
-      FASTLANE_SKIP_UPDATE_CHECK: "true"
-  mac:
-    working_directory: ~/SalesforceMobileSDK-UITests
-    macos:
-      xcode: *latest-xcode
-    shell: /bin/bash --login -eo pipefail
-    environment:
-      FASTLANE_SKIP_UPDATE_CHECK: "true"
     
-version: 2.1
 jobs:
   test-android:
-    executor: << parameters.e >>
     parameters:
       app_type: 
         type: string
@@ -44,11 +43,10 @@ jobs:
       complex_hybrid:
         type: boolean
         default: false
-      e:
-        type: executor
-        default: "android"
+    executor: linux
     steps:
       - checkout
+      - run: *install-android-build-tools-32
       - run: 
           name: Setup
           command: ./install.sh
@@ -112,13 +110,15 @@ jobs:
           path: test_output
 
   test-ios:
-    executor: << parameters.e >>
     parameters:
-      e:
-        type: executor
-        default: "mac"
+      xcode: 
+        type: string
+        default: *latest-xcode
       ios_version: 
         type: string
+      device:
+        type: string
+        default: *min-ios-device
       app_type: 
         type: string
         default: "native"
@@ -134,6 +134,11 @@ jobs:
       sfdx:
         type: boolean
         default: false
+    macos: 
+      xcode: << parameters.xcode >>
+    working_directory: ~/SalesforceMobileSDK-UITests
+    environment:
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
       - run: 
@@ -189,16 +194,23 @@ jobs:
           path: test_output
 
   test-carthage:
-    executor: << parameters.e >>
     parameters:
+      xcode:
+        type: string
+        default: *latest-xcode
       ios_version: 
           type: string
+      device:
+        type: string
+        default: *min-ios-device
       sfdx:
         type: boolean
         default: false
-      e:
-        type: executor
-        default: "mac"
+    macos:
+      xcode: << parameters.xcode >>
+    working_directory: ~/SalesforceMobileSDK-UITests
+    environment:
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
       - run: 
@@ -217,8 +229,22 @@ jobs:
       - store_test_results:
           path: test_output
 
+#  Potential parameters that can come from the project GUI Triggers
+parameters:
+  xcode:
+    type: string
+    default: *invalid
+  ios:
+    type: string
+    default: *invalid
+  device:
+    type: string
+    default: *min-ios-device
+
 workflows:
   pr:
+    when: 
+        equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
       - test-android:
           name: Android << matrix.app_type >>
@@ -232,16 +258,14 @@ workflows:
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
               ios_version: [*min-ios, *latest-ios]
               
-  # Cron are on a timezone 8 hours ahead of PST
   # Build everything on Saturday Afternoon
   build-all-apps:
-    triggers:
-      - schedule:
-          cron: "30 19 * * 6"
-          filters:
-            branches:
-              only:
-                - master
+    when:
+      and:
+        - not: << pipeline.parameters.xcode >>
+        - not: << pipeline.parameters.ios >>
+        - not: 
+            equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
       - test-android:
           name: Android << matrix.app_type >> SFDX-<< matrix.sfdx >>
@@ -282,7 +306,7 @@ workflows:
           matrix: 
             parameters: 
               app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
-              ios_version: [*latest-ios]
+              ios_version: [*min-ios, *latest-ios]
               template: [true]
       - test-ios:
           name: iOS << matrix.ios_version >> Advanced Auth
@@ -301,3 +325,65 @@ workflows:
           matrix:
             parameters: 
               ios_version: [*min-ios, *latest-ios]
+
+
+  # Build everything on Saturday Afternoon
+  build-all-apps-ios-beta:
+    when:
+      and:
+        - << pipeline.parameters.xcode >>
+        - << pipeline.parameters.ios >>
+        - not: 
+            equal: [ "webhook", << pipeline.trigger_source >> ]
+    jobs:
+      - test-ios:
+          name: iOS << matrix.ios_version >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          matrix:
+            parameters:
+              xcode: [ << pipeline.parameters.xcode >> ] 
+              ios_version: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
+              app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
+              sfdx: [true, false]
+      - test-ios:
+          name: iOS << matrix.ios_version >> MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
+          matrix: 
+            parameters: 
+              xcode: [ << pipeline.parameters.xcode >> ] 
+              ios_version: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
+              app_type: [*MobileSyncExplorerReactNative]
+              template: [true]
+              sfdx: [true, false]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Template
+          matrix: 
+            parameters: 
+              xcode: [ << pipeline.parameters.xcode >> ] 
+              ios_version: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
+              app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
+              template: [true]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Advanced Auth
+          matrix:
+            parameters:  
+              xcode: [ << pipeline.parameters.xcode >> ] 
+              ios_version: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
+              adv_auth: [true]
+      - test-ios:
+          name: iOS << matrix.ios_version >> Complex Hybrid
+          matrix:
+            parameters:  
+              xcode: [ << pipeline.parameters.xcode >> ] 
+              ios_version: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
+              complex_hybrid: [true]
+      - test-carthage:
+          name: iOS << matrix.ios_version >> Carthage
+          matrix:
+            parameters: 
+              xcode: [ << pipeline.parameters.xcode >> ] 
+              ios_version: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
