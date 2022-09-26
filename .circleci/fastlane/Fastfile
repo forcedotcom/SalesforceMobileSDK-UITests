@@ -133,8 +133,12 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     generate_command.concat(' --use-sfdx')
   end
   
-  result = silence_output(true) { system(generate_command) }
-  UI.user_error!('Test app was not successfully created.') unless(result)
+  result = system(generate_command)
+  if result 
+    UI.important 'Test App Generated'
+  else
+    UI.user_error!('Test app was not successfully created.')
+  end
 end
 
 #
@@ -163,6 +167,7 @@ def base_android_test_setup(options)
 
   generate_app('android', run_type, template, sfdx) unless rerun
   app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
+  UI.build_failure!('App did not generate successfully.') unless Dir.exists?(app_path)
 
   if app_name.downcase.include?('hybrid')
     if complexHybrid 
@@ -417,6 +422,7 @@ end
 def setup_react_native(app_path)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
+    system('sudo chmod -R 0777 /tmp')
     silence_output { system("./install*.js") }
     system('kill -9 `pgrep -f start`')
     system('npm start&')

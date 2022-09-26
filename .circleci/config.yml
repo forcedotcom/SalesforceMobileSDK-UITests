@@ -309,19 +309,11 @@ workflows:
               ios: [*min-ios, *latest-ios]
               sfdx: [true, false]
       - test-ios:
-          name: iOS << matrix.ios >> MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
-          matrix: 
-            parameters: 
-              app_type: [*MobileSyncExplorerReactNative]
-              ios: [*min-ios]
-              template: [true]
-              sfdx: [true, false]
-      - test-ios:
-          name: iOS << matrix.ios >> Template
+          name: iOS << matrix.ios >> << matrix.app_type >> Template
           matrix: 
             parameters: 
               app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
-              ios: [*latest-ios]
+              ios: [*min-ios, *latest-ios]
               template: [true]
       - test-ios:
           name: iOS << matrix.ios >> Advanced Auth
@@ -358,17 +350,7 @@ workflows:
               ios: [<< pipeline.parameters.ios >>]
               sfdx: [true, false]
       - test-ios:
-          name: iOS << pipeline.parameters.ios >> MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
-          matrix: 
-            parameters: 
-              app_type: [*MobileSyncExplorerReactNative]
-              xcode: [<< pipeline.parameters.xcode >>]
-              ios: [<< pipeline.parameters.ios >>]
-              device: [<< pipeline.parameters.device >>]
-              template: [true]
-              sfdx: [true, false]
-      - test-ios:
-          name: iOS << pipeline.parameters.ios >> Template
+          name: iOS << pipeline.parameters.ios >> << matrix.app_type >> Template
           matrix: 
             parameters: 
               app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]

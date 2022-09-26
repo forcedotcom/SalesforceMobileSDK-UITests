@@ -6,7 +6,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo npm install -g cordova@11.0.0
     sudo cordova telemetry off
     sudo npm install -g typescript
-    gem install --no-document fastlane
+    sudo gem install --no-document fastlane
 else
     npm install -g cordova@11.0.0
     cordova telemetry off
