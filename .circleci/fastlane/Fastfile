@@ -20,9 +20,9 @@ $default_ios = '15-0'
 # Defualt Android Firebase Info
 # 
 $min_api = 24
-$max_api = 30 
+$max_api = 33 
 
-App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs)
+App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 
 #
 # User Runnable Lanes
@@ -133,8 +133,12 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     generate_command.concat(' --use-sfdx')
   end
   
-  result = silence_output(true) { system(generate_command) }
-  UI.user_error!('Test app was not successfully created.') unless(result)
+  result = system(generate_command)
+  if result 
+    UI.important 'Test App Generated'
+  else
+    UI.user_error!('Test app was not successfully created.')
+  end
 end
 
 #
@@ -163,6 +167,7 @@ def base_android_test_setup(options)
 
   generate_app('android', run_type, template, sfdx) unless rerun
   app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
+  UI.build_failure!('App did not generate successfully.') unless Dir.exists?(app_path)
 
   if app_name.downcase.include?('hybrid')
     if complexHybrid 
@@ -191,7 +196,7 @@ def base_android_test_setup(options)
     end
   end
 
-  app_info = App_Info.new('android', app_type, app_path, package_name, args)
+  app_info = App_Info.new('android', app_type, app_path, package_name, args, sfdx)
   if adv_auth
     setup_adv_auth(app_info)
   end
@@ -239,8 +244,13 @@ def run_android_tests_firebase(test_class, app_info)
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
 
   devices = ''
-  for api_level in $min_api..$max_api do
-    devices.concat("--device model=NexusLowRes,version=#{api_level},locale=en,orientation=portrait \\")
+  if app_info.sfdx
+    device = "--device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \\"
+  else
+    for api_level in $min_api..$max_api do
+      model = api_level < 26 ? "Nexus9" : "MediumPhone.arm"
+      devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
+    end
   end
 
   Dir.chdir('./Android/') do
@@ -412,6 +422,7 @@ end
 def setup_react_native(app_path)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
+    system('sudo chmod -R 0777 /tmp')
     silence_output { system("./install*.js") }
     system('kill -9 `pgrep -f start`')
     system('npm start&')

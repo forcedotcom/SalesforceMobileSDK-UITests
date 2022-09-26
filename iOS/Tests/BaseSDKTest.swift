@@ -81,7 +81,7 @@ class BaseSDKTest: XCTestCase {
                 verifyInWebView(app: app, text: "Tim Barr")
             } else {
                 verifyInWebView(app: app, text: "Contacts")
-                verifyInWebView(app: app, text: "SwiftTestsiOS601942975.185514") 
+                verifyInWebView(app: app, text: "Sean Forbes") 
             }
         case .reactNative:
             let titleElement = app.otherElements[sampleAppTitle].firstMatch

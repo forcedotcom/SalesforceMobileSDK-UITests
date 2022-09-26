@@ -59,7 +59,7 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
                     "JB John Bond VP, Facilities Facilities"
                 }
                 else -> {
-                    "SwiftTestsiOS601942975.185514"
+                    "Sean Forbes"
                 }
             }
         }
