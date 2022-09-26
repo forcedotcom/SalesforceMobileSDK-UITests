@@ -46,10 +46,6 @@ class AuthorizationPageObject : BasePageObject() {
         val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
         Log.i("uia", "Waiting for allow button to be present.")
         assert(allowButton.waitForExists(timeout * 5))
-
-        val webview = device.wait(Until.findObject(By.clazz("android.webkit.WebView")), timeout)
-        Log.i("uia", "Scrolling webview.")
-        webview.scroll(Direction.DOWN, 0.5f)
         allowButton.click()
         Thread.sleep(timeout)
 

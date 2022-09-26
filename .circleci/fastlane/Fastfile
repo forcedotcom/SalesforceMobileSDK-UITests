@@ -43,7 +43,7 @@ lane :android do |options|
   else
     system("$ANDROID_HOME/platform-tools/adb uninstall #{app_info.package_name}")
     install_android_app(app_info.app_path, (app_info.package_name.include?('react')))  
-    run_android_tests(test_class, app_info.package_name, app_info.xcargs, app_info.sfdx)
+    run_android_tests(test_class, app_info.package_name, app_info.xcargs)
   end
 end
 
@@ -248,7 +248,7 @@ def run_android_tests_firebase(test_class, app_info)
     device = "--device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \\"
   else
     for api_level in $min_api..$max_api do
-      model = api_level < 31 ? "NexusLowRes" : "MediumPhone.arm"
+      model = api_level < 26 ? "Nexus9" : "MediumPhone.arm"
       devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
     end
   end
