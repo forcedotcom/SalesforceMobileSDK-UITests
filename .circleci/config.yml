@@ -74,6 +74,7 @@ jobs:
                 name: Test Android Template
                 command: cd .circleci && fastlane android template:<< parameters.app_type >> sfdx:<< parameters.sfdx >>
                 when: always
+                no_output_timeout: 30m
       - unless:
           condition: << parameters.template >>
           steps:
@@ -95,7 +96,7 @@ jobs:
                       name: Test << parameters.app_type >> Android
                       command: cd .circleci && fastlane android type:<< parameters.app_type >> sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >>
                       when: always
-                      no_output_timeout: 20m
+                      no_output_timeout: 30m
       - run: 
           name: Copy test results data
           command: |
@@ -280,8 +281,11 @@ workflows:
               
   # Scheduled Trigger on Saturday Afternoon
   build-all-apps:
-    unless:
-      equal: [ "webhook", << pipeline.trigger_source >> ]
+    when:
+      and:
+        - not: << pipeline.parameters.xcode >>
+        - not:  
+            equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
       - test-android:
           name: Android << matrix.app_type >> SFDX-<< matrix.sfdx >>

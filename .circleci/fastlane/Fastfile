@@ -242,14 +242,20 @@ def run_android_tests_firebase(test_class, app_info)
   apk_path = app_info.app_name.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
   optional_vars = ''
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
+  adv_auth = app_info.xcargs.include?("advAuth=true")
 
   devices = ''
   if app_info.sfdx
-    device = "--device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \\"
+    devices = "--device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \\"
   else
     for api_level in $min_api..$max_api do
-      model = api_level < 26 ? "Nexus9" : "MediumPhone.arm"
-      devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
+      #These emulators don't have chrome
+      if adv_auth && api_level.between?(26, 28)
+        next
+      else
+        model = api_level < 26 ? "Nexus9" : "MediumPhone.arm"
+        devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
+      end
     end
   end
 
@@ -265,11 +271,10 @@ def run_android_tests_firebase(test_class, app_info)
       --app=../#{app_info.app_path}app/build/outputs/apk/#{apk_path} \
       --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
       #{devices}
-      --results-dir=UITest-#{app_info.app_name}  \
-      --results-history-name=UITest-#{app_info.app_name}  \
-      --results-dir=UITest-#{app_info.app_name}-#{ENV['CIRCLE_BUILD_NUM']}  \
-      --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars}   \
-      --no-performance-metrics --no-auto-google-login")
+      --results-history-name=UITest-#{app_info.app_name} \
+      --results-dir=UITest-#{app_info.app_name}-#{ENV['CIRCLE_BUILD_NUM']} \
+      --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars} \
+      --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=3")
       UI.test_failure!('Tests failed.') unless testResult
   end
 end
