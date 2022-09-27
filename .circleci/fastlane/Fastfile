@@ -186,13 +186,14 @@ def base_android_test_setup(options)
     app_path.concat('android/')
 
     Dir.chdir(app_path) do
-    UI.important 'Building Release APK for React Native'
-    build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
-    silence_output{ 
+      UI.important 'Building Release APK for React Native'
       system('./gradlew assembleRelease --no-daemon')
-      system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
-      system('echo "test12\n" | ' + "#{build_tools_dir}/apksigner sign --ks uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk")
-    }
+      
+      build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
+      silence_output{ 
+        system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
+        system('echo "test12\n" | ' + "#{build_tools_dir}/apksigner sign --ks uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk")
+      }
     end
   end
 
