@@ -274,7 +274,7 @@ def run_android_tests_firebase(test_class, app_info)
       --results-history-name=UITest-#{app_info.app_name} \
       --results-dir=UITest-#{app_info.app_name}-#{ENV['CIRCLE_BUILD_NUM']} \
       --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars} \
-      --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=3")
+      --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=2")
       UI.test_failure!('Tests failed.') unless testResult
   end
 end

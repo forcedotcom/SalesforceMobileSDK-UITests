@@ -352,7 +352,9 @@ workflows:
           matrix:
             parameters: 
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
+              xcode: [<< pipeline.parameters.xcode >>]
               ios: [<< pipeline.parameters.ios >>]
+              device: [<< pipeline.parameters.device >>]
               sfdx: [true, false]
       - test-ios:
           name: iOS << pipeline.parameters.ios >> << matrix.app_type >> Template
