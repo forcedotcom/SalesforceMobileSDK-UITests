@@ -71,8 +71,11 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
     private fun verifyInWebView(text: String) {
         var webElement = device.findObject(UiSelector().className(viewClass).text(text))
         if (!webElement.waitForExists(timeout * 5)) {
-            webElement = device.findObject(UiSelector().descriptionContains(text))
-            webElement.waitForExists(timeout * 5)
+            webElement = device.findObject(UiSelector().className(textViewClass).text(text))
+            if (!webElement.waitForExists(timeout * 5)) {
+                webElement = device.findObject(UiSelector().descriptionContains(text))
+                webElement.waitForExists(timeout * 5)
+            }
         }
 
         Assert.assertTrue("App did not successfully load.", webElement.exists())
