@@ -59,18 +59,23 @@ class BaseSDKTest: XCTestCase {
         case .nativeSwift:
             let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
-            
+           
+            // TODO: Remove this when min supported version is iOS 16
+            let contacts = (ProcessInfo().operatingSystemVersion.majorVersion >= 16)
+                ? app.collectionViews.cells
+                : app.tables.cells
+                
             // Accounts List
-             _ = app.tables.cells.firstMatch.waitForExistence(timeout: timeout)
-             XCTAssertGreaterThan(app.tables.cells.count, 0, "Swift UI did not load Account List.")
+             _ = contacts.firstMatch.waitForExistence(timeout: timeout)
+             XCTAssertGreaterThan(contacts.count, 0, "Swift UI did not load Account List.")
             
             // Contacts List
-            app.tables.cells.element(boundBy: 0).tap()
-            XCTAssertGreaterThan(app.tables.cells.count, 0, "RestClient did not retrieve Contacts for Account.")
+            contacts.element(boundBy: 0).tap()
+            XCTAssertGreaterThan(contacts.count, 0, "RestClient did not retrieve Contacts for Account.")
             
             // Contact Details
-            app.tables.cells.element(boundBy: 0).tap()
-            XCTAssertGreaterThan(app.tables.cells.count, 0, mobileSyncError)
+            contacts.element(boundBy: 0).tap()
+            XCTAssertGreaterThan(contacts.count, 0, mobileSyncError)
         case .hybridRemote:
             verifyInWebView(app: app, text: "Salesforce Mobile SDK Test")
         case .hybridLocal:
@@ -91,9 +96,10 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
-            let contact = (ProcessInfo().operatingSystemVersion.majorVersion > 13)
-                ? app.tables/*@START_MENU_TOKEN@*/.buttons["John Bond, VP, Facilities"]/*[[".cells[\"John Bond, VP, Facilities\"].buttons[\"John Bond, VP, Facilities\"]",".buttons[\"John Bond, VP, Facilities\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
-                : app.tables.cells.buttons["John Bond\nVP, Facilities"]
+            // TODO: Remove this when min supported version is iOS 16
+            let contact = (ProcessInfo().operatingSystemVersion.majorVersion >= 16)
+                ? app.collectionViews/*@START_MENU_TOKEN@*/.buttons["John Bond, VP, Facilities"]/*[[".cells.buttons[\"John Bond, VP, Facilities\"]",".buttons[\"John Bond, VP, Facilities\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
+                : app.tables/*@START_MENU_TOKEN@*/.buttons["John Bond, VP, Facilities"]/*[[".cells[\"John Bond, VP, Facilities\"].buttons[\"John Bond, VP, Facilities\"]",".buttons[\"John Bond, VP, Facilities\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
             let title = app.otherElements["Contacts"].firstMatch
