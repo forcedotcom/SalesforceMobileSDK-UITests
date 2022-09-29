@@ -364,6 +364,8 @@ def start_emulator(device, ios)
 
   # Start Simulator
   system("xcrun simctl boot #{sim_id}")
+  # Wait for Simulator to boot
+  sleep(3)
   system("open #{$simulator_path} --args -CurrentDeviceUDID #{sim_id}")
 end
 
