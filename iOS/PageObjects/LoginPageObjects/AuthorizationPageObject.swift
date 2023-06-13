@@ -42,7 +42,7 @@ class AuthorizationPageObject {
         app = testApp
     }
     
-    func tapAllow() {
+    func tapAllowIfPresent() {
         pressButton(lable: "Allow")
     }
     
@@ -52,8 +52,9 @@ class AuthorizationPageObject {
     
     private func pressButton(lable: String) {
         let button = app.buttons.element(matching: NSPredicate(format: "label CONTAINS '" + lable + "'"))
-        assert(button.waitForExistence(timeout: timeout))
-        sleep(2)
-        button.tap()
+        if(button.waitForExistence(timeout: timeout)) {
+            sleep(2)
+            button.tap()
+        }
     }
 }

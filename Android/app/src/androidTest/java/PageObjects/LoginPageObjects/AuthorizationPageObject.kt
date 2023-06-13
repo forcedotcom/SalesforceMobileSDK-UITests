@@ -36,7 +36,7 @@ import pageobjects.BasePageObject
 
 class AuthorizationPageObject : BasePageObject() {
 
-    fun tapAllow() {
+    fun tapAllowIfPresent() {
         val chromePageObject = ChromePageObject()
         val advAuth = chromePageObject.isAdvAuth()
         if (advAuth) {
@@ -45,9 +45,10 @@ class AuthorizationPageObject : BasePageObject() {
 
         val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
         Log.i("uia", "Waiting for allow button to be present.")
-        assert(allowButton.waitForExists(timeout * 5))
-        allowButton.click()
-        Thread.sleep(timeout)
+        if (allowButton.waitForExists(timeout)) {
+            allowButton.click()
+            Thread.sleep(timeout)
+        }
 
         /*
          *  TODO: This is an issue we have no control over, remove this if fixed by Google.

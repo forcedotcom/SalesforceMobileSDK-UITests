@@ -60,9 +60,9 @@ class LoginPageObject {
     }
     
     func tapLogin() -> Void {
-        let webViewPredicate = NSPredicate(format: "label BEGINSWITH[cd] 'Login'")
-        let webElements = app.otherElements.webViews.otherElements.matching(webViewPredicate).element
-        webElements.otherElements.children(matching: .button).element(boundBy: 0).tap()
+        let loginButton = app.webViews.webViews.webViews/*@START_MENU_TOKEN@*/.buttons["Log In"]/*[[".otherElements[\"Login | Salesforce\"].buttons[\"Log In\"]",".buttons[\"Log In\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
+        _ = loginButton.waitForExistence(timeout: timeout)
+        loginButton.tap()
     }
     
     func tapBack() -> Void {
