@@ -59,7 +59,7 @@ class LoginTests {
         loginPage.setUsername(username)
         loginPage.setPassword(password)
         loginPage.tapLogin()
-        AuthorizationPageObject().tapAllow()
+        AuthorizationPageObject().tapAllowIfPresent()
 
         when (app.type) {
             AppType.NATIVE, AppType.NATIVE_KOTLIN ->

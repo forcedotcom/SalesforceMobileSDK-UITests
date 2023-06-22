@@ -2,11 +2,11 @@
 #  Each post contains a full image manifest, including iOS runtimes, devices, CocoaPods version, etc.
 #  NOTE: When updaing Xcode check the manifest for compatible chruby versions.
 anchors:
-  - &android-env     "cimg/android:2022.09.2-node"
-  - &latest-xcode    "13.4.1"
-  - &latest-ios      "15.5"
-  - &min-ios         "14.5"
-  - &device          "iPhone 12"
+  - &android-env     "cimg/android:2023.6.1-node"
+  - &latest-xcode    "14.3.1"
+  - &latest-ios      "16.4"
+  - &min-ios         "15.5"
+  - &device          "iPhone 13"
   - &invalid         ""
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
@@ -25,6 +25,7 @@ executors:
   mac:
     macos:
       xcode: *latest-xcode
+    resource_class: macos.x86.medium.gen2
     
 version: 2.1
 jobs:

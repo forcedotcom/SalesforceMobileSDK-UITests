@@ -32,7 +32,7 @@ import androidx.test.platform.app.InstrumentationRegistry
  * Created by bpage on 2/28/18.
  */
 class UserUtility {
-    private var _username = InstrumentationRegistry.getArguments().get("username") as? String
+    private var _username = InstrumentationRegistry.getArguments().getString("username")
     var username: String = if(_username == null ) "circleci@mobilesdk.com" else _username as String
-    var password: String = (InstrumentationRegistry.getArguments().get("password") as? String) as String
+    var password: String = InstrumentationRegistry.getArguments().getString("password") as String
 }

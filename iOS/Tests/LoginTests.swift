@@ -47,7 +47,7 @@ class LoginTests: BaseSDKTest {
         loginPage.tapLogin()
         
         if !isAdvAuth {
-            authPage.tapAllow()
+            authPage.tapAllowIfPresent()
         }
         
         // Assert App loads
