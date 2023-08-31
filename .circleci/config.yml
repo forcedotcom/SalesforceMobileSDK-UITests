@@ -2,7 +2,7 @@
 #  Each post contains a full image manifest, including iOS runtimes, devices, CocoaPods version, etc.
 #  NOTE: When updaing Xcode check the manifest for compatible chruby versions.
 anchors:
-  - &android-env     "cimg/android:2023.6.1-node"
+  - &android-env     "cimg/android:2023.8.1-node"
   - &latest-xcode    "14.3.1"
   - &latest-ios      "16.4"
   - &min-ios         "15.5"
@@ -262,6 +262,7 @@ workflows:
     jobs:
       - test-android:
           name: Android << matrix.app_type >>
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote", "react_native"]
@@ -271,6 +272,7 @@ workflows:
                 - /pull.*/
       - test-ios:
           name: iOS << matrix.ios >> << matrix.app_type >> 
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
@@ -290,12 +292,14 @@ workflows:
     jobs:
       - test-android:
           name: Android << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote", "react_native"]
               sfdx: [true, false]
       - test-android:
           name: Android MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: [*MobileSyncExplorerReactNative]
@@ -303,12 +307,15 @@ workflows:
               sfdx: [true, false]
       - test-android:
           name: Android Advanced Auth
+          context: Mobile SDK UI Tests
           adv_auth: true
       - test-android:
           name: Android Complex Hybrid
+          context: Mobile SDK UI Tests
           complex_hybrid: true
       - test-ios:
           name: iOS << matrix.ios >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
@@ -316,6 +323,7 @@ workflows:
               sfdx: [true, false]
       - test-ios:
           name: iOS << matrix.ios >> << matrix.app_type >> Template
+          context: Mobile SDK UI Tests
           matrix: 
             parameters: 
               app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
@@ -323,18 +331,21 @@ workflows:
               template: [true]
       - test-ios:
           name: iOS << matrix.ios >> Advanced Auth
+          context: Mobile SDK UI Tests
           matrix:
             parameters:  
               adv_auth: [true]
               ios: [*min-ios, *latest-ios]
       - test-ios:
           name: iOS << matrix.ios >> Complex Hybrid
+          context: Mobile SDK UI Tests
           matrix:
             parameters:  
               complex_hybrid: [true]
               ios: [*min-ios, *latest-ios]
       - test-carthage:
           name: iOS << matrix.ios >> Carthage
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               ios: [*min-ios, *latest-ios]
@@ -350,6 +361,7 @@ workflows:
     jobs:
       - test-ios:
           name: iOS << pipeline.parameters.ios >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
@@ -359,6 +371,7 @@ workflows:
               sfdx: [true, false]
       - test-ios:
           name: iOS << pipeline.parameters.ios >> << matrix.app_type >> Template
+          context: Mobile SDK UI Tests
           matrix: 
             parameters: 
               app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
@@ -368,6 +381,7 @@ workflows:
               template: [true]
       - test-ios:
           name: iOS << pipeline.parameters.ios >> Advanced Auth
+          context: Mobile SDK UI Tests
           matrix:
             parameters:  
               adv_auth: [true]
@@ -376,6 +390,7 @@ workflows:
               device: [<< pipeline.parameters.device >>]
       - test-ios:
           name: iOS << pipeline.parameters.ios >> Complex Hybrid
+          context: Mobile SDK UI Tests
           matrix:
             parameters:  
               complex_hybrid: [true]
@@ -384,6 +399,7 @@ workflows:
               device: [<< pipeline.parameters.device >>]
       - test-carthage:
           name: iOS << pipeline.parameters.ios >> Carthage
+          context: Mobile SDK UI Tests
           matrix:
             parameters: 
               xcode: [<< pipeline.parameters.xcode >>]
