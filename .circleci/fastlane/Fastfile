@@ -13,7 +13,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 #
 # Default iOS Device info
 #
-$default_device = 'iPhone SE (3rd generation)'
+$default_device = 'iPhone-SE-3rd-generation'
 $default_ios = '16-4'
 
 #

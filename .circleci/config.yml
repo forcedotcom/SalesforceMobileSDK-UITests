@@ -6,7 +6,7 @@ anchors:
   - &latest-xcode    "14.3.1"
   - &latest-ios      "16.4"
   - &min-ios         "15.5"
-  - &device          "iPhone SE (3rd generation)"
+  - &device          "iPhone-SE-3rd-generation"
   - &invalid         ""
   - &MobileSyncExplorerReactNative
       https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
