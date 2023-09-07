@@ -3,12 +3,12 @@
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo apt-get update
     sudo apt-get install libqt5widgets5
-    sudo npm install -g cordova@11.0.0
+    sudo npm install -g cordova
     sudo cordova telemetry off
     sudo npm install -g typescript
     sudo gem install --no-document fastlane
 else
-    npm install -g cordova@11.0.0
+    npm install -g cordova
     cordova telemetry off
     sudo gem install cocoapods
     sudo npm install plist
