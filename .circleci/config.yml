@@ -35,7 +35,7 @@ jobs:
     docker:
       - image: *android-env
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxPermSize=3072m -XX:+HeapDumpOnOutOfMemoryError"'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2024m -XX:MaxPermSize=2024m -XX:+HeapDumpOnOutOfMemoryError"'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
@@ -146,8 +146,7 @@ jobs:
       - run:
           name: Install SFDX
           command: |
-            sudo chown -R 502:20 "/Users/distiller/.npm"
-            npm install -g sfdx-cli
+            sudo npm install -g sfdx-cli
       - when:
           condition: << parameters.template >>
           steps:
