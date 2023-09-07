@@ -320,7 +320,7 @@ def base_ios_test_setup(options)
       setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
     elsif app_name.include?('react')
-      setup_react_native(app_path)
+      setup_react_native(app_path, false)
       app_path.concat('ios/')
 
       Dir.chdir(app_path) do
@@ -376,10 +376,10 @@ def install_ios_app(app_info, release = nil)
 
     # xcodebuild's derivedDataPath is nondeterministic.
     build_path = ''
-    if Dir.exists?('./Build/')
-      build_path = './Build/'
-    elsif Dir.exists?('./DerivedData/Build/')
+    if Dir.exists?('./DerivedData/Build/')
       build_path = './DerivedData/Build/'
+    elsif Dir.exists?('./Build/')
+      build_path = './Build/'
     else
       UI.build_failure!("#{app_info.app_name}.app could not be found.")
     end
@@ -427,15 +427,14 @@ def silence_output(silence_error = false)
   end
 end
 
-def setup_react_native(app_path)
+def setup_react_native(app_path, is_android = true)
   Dir.chdir(app_path) do
     UI.important 'Running React Native Setup'
-    system('sudo chmod -R 0777 /tmp')
     silence_output { system("./install*.js") }
     system('kill -9 `pgrep -f start`')
     system('npm start&')
 
-    if $is_ci
+    if $is_ci && is_android
       system('sudo npm i -g react-native')
       system('sudo npm install -i -g --force react-native-cli')
       system('mkdir android/app/src/main/assets')
