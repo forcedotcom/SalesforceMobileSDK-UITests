@@ -35,7 +35,7 @@ jobs:
     docker:
       - image: *android-env
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2024m -XX:MaxPermSize=2024m -XX:+HeapDumpOnOutOfMemoryError"'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError" -XX:MaxMetaspaceSize=2g'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
@@ -208,9 +208,8 @@ jobs:
         default: *device
     macos:
       xcode: << parameters.xcode >>
-    resource_class: macos.x86.medium.gen2
+    resource_class: macos.m1.medium.gen1
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxPermSize=4096m -XX:+HeapDumpOnOutOfMemoryError"'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
