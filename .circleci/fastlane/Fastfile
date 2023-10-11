@@ -14,7 +14,7 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-SE-3rd-generation'
-$default_ios = '16-4'
+$default_ios = '17-0'
 
 #
 # Defualt Android Firebase Info
@@ -28,6 +28,10 @@ App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 # User Runnable Lanes
 #
 lane :ios do |options|
+  # Ensure keychain popus and other env issues don't block execution.
+  UI.important('Setup CircleCI')
+  setup_circle_ci 
+
   app_info = base_ios_test_setup(options)
   install_ios_app(app_info)
   run_ios_tests('TestLogin', app_info.package_name, app_info.xcargs)
@@ -48,6 +52,10 @@ lane :android do |options|
 end
 
 lane :test_carthage do |options|
+  # Ensure keychain popus and other env issues don't block execution.
+  UI.important('Setup CircleCI')
+  setup_circle_ci 
+
   $password = get_password
   device = options[:device]
   ios = options[:ios]
