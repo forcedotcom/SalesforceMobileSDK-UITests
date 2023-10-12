@@ -2,7 +2,7 @@
 #  Each post contains a full image manifest, including iOS runtimes, devices, CocoaPods version, etc.
 #  NOTE: When updaing Xcode check the manifest for compatible chruby versions.
 anchors:
-  - &android-env     "cimg/android:2023.09.1-node"
+  - &android-env     "cimg/android:2023.10.1-node"
   - &latest-xcode    "15.1.0"
   - &latest-ios      "17.0"
   - &min-ios         "16.4"
@@ -35,7 +35,7 @@ jobs:
     docker:
       - image: *android-env
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError" -XX:MaxMetaspaceSize=2g'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx3072m -XX:+HeapDumpOnOutOfMemoryError" -XX:MaxMetaspaceSize=2g -Dorg.gradle.daemon=false'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
@@ -134,6 +134,7 @@ jobs:
     resource_class: macos.m1.medium.gen1
     environment:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
+      FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
     steps:
       - checkout
       - run: 
