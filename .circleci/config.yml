@@ -35,7 +35,7 @@ jobs:
     docker:
       - image: *android-env
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx3072m -XX:+HeapDumpOnOutOfMemoryError" -XX:MaxMetaspaceSize=2g -Dorg.gradle.daemon=false'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx3072m -XX:+HeapDumpOnOutOfMemoryError" -XX:MaxMetaspaceSize=2g'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
