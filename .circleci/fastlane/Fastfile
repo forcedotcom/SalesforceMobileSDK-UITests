@@ -29,8 +29,8 @@ App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 #
 lane :ios do |options|
   # Ensure keychain popus and other env issues don't block execution.
-  UI.important('Setup CircleCI')
   setup_circle_ci 
+  system("xcrun simctl shutdown all")
 
   app_info = base_ios_test_setup(options)
   install_ios_app(app_info)
