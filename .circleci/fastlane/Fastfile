@@ -4,7 +4,7 @@ $is_ci = ENV.has_key? 'CIRCLECI'
 $password
 $sim_name = 'testsim'
 $simulator_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
-$default_consumer_key = '3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa'
+$default_consumer_key = '3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw'
 $default_redirect_uri = 'testsfdc:///mobilesdk/detect/oauth/done'
 $adv_auth_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmyfUanAsJ6rWLQniOaec1Ks6YBBYFaJSfMREVJdPeRxTneqgoSxdswYvb9vP'
 $adv_auth_redirect_uri = 'com.mobilesdk.advauth:///oauth/success'
@@ -187,7 +187,7 @@ def base_android_test_setup(options)
 
     Dir.chdir(app_path) do
       UI.important 'Building Release APK for React Native'
-      system('./gradlew assembleRelease --no-daemon')
+      system('./gradlew app:assembleRelease --no-daemon')
       
       build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
       silence_output{ 
@@ -221,6 +221,9 @@ def install_android_app(app_path, release = nil)
 end
 
 def run_android_tests(test_class, package_name, test_ops = nil)
+  # Get rid of runtime permission popup
+  system("adb shell pm grant #{package_name} android.permission.POST_NOTIFICATIONS")
+
   class_param =  "-Pandroid.testInstrumentationRunnerArguments.class=#{test_class}"
   package_param = "-Pandroid.testInstrumentationRunnerArguments.packageName=#{package_name}"
   password_param = "-Pandroid.testInstrumentationRunnerArguments.password=#{$password}"
@@ -434,11 +437,16 @@ def setup_react_native(app_path, is_android = true)
     system('kill -9 `pgrep -f start`')
     system('npm start&')
 
-    if $is_ci && is_android
-      system('sudo npm i -g react-native')
-      system('sudo npm install -i -g --force react-native-cli')
-      system('mkdir android/app/src/main/assets')
-      system('sudo react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+    if is_android
+      if $is_ci
+        system('sudo npm i -g react-native')
+        system('sudo npm install -i -g --force react-native-cli')
+        system('mkdir android/app/src/main/assets')
+        system('sudo react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+      else
+        system('mkdir android/app/src/main/assets')
+        system('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+      end
     end
   end
 end
