@@ -75,6 +75,11 @@ class LoginPageObject {
     }
     
     func hideKeyboard() -> Void {
+        let continueButton = app/*@START_MENU_TOKEN@*/.staticTexts["Continue"]/*[[".otherElements[\"UIContinuousPathIntroductionView\"]",".buttons[\"Continue\"].staticTexts[\"Continue\"]",".staticTexts[\"Continue\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/
+        if continueButton.exists {
+            continueButton.tap()
+        }
+        
         let doneButton = app.toolbars.matching(identifier: "Toolbar").buttons["Done"]
         if doneButton.exists {
             doneButton.tap()
