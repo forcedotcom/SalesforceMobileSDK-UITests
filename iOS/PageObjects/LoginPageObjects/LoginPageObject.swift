@@ -44,6 +44,7 @@ class LoginPageObject {
     
     func setUsername(name: String) -> Void {
         sleep(3)
+        hideKeyboard()
         let nameField = app.descendants(matching: .textField).element
         _ = nameField.waitForExistence(timeout: timeout * 12)
         nameField.tap()
@@ -52,6 +53,7 @@ class LoginPageObject {
     }
     
     func setPassword(password: String) -> Void {
+        hideKeyboard()
         let passwordField = app.descendants(matching: .secureTextField).element
         _ = passwordField.waitForExistence(timeout: timeout)
         passwordField.tap()
@@ -60,6 +62,7 @@ class LoginPageObject {
     }
     
     func tapLogin() -> Void {
+        hideKeyboard()
         let loginButton = app.webViews.webViews.webViews/*@START_MENU_TOKEN@*/.buttons["Log In"]/*[[".otherElements[\"Login | Salesforce\"].buttons[\"Log In\"]",".buttons[\"Log In\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
         _ = loginButton.waitForExistence(timeout: timeout)
         loginButton.tap()
@@ -69,5 +72,17 @@ class LoginPageObject {
         let backButton = app.navigationBars["Log In"].children(matching: .button).element(boundBy: 0)
         _ = backButton.waitForExistence(timeout: timeout)
         backButton.tap()
+    }
+    
+    func hideKeyboard() -> Void {
+        let continueButton = app/*@START_MENU_TOKEN@*/.staticTexts["Continue"]/*[[".otherElements[\"UIContinuousPathIntroductionView\"]",".buttons[\"Continue\"].staticTexts[\"Continue\"]",".staticTexts[\"Continue\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/
+        if continueButton.exists {
+            continueButton.tap()
+        }
+        
+        let doneButton = app.toolbars.matching(identifier: "Toolbar").buttons["Done"]
+        if doneButton.exists {
+            doneButton.tap()
+        }
     }
 }
