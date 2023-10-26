@@ -187,7 +187,7 @@ def base_android_test_setup(options)
 
     Dir.chdir(app_path) do
       UI.important 'Building Release APK for React Native'
-      system('./gradlew app:assembleRelease --no-daemon')
+      system('./gradlew app:assembleRelease -PreactNativeDevServerPort=8081 --no-daemon')
       
       build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
       silence_output{ 
@@ -442,10 +442,10 @@ def setup_react_native(app_path, is_android = true)
         system('sudo npm i -g react-native')
         system('sudo npm install -i -g --force react-native-cli')
         system('mkdir android/app/src/main/assets')
-        system('sudo react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+        system('sudo npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
       else
         system('mkdir android/app/src/main/assets')
-        system('react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+        system('npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
       end
     end
   end
