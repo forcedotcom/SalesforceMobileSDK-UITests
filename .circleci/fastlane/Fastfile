@@ -14,13 +14,13 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-SE-3rd-generation'
-$default_ios = '16-4'
+$default_ios = '17-4'
 
 #
 # Defualt Android Firebase Info
 # 
-$min_api = 24
-$max_api = 33 
+$min_api = 26
+$max_api = 34 
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 

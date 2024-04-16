@@ -48,7 +48,7 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
             if (app.complexHybrid == "accounteditor") {
                 Thread.sleep(timeout)
                 val search = device.findObject(UiSelector().className(editTextClass))
-                search.legacySetText("New")
+                search.setText("New")
             }
 
             content = when (app.complexHybrid) {
