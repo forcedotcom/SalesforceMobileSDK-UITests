@@ -40,14 +40,14 @@ class LoginPageObject : BasePageObject() {
 
         Log.i("uia", "Waiting for username filed to be present.")
         assert(usernameField.waitForExists(timeout * 10))
-        usernameField.text = name
+        usernameField.setText(name)
     }
 
     fun setPassword(password: String) {
         val passwordField = device.findObject(UiSelector().resourceId("password"))
         Log.i("uia", "Waiting for password filed to be present.")
         assert(passwordField.waitForExists(timeout * 5))
-        passwordField.text = password
+        passwordField.setText(password)
     }
 
     fun tapLogin() {
