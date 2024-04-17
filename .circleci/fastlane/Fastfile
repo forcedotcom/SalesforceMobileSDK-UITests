@@ -167,7 +167,7 @@ def base_android_test_setup(options)
 
   generate_app('android', run_type, template, sfdx) unless rerun
   app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
-  UI.build_failure!('App did not generate successfully.') unless Dir.exists?(app_path)
+  UI.build_failure!('App did not generate successfully.') unless Dir.exist?(app_path)
 
   if app_name.downcase.include?('hybrid')
     if complexHybrid 
@@ -379,9 +379,9 @@ def install_ios_app(app_info, release = nil)
 
     # xcodebuild's derivedDataPath is nondeterministic.
     build_path = ''
-    if Dir.exists?('./DerivedData/Build/')
+    if Dir.exist?('./DerivedData/Build/')
       build_path = './DerivedData/Build/'
-    elsif Dir.exists?('./Build/')
+    elsif Dir.exist?('./Build/')
       build_path = './Build/'
     else
       UI.build_failure!("#{app_info.app_name}.app could not be found.")
@@ -415,7 +415,7 @@ end
 
 def silence_output(silence_error = false)
   begin
-    Dir.mkdir 'test_output' unless Dir.exists? 'test_output'
+    Dir.mkdir 'test_output' unless Dir.exist? 'test_output'
     out_file = 'test_output/output.txt'
     stderr, stdout = $stderr.clone, $stdout.clone
     $stderr.reopen(File.new(out_file, 'w'))
@@ -454,18 +454,15 @@ end
 def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, old_uri = nil)
   old_key = $default_consumer_key unless old_key
   old_uri = $default_redirect_uri unless old_uri
-  config_path = app_info.app_path.clone
+  config_path = app_info.app_path.clone.concat('app/src/main/res/values/bootconfig.xml')
   android_build = 'assemble'
 
   # Determine iOS/Android
   if app_info.os == 'android'
     case app_info.app_name
-    when 'native', 'native_kotlin'
-      config_path.concat('app/res/values/bootconfig.xml')
     when 'hybrid_local', 'hybrid_remote'
-      config_path.concat('../../www/bootconfig.json')
+      config_path = app_info.app_path.clone.concat('../../www/bootconfig.json')
     when 'react_native', 'mobile_sync_react_native'
-      config_path.concat('app/src/main/res/values/bootconfig.xml')
       android_build = 'assembleRelease'  
     end
   else
@@ -493,16 +490,13 @@ def setup_adv_auth(app_info)
   scheme, path = $adv_auth_redirect_uri.split('://')
 
   if app_info.os == 'android'
-    manifest_path = app_info.app_path + 'app/'
+    manifest_path = app_info.app_path + 'app/src/main/AndroidManifest.xml'
     case app_info.app_name
     when 'native', 'native_kotlin'
       servers_path = app_info.app_path + '/mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
-      manifest_path.concat('AndroidManifest.xml')
     when 'hybrid_local', 'hybrid_remote'
-      manifest_path.concat('AndroidManifest.xml')
       servers_path = app_info.app_path + 'SalesforceSDK/res/xml/servers.xml'
     when 'react_native', 'mobile_sync_react_native'
-      manifest_path.concat('src/main/AndroidManifest.xml')
       servers_path = app_info.app_path + '../mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
     end
 
