@@ -32,10 +32,14 @@ jobs:
       complex_hybrid:
         type: boolean
         default: false
+      resource_size:
+        type: string
+        default: medium
     docker:
       - image: *android-env
+    resource_class: << parameters.resource_size >>
     environment:
-      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"'
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" -Dorg.gradle.daemon=false -Dfile.encoding=utf-8'
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
@@ -257,7 +261,18 @@ workflows:
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
-              app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote", "react_native"]
+              app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote"]
+          filters:
+            branches:
+              only:
+                - /pull.*/
+      - test-android:
+          name: Android React Native
+          context: Mobile SDK UI Tests
+          matrix:
+            parameters: 
+              app_type: ["react_native"]
+              resource_size: ["medium+"]
           filters:
             branches:
               only:
@@ -287,16 +302,30 @@ workflows:
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
-              app_type: ["native", "native_kotlin", "hybrid_local", "hybrid_remote", "react_native"]
+              app_type: ["native", "hybrid_local",]
               sfdx: [true, false]
       - test-android:
-          name: Android MobileSyncExplorerReactNative SFDX-<< matrix.sfdx >>
+          name: Android << matrix.app_type >> 
+          context: Mobile SDK UI Tests
+          matrix:
+            parameters: 
+              app_type: ["native_kotlin", "hybrid_remote"]
+      - test-android:
+          name: Android << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          context: Mobile SDK UI Tests
+          matrix:
+            parameters: 
+              app_type: ["react_native"]
+              sfdx: [true, false]
+              resource_size: ["medium+"]
+      - test-android:
+          name: Android MobileSyncExplorerReactNative
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: [*MobileSyncExplorerReactNative]
               template: [true]
-              sfdx: [true, false]
+              resource_size: ["medium+"]
       - test-android:
           name: Android Advanced Auth
           context: Mobile SDK UI Tests
@@ -306,12 +335,19 @@ workflows:
           context: Mobile SDK UI Tests
           complex_hybrid: true
       - test-ios:
-          name: iOS << matrix.ios >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          name: iOS << matrix.ios >> << matrix.app_type >>
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
               ios: [*min-ios, *latest-ios]
+      - test-ios:
+          name: iOS << matrix.ios >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          context: Mobile SDK UI Tests
+          matrix:
+            parameters: 
+              app_type: ["native", "hybrid_local", "react_native"]
+              ios: [*latest-ios]
               sfdx: [true, false]
       - test-ios:
           name: iOS << matrix.ios >> << matrix.app_type >> Template
@@ -352,7 +388,7 @@ workflows:
             equal: [ "webhook", << pipeline.trigger_source >> ]
     jobs:
       - test-ios:
-          name: iOS << pipeline.parameters.ios >> << matrix.app_type >> SFDX-<< matrix.sfdx >>
+          name: iOS << pipeline.parameters.ios >> << matrix.app_type >>
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
@@ -360,7 +396,6 @@ workflows:
               xcode: [<< pipeline.parameters.xcode >>]
               ios: [<< pipeline.parameters.ios >>]
               device: [<< pipeline.parameters.device >>]
-              sfdx: [true, false]
       - test-ios:
           name: iOS << pipeline.parameters.ios >> << matrix.app_type >> Template
           context: Mobile SDK UI Tests
