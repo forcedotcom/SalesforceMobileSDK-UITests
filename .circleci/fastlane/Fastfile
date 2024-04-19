@@ -42,7 +42,7 @@ lane :android do |options|
     run_android_tests_firebase(test_class, app_info)
   else
     system("$ANDROID_HOME/platform-tools/adb uninstall #{app_info.package_name}")
-    install_android_app(app_info.app_path, (app_info.package_name.include?('react')))  
+    install_android_app(app_info.app_path, (is_react(app_info.package_name)))  
     run_android_tests(test_class, app_info.package_name, app_info.xcargs)
   end
 end
@@ -169,7 +169,7 @@ def base_android_test_setup(options)
   app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
   UI.build_failure!('App did not generate successfully.') unless Dir.exist?(app_path)
 
-  if app_name.downcase.include?('hybrid')
+  if is_hybird(app_name)
     if complexHybrid 
       setup_complex_hybrid(complexHybrid, app_path)
       app_path.concat('platforms/android/')
@@ -181,7 +181,7 @@ def base_android_test_setup(options)
     elsif
       app_path.concat('platforms/android/')
     end     
-  elsif app_name.downcase.include?('react')
+  elsif is_react(app_name)
     setup_react_native(app_path)
     app_path.concat('android/')
 
@@ -243,7 +243,7 @@ def run_android_tests(test_class, package_name, test_ops = nil)
 end
 
 def run_android_tests_firebase(test_class, app_info)
-  apk_path = app_info.app_name.include?('react') ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
+  apk_path = is_react(app_info.app_name) ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
   optional_vars = ''
   app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
   adv_auth = app_info.xcargs.include?("advAuth=true")
@@ -312,17 +312,17 @@ def base_ios_test_setup(options)
 
   app_name = 'ios'.concat(template ? templateName : "#{run_type}").gsub('_', '')
   system("rm -rf ../../test_output/#{app_name}")
-  bundle_name = app_name.include?('hybrid') ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
+  bundle_name = is_hybird(app_name) ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
   start_emulator(device, ios)
   
   Dir.chdir('../../') do
     generate_app('ios', run_type, template, sfdx) unless rerun
     app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
 
-    if app_name.include?('hybrid')
+    if is_hybird(app_name)
       setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
-    elsif app_name.include?('react')
+    elsif is_react(app_name)
       setup_react_native(app_path, false)
       app_path.concat('ios/')
 
@@ -454,20 +454,24 @@ end
 def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, old_uri = nil)
   old_key = $default_consumer_key unless old_key
   old_uri = $default_redirect_uri unless old_uri
-  config_path = app_info.app_path.clone.concat('app/src/main/res/values/bootconfig.xml')
-  android_build = 'assemble'
+  config_path = app_info.app_path.clone
 
   # Determine iOS/Android
   if app_info.os == 'android'
-    case app_info.app_name
-    when 'hybrid_local', 'hybrid_remote'
-      config_path = app_info.app_path.clone.concat('../../www/bootconfig.json')
-    when 'react_native', 'mobile_sync_react_native'
-      android_build = 'assembleRelease'  
+    if is_hybird(app_info.app_name)
+      config_path.concat('../../www/bootconfig.json')
+    else
+      config_path.concat('app/src/main/res/values/bootconfig.xml')
+    end
+
+    if is_react(app_info.app_name)
+      android_build = 'assembleRelease'
+    else
+      android_build = 'assemble'
     end
   else
-    case app_info.app_name
-    when 'ioshybridlocal', 'ioshybridremote'
+    # iOS
+    if is_hybird(app_info.app_name)
       config_path.concat('www/bootconfig.json')
     else
       config_path.concat(app_info.app_name + '/bootconfig.plist')
@@ -563,4 +567,13 @@ def setup_complex_hybrid(complexHybrid, app_path)
   Dir.chdir(app_path) do
     system('cordova prepare') 
   end }
+end
+
+# Generic Helpers
+def is_hybird(app_name)
+  app_name.downcase.include?('hybrid')
+end
+
+def is_react(app_name)
+  app_name.downcase.include?('react')
 end
