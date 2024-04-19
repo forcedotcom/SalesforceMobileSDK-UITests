@@ -7,14 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1FF3EED38A519E7328436FE1 /* SalesforceSDKCore.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9E0A4ABB281D4246ABFB4274 /* SalesforceSDKCore.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		35B3774D5D644D8B820D1E27 /* SmartStore.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4C6311DCC1B6BC7AA55F8882 /* SmartStore.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		43940AF52D579C1E396D50E4 /* SalesforceSDKCore.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9E0A4ABB281D4246ABFB4274 /* SalesforceSDKCore.xcframework */; };
-		5EEBCC2F8F452D21BF22FDF1 /* SmartStore.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C6311DCC1B6BC7AA55F8882 /* SmartStore.xcframework */; };
-		611DF153A8F7BCC783DB0785 /* SalesforceAnalytics.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4EDA01D2D9A9F7C46DF3C9F2 /* SalesforceAnalytics.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		87D564A07EBE247ADFB24B8C /* MobileSyncExplorerCommon.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0E245F93BD608C7865559168 /* MobileSyncExplorerCommon.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		8F0D40335A5FBADAC64DA68B /* SalesforceSDKCommon.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 101773B2DF2FA8C1A8D6AB02 /* SalesforceSDKCommon.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		93BB3A22EA9302D95609FD5B /* MobileSyncExplorerCommon.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E245F93BD608C7865559168 /* MobileSyncExplorerCommon.xcframework */; };
 		A326484C23CFCA4E008F7E66 /* RootViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A326484B23CFCA4E008F7E66 /* RootViewController.swift */; };
 		A391013323CF743500883A88 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A391013223CF743500883A88 /* AppDelegate.swift */; };
 		A391013A23CF743500883A88 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A391013823CF743500883A88 /* Main.storyboard */; };
@@ -23,40 +15,11 @@
 		A391014723CF74B500883A88 /* bootconfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = A391014623CF74B500883A88 /* bootconfig.plist */; };
 		A3C6A67E23CFCD5900AD9AF9 /* InitialViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C6A67D23CFCD5900AD9AF9 /* InitialViewController.swift */; };
 		A3C6A68023CFD37200AD9AF9 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C6A67F23CFD37200AD9AF9 /* main.swift */; };
-		B15AFCBD2A20D0518D787951 /* SalesforceSDKCommon.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 101773B2DF2FA8C1A8D6AB02 /* SalesforceSDKCommon.xcframework */; };
-		C601C58A7AEA6FCC6FFCDCDD /* MobileSync.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2EA101EE0AB717E6C021B5BC /* MobileSync.xcframework */; };
-		CC7647D767A3E1695F1C810D /* MobileSync.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2EA101EE0AB717E6C021B5BC /* MobileSync.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DE4C8E353CBE64E0F23845C6 /* SalesforceAnalytics.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6DC2C9D3834EDA9C0073C565 /* SalesforceAnalytics.xcframework */; };
-		EA4BBF3ED5E39B7978D1A799 /* SalesforceAnalytics.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EDA01D2D9A9F7C46DF3C9F2 /* SalesforceAnalytics.xcframework */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		EBC9F8785A56D72DA2F34957 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				8F0D40335A5FBADAC64DA68B /* SalesforceSDKCommon.xcframework in Embed Frameworks */,
-				CC7647D767A3E1695F1C810D /* MobileSync.xcframework in Embed Frameworks */,
-				611DF153A8F7BCC783DB0785 /* SalesforceAnalytics.xcframework in Embed Frameworks */,
-				1FF3EED38A519E7328436FE1 /* SalesforceSDKCore.xcframework in Embed Frameworks */,
-				35B3774D5D644D8B820D1E27 /* SmartStore.xcframework in Embed Frameworks */,
-				87D564A07EBE247ADFB24B8C /* MobileSyncExplorerCommon.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		0E245F93BD608C7865559168 /* MobileSyncExplorerCommon.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = MobileSyncExplorerCommon.xcframework; path = Carthage/Build/MobileSyncExplorerCommon.xcframework; sourceTree = "<group>"; };
-		101773B2DF2FA8C1A8D6AB02 /* SalesforceSDKCommon.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = SalesforceSDKCommon.xcframework; path = Carthage/Build/SalesforceSDKCommon.xcframework; sourceTree = "<group>"; };
-		2EA101EE0AB717E6C021B5BC /* MobileSync.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = MobileSync.xcframework; path = Carthage/Build/MobileSync.xcframework; sourceTree = "<group>"; };
-		4C6311DCC1B6BC7AA55F8882 /* SmartStore.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = SmartStore.xcframework; path = Carthage/Build/SmartStore.xcframework; sourceTree = "<group>"; };
-		4EDA01D2D9A9F7C46DF3C9F2 /* SalesforceAnalytics.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = SalesforceAnalytics.xcframework; path = Carthage/Build/SalesforceAnalytics.xcframework; sourceTree = "<group>"; };
 		6DC2C9D3834EDA9C0073C565 /* SalesforceAnalytics.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = SalesforceAnalytics.xcframework; path = Carthage/Build/SalesforceAnalytics.xcframework; sourceTree = "<group>"; };
-		9E0A4ABB281D4246ABFB4274 /* SalesforceSDKCore.xcframework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.xcframework; name = SalesforceSDKCore.xcframework; path = Carthage/Build/SalesforceSDKCore.xcframework; sourceTree = "<group>"; };
 		A326484B23CFCA4E008F7E66 /* RootViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootViewController.swift; sourceTree = "<group>"; };
 		A391012F23CF743500883A88 /* CarthageTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CarthageTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A391013223CF743500883A88 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -75,12 +38,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				DE4C8E353CBE64E0F23845C6 /* SalesforceAnalytics.xcframework in Frameworks */,
-				B15AFCBD2A20D0518D787951 /* SalesforceSDKCommon.xcframework in Frameworks */,
-				C601C58A7AEA6FCC6FFCDCDD /* MobileSync.xcframework in Frameworks */,
-				EA4BBF3ED5E39B7978D1A799 /* SalesforceAnalytics.xcframework in Frameworks */,
-				43940AF52D579C1E396D50E4 /* SalesforceSDKCore.xcframework in Frameworks */,
-				5EEBCC2F8F452D21BF22FDF1 /* SmartStore.xcframework in Frameworks */,
-				93BB3A22EA9302D95609FD5B /* MobileSyncExplorerCommon.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,12 +48,6 @@
 			isa = PBXGroup;
 			children = (
 				6DC2C9D3834EDA9C0073C565 /* SalesforceAnalytics.xcframework */,
-				101773B2DF2FA8C1A8D6AB02 /* SalesforceSDKCommon.xcframework */,
-				2EA101EE0AB717E6C021B5BC /* MobileSync.xcframework */,
-				4EDA01D2D9A9F7C46DF3C9F2 /* SalesforceAnalytics.xcframework */,
-				9E0A4ABB281D4246ABFB4274 /* SalesforceSDKCore.xcframework */,
-				4C6311DCC1B6BC7AA55F8882 /* SmartStore.xcframework */,
-				0E245F93BD608C7865559168 /* MobileSyncExplorerCommon.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -144,7 +95,6 @@
 				A391012B23CF743400883A88 /* Sources */,
 				A391012C23CF743400883A88 /* Frameworks */,
 				A391012D23CF743400883A88 /* Resources */,
-				EBC9F8785A56D72DA2F34957 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
