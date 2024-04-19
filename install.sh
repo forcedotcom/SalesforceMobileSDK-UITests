@@ -3,6 +3,7 @@
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     sudo apt-get update
     sudo apt-get install libqt5widgets5
+    sudo apt install ninja-build
     sudo npm install -g cordova
     cordova telemetry off
     sudo npm install -g typescript
