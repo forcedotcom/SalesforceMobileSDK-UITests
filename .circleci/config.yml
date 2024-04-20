@@ -334,6 +334,7 @@ workflows:
           name: Android Complex Hybrid
           context: Mobile SDK UI Tests
           complex_hybrid: true
+          resource_size: medium+
       - test-ios:
           name: iOS << matrix.ios >> << matrix.app_type >>
           context: Mobile SDK UI Tests

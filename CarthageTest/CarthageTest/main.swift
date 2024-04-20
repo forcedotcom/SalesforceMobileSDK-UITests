@@ -29,6 +29,6 @@ import SalesforceSDKCore
 UIApplicationMain(
     CommandLine.argc,
     CommandLine.unsafeArgv,
-    NSStringFromClass(SFApplication.self),
+    nil,
     NSStringFromClass(AppDelegate.self)
 )
