@@ -82,6 +82,12 @@
             </BuildableReference>
             <SkippedTests>
                <Test
+                  Identifier = "BaseSDKTest">
+               </Test>
+               <Test
+                  Identifier = "NativeLoginTests">
+               </Test>
+               <Test
                   Identifier = "PasscodeTests">
                </Test>
             </SkippedTests>

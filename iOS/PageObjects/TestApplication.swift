@@ -55,7 +55,7 @@ class TestApplication: XCUIApplication {
         switch bundleString {
         case "com.salesforce.iosnative":
             type = .nativeObjC
-        case "com.salesforce.iosnativeswift":
+        case "com.salesforce.iosnativeswift", "com.salesforce.iosnativelogin":
             type = .nativeSwift
         case "com.salesforce.ioshybridlocal":
             type = .hybridLocal

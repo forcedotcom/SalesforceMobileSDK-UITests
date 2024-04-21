@@ -8,6 +8,9 @@ $default_consumer_key = '3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxM
 $default_redirect_uri = 'testsfdc:///mobilesdk/detect/oauth/done'
 $adv_auth_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmyfUanAsJ6rWLQniOaec1Ks6YBBYFaJSfMREVJdPeRxTneqgoSxdswYvb9vP'
 $adv_auth_redirect_uri = 'com.mobilesdk.advauth:///oauth/success'
+$native_login_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmzX.EQ9ZvtHL1TG3gHFV.4IvKZyXw5SgdiVPi61mXrpu40mCOhKevEfYNMOm'
+$native_login_redirect_uri = 'https://msdk-enhanced-dev-ed.my.site.com/services/oauth2/echo'
+$native_login_url = 'https://msdk-enhanced-dev-ed.my.site.com/headless'
 $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.LoginActivity'
 
 #
@@ -30,13 +33,26 @@ App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 lane :ios do |options|
   app_info = base_ios_test_setup(options)
   install_ios_app(app_info)
-  run_ios_tests('TestLogin', app_info.package_name, app_info.xcargs)
+
+  test_class =  if is_native_login(app_info.app_name)
+                  'TestNativeLogin'
+                else
+                  'TestLogin'
+                end
+
+  run_ios_tests(test_class, app_info.package_name, app_info.xcargs)
 end
 
 lane :android do |options|
   Dir.chdir('../../')
   app_info = base_android_test_setup(options)
-  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests'
+  
+  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.login.'
+  if is_native_login(app_info.app_name)
+    test_class.concat('NativeLoginTests')
+  else
+    test_class.concat('LoginTests')
+  end
 
   if $is_ci
     run_android_tests_firebase(test_class, app_info)
@@ -95,19 +111,25 @@ end
 #
 # Generic Reusable Helper Functions
 #
-def get_password()
-  if ENV.has_key? 'CI_USER_PASSWORD'
-    return ENV['CI_USER_PASSWORD']
+def get_password(native_login = false)
+  if native_login 
+    if ENV.has_key? 'CI_USER_NATIVE_PASSWORD'
+      return ENV['CI_USER_NATIVE_PASSWORD']
+    end
   else
-    # Crash if not set for CI
-    UI.crash!('Error: Password should be set in CircleCI Environment Variables.') if $is_ci
-
-    # Let user recover for local run
-    UI.important 'Error: CI User Password not set!!!'
-    UI.important 'For future use please execute: export CI_USER_PASSWORD=<password>'
-    UI.important 'CI User Password can be found here: https://salesforce.quip.com/RmK0A8aSX3Cc'
-    return prompt(text: 'To recover now, enter the password for CI User:')
+    if ENV.has_key? 'CI_USER_PASSWORD'
+      return ENV['CI_USER_PASSWORD']
+    end
   end
+  
+  # Crash if not set for CI
+  UI.crash!('Error: Password should be set in CircleCI Environment Variables.') if $is_ci
+
+  # Let user recover for local run
+  UI.important 'Error: CI User Password not set!!!'
+  UI.important 'For future use please execute: export CI_USER_PASSWORD=<password>'
+  UI.important 'CI User Password can be found here: https://salesforce.quip.com/RmK0A8aSX3Cc'
+  return prompt(text: 'To recover now, enter the password for CI User:')
 end
 
 # Either type or template needs to be set.
@@ -126,7 +148,13 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     end
   else
     UI.header 'Generating App from Template'
-    generate_command.concat("  --templaterepouri=#{template}")
+    templateUrl = if template.start_with?('https')
+                    template
+                  else
+                    "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/#{template}\#dev"
+                  end
+
+    generate_command.concat("  --templaterepouri=#{templateUrl}")
   end
 
   if sfdx
@@ -146,7 +174,6 @@ end
 #
 def base_android_test_setup(options)
   $is_ci = true if options[:firebase] 
-  $password = get_password
   run_type = options[:type]
   template = options[:template]
   UI.user_error!('Please specify run type.') unless(run_type or template)
@@ -162,8 +189,11 @@ def base_android_test_setup(options)
   end
 
   app_type = template ? templateName : run_type
-  app_name = 'android'.concat(app_type).gsub('_', '')
+  app_name = app_type.gsub('_', '')
+  app_name = 'android' + app_name unless template
+  app_name.delete_suffix!('template') if template
   package_name = "com.salesforce.#{app_name}"
+  $password = get_password(is_native_login(app_name))
 
   generate_app('android', run_type, template, sfdx) unless rerun
   app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
@@ -197,7 +227,7 @@ def base_android_test_setup(options)
     end
   end
 
-  app_info = App_Info.new('android', app_type, app_path, package_name, args, sfdx)
+  app_info = App_Info.new('android', app_name, app_path, package_name, args, sfdx)
   if adv_auth
     setup_adv_auth(app_info)
   end
@@ -205,6 +235,10 @@ def base_android_test_setup(options)
   if complexHybrid
     args.push("complexHybrid=#{complexHybrid}")
     UI.important('args: ' + args.inspect())
+  end
+
+  if is_native_login(app_name) 
+    setup_native_login(app_info)
   end
   
   return app_info
@@ -257,8 +291,7 @@ def run_android_tests_firebase(test_class, app_info)
       if adv_auth && api_level.between?(26, 28)
         next
       else
-        model = api_level < 26 ? "Nexus9" : "MediumPhone.arm"
-        devices.concat("--device model=#{model},version=#{api_level},locale=en,orientation=portrait \\")
+        devices.concat("--device model=MediumPhone.arm,version=#{api_level},locale=en,orientation=portrait \\")
       end
     end
   end
@@ -287,7 +320,6 @@ end
 # iOS Helper Functions
 #
 def base_ios_test_setup(options)
-  $password = get_password
   run_type = options[:type]
   template = options[:template]
   UI.user_error!('Please specify run type.') unless(run_type or template)
@@ -311,6 +343,7 @@ def base_ios_test_setup(options)
   end
 
   app_name = 'ios'.concat(template ? templateName : "#{run_type}").gsub('_', '')
+  $password = get_password(is_native_login(app_name))
   system("rm -rf ../../test_output/#{app_name}")
   bundle_name = is_hybird(app_name) ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
   start_emulator(device, ios)
@@ -339,6 +372,10 @@ def base_ios_test_setup(options)
 
     if complexHybrid
       xcargs.push("COMPLEX_HYBRID=#{complexHybrid}")
+    end
+
+    if is_native_login(app_name) 
+      setup_native_login(app_info, false)
     end
 
     return app_info
@@ -569,6 +606,26 @@ def setup_complex_hybrid(complexHybrid, app_path)
   end }
 end
 
+def setup_native_login(app_info, is_android = true)
+  if is_android
+    source_path = app_info.app_path + 'app/src/main/java/com/salesforce/androidnativelogin/MainApplication.kt'
+    modify_source(source_path, "val clientId = \"your-client-id\"", "val clientId = \"#{$native_login_consumer_key}\"")
+    modify_source(source_path, "val redirectUri = \"your-redirect-uri\"", "val redirectUri = \"#{$native_login_redirect_uri}\"")
+    modify_source(source_path, "val loginUrl = \"your-community-url\"", "val loginUrl = \"#{$native_login_url}\"")
+  
+    UI.important 'Rebuilding with modified source files'
+    Dir.chdir(app_info. app_path) do
+      result = silence_output { system("./gradlew assemble --no-daemon") }
+      UI.build_failure!('Failed to rebuild with modified source files.') unless result
+    end
+  else
+    source_path = app_info.app_path + app_info.app_name + '/SceneDelegate.swift'
+    modify_source(source_path, "let clientId = \"your-client-id\"", "let clientId = \"#{$native_login_consumer_key}\"")
+    modify_source(source_path, "let redirectUri = \"your-redirect-uri\"", "let redirectUri = \"#{$native_login_redirect_uri}\"")
+    modify_source(source_path, "let loginUrl = \"your-community-url\"", "let loginUrl = \"#{$native_login_url}\"")
+  end
+end
+
 # Generic Helpers
 def is_hybird(app_name)
   app_name.downcase.include?('hybrid')
@@ -576,4 +633,8 @@ end
 
 def is_react(app_name)
   app_name.downcase.include?('react')
+end
+
+def is_native_login(app_name)
+  app_name.downcase == 'androidnativelogin' or app_name.downcase == 'iosnativelogin'
 end

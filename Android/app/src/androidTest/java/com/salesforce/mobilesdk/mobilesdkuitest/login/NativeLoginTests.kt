@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2024-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-//
-//  UserUtility.swift
-//  SalesforceMobileSDK-UITest
-//
-//  Created by Brandon Page on 3/29/18.
-//
+package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import Foundation
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import pageobjects.loginpageobjects.LoginPageObject
+import pageobjects.testapppageobjects.NativeAppPageObject
+import pageobjects.testapppageobjects.TestApplication
+import testutility.UserUtility
 
-class UserUtility {
-    var username = ""
-    var nativeLoginUsername = ""
-    var password = ""
+@RunWith(AndroidJUnit4::class)
+class NativeLoginTests {
+    private var app = TestApplication()
 
-    init() {
-        let envUsername = ProcessInfo.processInfo.environment["USERNAME"] ?? ""
-        username = envUsername.isEmpty ? "circleci@mobilesdk.com" : envUsername
-        nativeLoginUsername = envUsername.isEmpty ? "bpage2@salesforce.com" : envUsername
-        password = ProcessInfo.processInfo.environment["PASSWORD"]!
+    @Before
+    fun setupTestApp() {
+        app.launch()
+    }
+
+    @Test
+    fun testLogin() {
+        val loginPage = LoginPageObject()
+        loginPage.setUsername(UserUtility.nativeLoginUsername)
+        loginPage.setPassword(UserUtility.password)
+        loginPage.tapLogin()
+
+        NativeAppPageObject(app).assertAppLoads()
     }
 }

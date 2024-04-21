@@ -42,9 +42,6 @@ import pageobjects.testapppageobjects.*
 @RunWith(AndroidJUnit4::class)
 class LoginTests {
     private var app = TestApplication()
-    private var userUtil = UserUtility()
-    private var username = userUtil.username
-    private var password = userUtil.password
 
     @Before
     fun setupTestApp() {
@@ -56,8 +53,8 @@ class LoginTests {
         Assert.assertEquals("Wrong browser is used for login.", app.advAuth, ChromePageObject().isAdvAuth())
 
         val loginPage = LoginPageObject()
-        loginPage.setUsername(username)
-        loginPage.setPassword(password)
+        loginPage.setUsername(UserUtility.username)
+        loginPage.setPassword(UserUtility.password)
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllowIfPresent()
 
