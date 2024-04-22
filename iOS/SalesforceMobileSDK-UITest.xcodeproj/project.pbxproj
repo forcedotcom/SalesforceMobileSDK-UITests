@@ -10,7 +10,9 @@
 		A3045A28203E241B0028F46F /* TestApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A27203E241B0028F46F /* TestApplication.swift */; };
 		A3045A2A203E26AD0028F46F /* LoginPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A29203E26AD0028F46F /* LoginPageObject.swift */; };
 		A3045A2C203E2F420028F46F /* AuthorizationPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */; };
+		A381912D2BD496B500A93F6A /* NativeLoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A381912C2BD496B500A93F6A /* NativeLoginTests.swift */; };
 		A39442FB2024D440006022F8 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39442FA2024D440006022F8 /* LoginTests.swift */; };
+		A396F6662BD4BEDD007BD55A /* NativeLoginPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A396F6652BD4BEDD007BD55A /* NativeLoginPageObject.swift */; };
 		A3DD05AE237E1F4D006C2125 /* BaseSDKTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DD05AD237E1F4D006C2125 /* BaseSDKTest.swift */; };
 		A3F06182206DC48100ADA1DD /* UserUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F06181206DC48100ADA1DD /* UserUtility.swift */; };
 /* End PBXBuildFile section */
@@ -20,7 +22,9 @@
 		A3045A29203E26AD0028F46F /* LoginPageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginPageObject.swift; sourceTree = "<group>"; };
 		A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationPageObject.swift; sourceTree = "<group>"; };
 		A34A749F20239B4E00846B32 /* SalesforceMobileSDK-UITest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SalesforceMobileSDK-UITest.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A381912C2BD496B500A93F6A /* NativeLoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeLoginTests.swift; sourceTree = "<group>"; };
 		A39442FA2024D440006022F8 /* LoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginTests.swift; sourceTree = "<group>"; };
+		A396F6652BD4BEDD007BD55A /* NativeLoginPageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeLoginPageObject.swift; sourceTree = "<group>"; };
 		A39F9D4B2024CD5100251414 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A3DD05AD237E1F4D006C2125 /* BaseSDKTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseSDKTest.swift; sourceTree = "<group>"; };
 		A3F06181206DC48100ADA1DD /* UserUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserUtility.swift; sourceTree = "<group>"; };
@@ -70,6 +74,7 @@
 			children = (
 				A39442FA2024D440006022F8 /* LoginTests.swift */,
 				A3DD05AD237E1F4D006C2125 /* BaseSDKTest.swift */,
+				A381912C2BD496B500A93F6A /* NativeLoginTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -87,6 +92,7 @@
 			children = (
 				A3045A2B203E2F420028F46F /* AuthorizationPageObject.swift */,
 				A3045A29203E26AD0028F46F /* LoginPageObject.swift */,
+				A396F6652BD4BEDD007BD55A /* NativeLoginPageObject.swift */,
 			);
 			path = LoginPageObjects;
 			sourceTree = "<group>";
@@ -160,6 +166,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3045A28203E241B0028F46F /* TestApplication.swift in Sources */,
+				A381912D2BD496B500A93F6A /* NativeLoginTests.swift in Sources */,
+				A396F6662BD4BEDD007BD55A /* NativeLoginPageObject.swift in Sources */,
 				A3DD05AE237E1F4D006C2125 /* BaseSDKTest.swift in Sources */,
 				A3045A2C203E2F420028F46F /* AuthorizationPageObject.swift in Sources */,
 				A3F06182206DC48100ADA1DD /* UserUtility.swift in Sources */,

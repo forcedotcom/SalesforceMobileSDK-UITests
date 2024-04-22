@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2024-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -25,23 +25,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 //
-//  UserUtility.swift
+//  NativeLoginPageObject.swift
 //  SalesforceMobileSDK-UITest
 //
-//  Created by Brandon Page on 3/29/18.
+//  Created by Brandon Page on 4/20/24.
 //
 
 import Foundation
+import XCTest
 
-class UserUtility {
-    var username = ""
-    var nativeLoginUsername = ""
-    var password = ""
-
-    init() {
-        let envUsername = ProcessInfo.processInfo.environment["USERNAME"] ?? ""
-        username = envUsername.isEmpty ? "circleci@mobilesdk.com" : envUsername
-        nativeLoginUsername = envUsername.isEmpty ? "bpage2@salesforce.com" : envUsername
-        password = ProcessInfo.processInfo.environment["PASSWORD"]!
+class NativeLoginPageObject: LoginPageObject {
+    
+    override func tapLogin() -> Void {
+        hideKeyboard()
+        let loginButton = app.buttons["Log In"]
+        _ = loginButton.waitForExistence(timeout: timeout)
+        loginButton.tap()
     }
 }

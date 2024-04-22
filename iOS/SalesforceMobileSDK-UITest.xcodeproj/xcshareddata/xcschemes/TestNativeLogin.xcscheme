@@ -26,7 +26,8 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "NO">
+      shouldUseLaunchSchemeArgsEnv = "NO"
+      codeCoverageEnabled = "YES">
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
@@ -36,10 +37,21 @@
             ReferencedContainer = "container:SalesforceMobileSDK-UITest.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = ""
+            isEnabled = "NO">
+         </CommandLineArgument>
+      </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "USERNAME"
             value = "$(USERNAME)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "COMPLEX_HYBRID"
+            value = "${COMPLEX_HYBRID}"
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
@@ -57,11 +69,6 @@
             value = "$(ADV_AUTH)"
             isEnabled = "YES">
          </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "COMPLEX_HYBRID"
-            value = "${COMPLEX_HYBRID}"
-            isEnabled = "YES">
-         </EnvironmentVariable>
       </EnvironmentVariables>
       <Testables>
          <TestableReference
@@ -75,7 +82,13 @@
             </BuildableReference>
             <SkippedTests>
                <Test
+                  Identifier = "BaseSDKTest">
+               </Test>
+               <Test
                   Identifier = "LoginTests">
+               </Test>
+               <Test
+                  Identifier = "PasscodeTests">
                </Test>
             </SkippedTests>
          </TestableReference>
@@ -85,7 +98,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      launchStyle = "0"
+      launchStyle = "1"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"

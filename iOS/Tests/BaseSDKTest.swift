@@ -36,6 +36,7 @@ import XCTest
 
 class BaseSDKTest: XCTestCase {
     var username = UserUtility().username
+    var nativeLoginUsername = UserUtility().nativeLoginUsername
     var password = UserUtility().password
     var timeout:double_t = 60
     private var appLoadError = "App did not load."

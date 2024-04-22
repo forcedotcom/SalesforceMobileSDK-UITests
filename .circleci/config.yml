@@ -8,10 +8,6 @@ anchors:
   - &min-ios         "16.4"
   - &device          "iPhone-SE-3rd-generation"
   - &invalid         ""
-  - &MobileSyncExplorerReactNative
-      https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerReactNative\#dev
-  - &MobileSyncSwiftTemplate
-      https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 
 version: 2.1
 jobs:
@@ -277,13 +273,35 @@ workflows:
             branches:
               only:
                 - /pull.*/
+      - test-android:
+          name: Android Native Login 
+          context: Mobile SDK UI Tests
+          matrix:
+            parameters: 
+              app_type: ["AndroidNativeLoginTemplate"]
+              template: [true]
+              resource_size: ["medium+"]
+          filters:
+            branches:
+              only:
+                - /pull.*/
       - test-ios:
-          name: iOS << matrix.ios >> << matrix.app_type >> 
+          name: iOS << matrix.app_type >> 
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
               app_type: ["native", "native_swift", "hybrid_local", "hybrid_remote", "react_native"]
-              ios: [*min-ios, *latest-ios]
+          filters:
+            branches:
+              only:
+                - /pull.*/
+      - test-ios:
+          name: iOS Native Login Template
+          context: Mobile SDK UI Tests
+          matrix: 
+            parameters: 
+              app_type: ["iOSNativeLoginTemplate"]
+              template: [true]
           filters:
             branches:
               only:
@@ -323,9 +341,16 @@ workflows:
           context: Mobile SDK UI Tests
           matrix:
             parameters: 
-              app_type: [*MobileSyncExplorerReactNative]
+              app_type: ["MobileSyncExplorerReactNative"]
               template: [true]
               resource_size: ["medium+"]
+      - test-android:
+          name: Android Native Login 
+          context: Mobile SDK UI Tests
+          matrix:
+            parameters: 
+              app_type: ["AndroidNativeLoginTemplate"]
+              template: [true]
       - test-android:
           name: Android Advanced Auth
           context: Mobile SDK UI Tests
@@ -355,7 +380,7 @@ workflows:
           context: Mobile SDK UI Tests
           matrix: 
             parameters: 
-              app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
+              app_type: ["MobileSyncExplorerReactNative", "MobileSyncExplorerSwift", "iOSNativeLoginTemplate"]
               ios: [*min-ios, *latest-ios]
               template: [true]
       - test-ios:
@@ -402,7 +427,7 @@ workflows:
           context: Mobile SDK UI Tests
           matrix: 
             parameters: 
-              app_type: [*MobileSyncExplorerReactNative, *MobileSyncSwiftTemplate]
+              app_type: ["MobileSyncExplorerReactNative", "MobileSyncExplorerSwift"]
               xcode: [<< pipeline.parameters.xcode >>]
               ios: [<< pipeline.parameters.ios >>]
               device: [<< pipeline.parameters.device >>]
