@@ -280,6 +280,7 @@ workflows:
             parameters: 
               app_type: ["AndroidNativeLoginTemplate"]
               template: [true]
+              resource_size: ["medium+"]
           filters:
             branches:
               only:
