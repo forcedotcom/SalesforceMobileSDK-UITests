@@ -2,8 +2,8 @@
 #  Each post contains a full image manifest, including iOS runtimes, devices, CocoaPods version, etc.
 #  NOTE: When updaing Xcode check the manifest for compatible chruby versions.
 anchors:
-  - &android-env     "cimg/android:2024.01.1-node"
-  - &latest-xcode    "15.3"
+  - &android-env     "cimg/android:2024.07.1-node"
+  - &latest-xcode    "15.3.0"
   - &latest-ios      "17.4"
   - &min-ios         "16.4"
   - &device          "iPhone-SE-3rd-generation"
@@ -134,7 +134,7 @@ jobs:
         default: *device
     macos:
       xcode: << parameters.xcode >>
-    resource_class: macos.x86.medium.gen2
+    resource_class: macos.m1.medium.gen1
     environment:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
@@ -211,7 +211,7 @@ jobs:
         default: *device
     macos:
       xcode: << parameters.xcode >>
-    resource_class: macos.x86.medium.gen2
+    resource_class: macos.m1.medium.gen1
     environment:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
