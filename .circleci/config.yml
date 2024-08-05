@@ -30,7 +30,7 @@ jobs:
         default: false
       resource_size:
         type: string
-        default: medium
+        default: medium+
     docker:
       - image: *android-env
     resource_class: << parameters.resource_size >>
@@ -265,7 +265,6 @@ workflows:
           matrix:
             parameters: 
               app_type: ["react_native"]
-              resource_size: ["medium+"]
           filters:
             branches:
               only:
@@ -277,7 +276,6 @@ workflows:
             parameters: 
               app_type: ["AndroidNativeLoginTemplate"]
               template: [true]
-              resource_size: ["medium+"]
           filters:
             branches:
               only:
@@ -332,7 +330,6 @@ workflows:
             parameters: 
               app_type: ["react_native"]
               sfdx: [true, false]
-              resource_size: ["medium+"]
       - test-android:
           name: Android MobileSyncExplorerReactNative
           context: Mobile SDK UI Tests
@@ -340,7 +337,6 @@ workflows:
             parameters: 
               app_type: ["MobileSyncExplorerReactNative"]
               template: [true]
-              resource_size: ["medium+"]
       - test-android:
           name: Android Native Login 
           context: Mobile SDK UI Tests
@@ -356,7 +352,6 @@ workflows:
           name: Android Complex Hybrid
           context: Mobile SDK UI Tests
           complex_hybrid: true
-          resource_size: medium+
       - test-ios:
           name: iOS << matrix.ios >> << matrix.app_type >>
           context: Mobile SDK UI Tests
