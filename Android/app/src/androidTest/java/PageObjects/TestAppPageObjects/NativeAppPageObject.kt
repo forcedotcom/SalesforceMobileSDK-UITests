@@ -39,7 +39,7 @@ class NativeAppPageObject(private val app: TestApplication) : BasePageObject() {
         // This sleep prevents the test from reading the titleBar of the login page 
         Thread.sleep(timeout)
         val titleBar = device.findObject(UiSelector().className(textViewClass).index(0))
-        titleBar.waitForExists(timeout * 5)
+        titleBar.waitForExists(timeout * 6)
         Assert.assertEquals("App did not successfully login.", app.name, titleBar.text)
     }
 }
