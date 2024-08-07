@@ -52,9 +52,9 @@ class ChromePageObject : BasePageObject() {
     }
 
     fun dismissSavePasswordDialog() {
-        val infobar = device.findObject(UiSelector().resourceId("com.android.chrome:id/infobar_message"))
+        val infoBar = device.findObject(UiSelector().resourceId("com.android.chrome:id/infobar_message"))
         val neverButton = device.findObject(UiSelector().resourceId("com.android.chrome:id/button_secondary"))
-        infobar.waitForExists(timeout)
+        infoBar.waitForExists(timeout)
         if (neverButton.waitForExists(timeout)) {
             neverButton.click()
         }

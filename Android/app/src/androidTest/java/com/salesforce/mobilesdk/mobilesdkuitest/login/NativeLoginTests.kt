@@ -30,6 +30,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import pageobjects.BasePageObject
 import pageobjects.loginpageobjects.LoginPageObject
 import pageobjects.testapppageobjects.NativeAppPageObject
 import pageobjects.testapppageobjects.TestApplication
@@ -51,6 +52,7 @@ class NativeLoginTests {
         loginPage.setPassword(UserUtility.password)
         loginPage.tapLogin()
 
+        Thread.sleep(BasePageObject().timeout)
         NativeAppPageObject(app).assertAppLoads()
     }
 }
