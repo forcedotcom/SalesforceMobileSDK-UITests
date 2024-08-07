@@ -154,6 +154,7 @@ jobs:
                 name: Test iOS << parameters.ios >> Template
                 command: |
                   sudo chown -R $USER:$GROUP ~/.npm
+                  sudo gem install rb-readline
                   cd .circleci
                   fastlane ios template:<< parameters.app_type >> ios:<< parameters.ios >> device:"<< parameters.device >>" sfdx:<< parameters.sfdx >>
                 when: always
@@ -169,6 +170,7 @@ jobs:
                       command:  |
                           sudo chown -R $USER:$GROUP ~/.npm
                           sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
+                          sudo gem install rb-readline
                           cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios >> device:"<< parameters.device >>" complexHybrid:accounteditor sfdx:<< parameters.sfdx >>
                       when: always
                   - run:
@@ -176,6 +178,7 @@ jobs:
                       command:  |
                           sudo chown -R $USER:$GROUP ~/.npm
                           sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
+                          sudo gem install rb-readline
                           cd .circleci && fastlane ios type:hybrid_local ios:<< parameters.ios >> device:"<< parameters.device >>" complexHybrid:mobilesyncexplorer sfdx:<< parameters.sfdx >>
                       when: always
             - unless: 
@@ -186,6 +189,7 @@ jobs:
                       command:  |
                           sudo chown -R $USER:$GROUP ~/.npm
                           sudo chown -R `whoami` /Users/`whoami`/Library/Preferences/
+                          sudo gem install rb-readline
                           cd .circleci && fastlane ios type:<< parameters.app_type >> ios:<< parameters.ios >> device:"<< parameters.device >>" sfdx:<< parameters.sfdx >> adv_auth:<< parameters.adv_auth >>
                       when: always
                       no_output_timeout: 20m
@@ -222,7 +226,10 @@ jobs:
           command: brew upgrade carthage
       - run:
           name: Test Carthage
-          command: cd .circleci && fastlane test_carthage ios:<< parameters.ios >> device:"<< parameters.device >>"
+          command:  |
+            sudo gem install rb-readline
+            cd .circleci
+            fastlane test_carthage ios:<< parameters.ios >> device:"<< parameters.device >>"
           when: always
       - store_artifacts:
           path: test_output
