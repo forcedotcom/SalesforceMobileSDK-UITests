@@ -15,6 +15,7 @@ else
     sudo npm install plist
     sudo gem install fastlane
     sudo npm install -g typescript
+    sudo gem install rb-readline
     sudo gem install --no-document fastlane
     sudo chown -R $USER:$GROUP /Users/$USER/.config/yarn
 fi
