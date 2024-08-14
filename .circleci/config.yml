@@ -9,6 +9,9 @@ anchors:
   - &device          "iPhone-SE-3rd-generation"
   - &invalid         ""
 
+orbs:
+  macos: circleci/macos@2
+
 version: 2.1
 jobs:
   test-android:
@@ -139,6 +142,8 @@ jobs:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
+      - macos/switch-ruby:
+          version: "3.2.3"
       - run: 
           name: Setup
           command: ./install.sh
@@ -217,6 +222,8 @@ jobs:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
     steps:
       - checkout
+      - macos/switch-ruby:
+          version: "3.2.3"
       - run: 
           name: Setup
           command: ./install.sh
