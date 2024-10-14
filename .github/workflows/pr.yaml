@@ -1,0 +1,38 @@
+name: Pull Request Workflow
+
+on: [pull_request]
+
+# use include to add sfdx to specific app types
+
+jobs:
+  test-android:
+    runs-on: ubuntu-latest
+    container:
+        image: fabernovel/android:api-34-gcloud-snapshot
+    strategy:
+      matrix:
+        app_type: [native, hybrid_local]
+    steps:
+    - uses: actions/checkout@v4.1.0
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Setup
+      run: ./install.sh
+    - uses: 'google-github-actions/auth@v2'
+      with:
+        project_id: "${PROJECT_ID}"
+        workload_identity_provider: "${WORKLOAD_IDENTITY_POOL_ID}"
+    - name: Install SF CLI 
+      if: ${{ matrix.app_type == 'hybrid_local' }}
+      run: npm install -g @salesforce/cli
+    - name: Test ${{ matrix.app_type }} Android
+      run: cd .github && fastlane android type:${{ matrix.app_type }}
+    - uses: actions/upload-artifact@v4.1.0
+      with:
+        path: |
+          firebase
+          firebase/results
+          test_output
+    
+    

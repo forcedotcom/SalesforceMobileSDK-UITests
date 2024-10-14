@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get update
-    sudo apt-get install libqt5widgets5
-    sudo apt install ninja-build
+    # sudo apt-get update
+    # sudo apt-get install libqt5widgets5
+    # sudo apt install ninja-build
 else
-    sudo gem install cocoapods
-    sudo npm install plist
+    gem install cocoapods
+    npm install plist
+    gem install --no-document fastlane
 fi
 
-sudo npm install -g cordova
+npm install -g cordova
 cordova telemetry off
-sudo npm install -g typescript
-sudo gem install --no-document fastlane
+npm install -g typescript
 
 git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Package.git
-cd SalesforceMobileSDK-Package && sudo node ./install.js
+cd SalesforceMobileSDK-Package && node ./install.js
