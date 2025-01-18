@@ -14,7 +14,7 @@ examples:
 
        fastlane android type:native_kotlin adv_auth:true
 
-       fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
+       fastlane ios template:https://github.co1m/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
 
 ----------
 
