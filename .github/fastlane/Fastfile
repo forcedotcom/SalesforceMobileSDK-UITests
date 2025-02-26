@@ -1,0 +1,668 @@
+require 'xcodeproj'
+
+$is_ci = ENV.has_key? 'GITHUB_WORKFLOW'
+$password
+$sim_name = 'testsim'
+$simulator_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
+$default_consumer_key = '3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw'
+$default_redirect_uri = 'testsfdc:///mobilesdk/detect/oauth/done'
+$adv_auth_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmyfUanAsJ6rWLQniOaec1Ks6YBBYFaJSfMREVJdPeRxTneqgoSxdswYvb9vP'
+$adv_auth_redirect_uri = 'com.mobilesdk.advauth:///oauth/success'
+$native_login_consumer_key = '3MVG9CEn_O3jvv0wTqRT0Le6tmzX.EQ9ZvtHL1TG3gHFV.4IvKZyXw5SgdiVPi61mXrpu40mCOhKevEfYNMOm'
+$native_login_redirect_uri = 'https://msdk-enhanced-dev-ed.my.site.com/services/oauth2/echo'
+$native_login_url = 'https://msdk-enhanced-dev-ed.my.site.com/headless'
+$android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.LoginActivity'
+
+#
+# Default iOS Device info
+#
+$default_device = 'iPhone-SE-3rd-generation'
+$default_ios = '18-2'
+
+#
+# Defualt Android Firebase Info
+# 
+$min_api = 28
+$max_api = 35 
+
+App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
+
+#
+# User Runnable Lanes
+#
+lane :ios do |options|
+  app_info = base_ios_test_setup(options)
+  install_ios_app(app_info)
+
+  test_class =  if is_native_login(app_info.app_name)
+                  'TestNativeLogin'
+                else
+                  'TestLogin'
+                end
+
+  run_ios_tests(test_class, app_info.package_name, app_info.xcargs)
+end
+
+lane :android do |options|
+  Dir.chdir('../../')
+  app_info = base_android_test_setup(options)
+  
+  test_class = 'com.salesforce.mobilesdk.mobilesdkuitest.login.'
+  if is_native_login(app_info.app_name)
+    test_class.concat('NativeLoginTests')
+  else
+    test_class.concat('LoginTests')
+  end
+
+  if $is_ci
+    run_android_tests_firebase(test_class, app_info)
+  else
+    system("$ANDROID_HOME/platform-tools/adb uninstall #{app_info.package_name}")
+    install_android_app(app_info.app_path, (is_react(app_info.package_name)))  
+    run_android_tests(test_class, app_info.package_name, app_info.xcargs)
+  end
+end
+
+lane :test_carthage do |options|
+  $password = get_password
+  device = options[:device]
+  ios = options[:ios]
+  start_emulator(device, ios)  
+
+  Dir.chdir('../../CarthageTest') do
+    UI.important('Carthage Bootstrap')
+    ENV["XCODE_XCCONFIG_FILE"] = Dir.pwd + "/tmp.xcconfig"
+    carthage_result = system("carthage bootstrap --use-xcframeworks")
+    UI.build_failure!("Carthage bootstrap failed.") unless carthage_result
+    
+    project = Xcodeproj::Project.open('CarthageTest.xcodeproj')
+    project.frameworks_group
+    frameworks_group = project.groups.find { |group| group.display_name == 'Frameworks' }
+    target = project.targets.first
+    frameworks_build_phase = target.build_phases.find { |build_phase| build_phase.to_s == 'FrameworksBuildPhase' }
+    framework_files = Dir.glob('Carthage/Build/*.xcframework')
+
+    # Add new "Embed Frameworks" build phase to target
+    embed_frameworks_build_phase = project.new(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase)
+    embed_frameworks_build_phase.name = 'Embed Frameworks'
+    embed_frameworks_build_phase.symbol_dst_subfolder_spec = :frameworks
+    target.build_phases << embed_frameworks_build_phase
+
+    UI.important('Add Frameworks to Project')
+    framework_files.each do |framework_name| 
+      framework_ref = frameworks_group.new_file(framework_name)
+      build_file = embed_frameworks_build_phase.add_file_reference(framework_ref)
+      frameworks_build_phase.add_file_reference(framework_ref)
+      build_file.settings = { 'ATTRIBUTES' => ['CodeSignOnCopy', 'RemoveHeadersOnCopy'] }
+    end
+    project.save
+
+    UI.important('Build Project')
+    results = xcbeautify_xcodebuild("-scheme CarthageTest")
+    UI.build_failure!('Failed to build app.') unless results
+
+    UI.important('Installing App on Simulator')
+    system("xcrun simctl install booted ./DerivedData/Build/Products/Debug-iphonesimulator/CarthageTest.app")
+  end
+  
+  run_ios_tests('TestLogin', 'com.mobilesdk.CarthageTest', [])
+end
+
+#
+# Generic Reusable Helper Functions
+#
+def get_password(native_login = false)
+  if native_login 
+    if ENV.has_key? 'CI_USER_NATIVE_PASSWORD'
+      return ENV['CI_USER_NATIVE_PASSWORD']
+    end
+  else
+    if ENV.has_key? 'CI_USER_PASSWORD'
+      return ENV['CI_USER_PASSWORD']
+    end
+  end
+  
+  # Crash if not set for CI
+  UI.crash!('Error: Password should be set in Github Action Environment Variables.') if $is_ci
+
+  # Let user recover for local run
+  UI.important 'Error: CI User Password not set!!!'
+  if native_login 
+    UI.important 'To avoid this on future runs execute: export CI_USER_NATIVE_PASSWORD=<password>'
+  else
+    UI.important 'To avoid this on future runs execute: export CI_USER_PASSWORD=<password>'
+  end
+  UI.important 'CI User Password can be found here: https://salesforce.quip.com/RmK0A8aSX3Cc'
+  return prompt(text: 'To recover now, enter the password for CI User:')
+end
+
+# Either type or template needs to be set.
+def generate_app(os, type = nil, template = nil, sfdx = nil)
+  UI.crash!('Error: Cannot generate app without type or template.') unless(type or template)
+
+  system('rm -rf tmp*/')
+  system('rm -rf Android/app/build/')
+  generate_command = "./SalesforceMobileSDK-Package/test/test_force.js --os=#{os}"
+  if type
+    UI.header "Generating #{type} App"
+    generate_command.concat(" --apptype=#{type}")
+
+    if type.start_with?('hybrid')
+      generate_command.concat(' --no-plugin-update')
+    end
+  else
+    UI.header 'Generating App from Template'
+    templateUrl = if template.start_with?('https')
+                    template
+                  else
+                    "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/#{template}\#dev"
+                  end
+
+    generate_command.concat("  --templaterepouri=#{templateUrl}")
+  end
+
+  if sfdx
+    generate_command.concat(' --use-sfdx')
+  end
+  
+  if os.eql?('android')
+    result = system(generate_command)
+  else
+    # The xcodebuilds (without xcpretty/xcbeautify) in package repo add so many lines the CI logs get truncated.
+    result = silence_output { system(generate_command) }
+  end
+
+  if result 
+    UI.important 'Test App Generated Successfully!'
+  else
+    UI.user_error!('Test app was NOT successfully created.')
+  end
+end
+
+#
+# Android Helper Functions
+#
+def base_android_test_setup(options)
+  $is_ci = true if options[:firebase] 
+  run_type = options[:type]
+  template = options[:template]
+  UI.user_error!('Please specify run type.') unless (run_type or template)
+  sfdx = options[:sfdx]
+  adv_auth = options[:adv_auth]
+  args = adv_auth ? ["advAuth=true"] : []
+  rerun = options[:rerun]
+  complexHybrid = options[:complexHybrid]
+
+  if template 
+    templateName = template.split('/').last.split('#').first
+    templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
+  end
+
+  app_type = template ? templateName : run_type
+  app_name = app_type.gsub('_', '')
+  app_name = 'android' + app_name unless (template and app_name != 'mobilesyncexplorerreactnative')
+  app_name.delete_suffix!('template') if template
+  package_name = "com.salesforce.#{app_name}"
+  $password = get_password(is_native_login(app_name))
+
+  generate_app('android', run_type, template, sfdx) unless rerun
+  app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
+  UI.build_failure!('App did not generate successfully.') unless Dir.exist?(app_path)
+
+  if is_hybird(app_name)
+    if complexHybrid 
+      setup_complex_hybrid(complexHybrid, app_path)
+      app_path.concat('platforms/android/')
+      UI.important 'Rebuilding with modified source files'
+      Dir.chdir(app_path) do
+        result = silence_output { system("./gradlew assemble --no-daemon") }
+        UI.build_failure!('Failed to rebuild with modified source files.') unless result
+      end
+    elsif
+      app_path.concat('platforms/android/')
+    end     
+  elsif is_react(app_name)
+    setup_react_native(app_path)
+    app_path.concat('android/')
+
+    Dir.chdir(app_path) do
+      UI.important 'Building Release APK for React Native'
+      system('./gradlew app:assembleRelease -PreactNativeDevServerPort=8081 --no-daemon')
+      
+      build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
+      silence_output{ 
+        system('echo "test12\ntest12\n\n\n\n\n\n\nyes\ntest12\ntest12" | keytool -genkey -v -keystore uitest.keystore -alias react -keyalg RSA -keysize 2048 -validity 1')
+        system('echo "test12\n" | ' + "#{build_tools_dir}/apksigner sign --ks uitest.keystore ./app/build/outputs/apk/release/app-release-unsigned.apk")
+      }
+    end
+  end
+
+  app_info = App_Info.new('android', app_name, app_path, package_name, args, sfdx)
+  if adv_auth
+    setup_adv_auth(app_info)
+  end
+
+  if complexHybrid
+    args.push("complexHybrid=#{complexHybrid}")
+    UI.important('args: ' + args.inspect())
+  end
+
+  if is_native_login(app_name) 
+    setup_native_login(app_info)
+  end
+  
+  return app_info
+end
+
+def install_android_app(app_path, release = nil)
+  apk_path = release ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
+
+  Dir.chdir(app_path) do
+    UI.important 'Installing App on Emulator'
+    result = `$ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/#{apk_path}`.split("\n").last.delete("\r")
+    UI.build_failure!("APK did not install successfully. \n\nError: #{result}") unless(result.eql? 'Success')
+  end
+end
+
+def run_android_tests(test_class, package_name, test_ops = nil)
+  # Get rid of runtime permission popup
+  system("adb shell pm grant #{package_name} android.permission.POST_NOTIFICATIONS")
+
+  class_param =  "-Pandroid.testInstrumentationRunnerArguments.class=#{test_class}"
+  package_param = "-Pandroid.testInstrumentationRunnerArguments.packageName=#{package_name}"
+  password_param = "-Pandroid.testInstrumentationRunnerArguments.password=#{$password}"
+  optional_vars = ''
+  test_ops.each { |op| optional_vars.concat("-Pandroid.testInstrumentationRunnerArguments.#{op} ") } if test_ops
+
+  Dir.chdir('./Android/') do
+    UI.header 'Run Tests Locally'
+    
+    begin
+      system("$ANDROID_HOME/platform-tools/adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'")
+      result = system("./gradlew #{class_param} #{package_param} #{password_param} #{optional_vars} connectedAndroidTest")
+    ensure
+      UI.test_failure!('Tests failed.') unless(result)
+    end
+  end
+end
+
+def run_android_tests_firebase(test_class, app_info)
+  apk_path = is_react(app_info.app_name) ? 'release/app-release-unsigned.apk' : 'debug/app-debug.apk'
+  optional_vars = ''
+  app_info.xcargs.each { |op| optional_vars.concat(",#{op}") } if app_info.xcargs
+  adv_auth = app_info.xcargs.include?("advAuth=true")
+
+  devices = ''
+  if app_info.sfdx
+    devices = "--device model=MediumPhone.arm,version=34,locale=en,orientation=portrait \\"
+  else
+    for api_level in $min_api..$max_api do
+      #These emulators don't have chrome
+      if adv_auth && api_level.eql?(28)
+        next
+      else
+        devices.concat("--device model=MediumPhone.arm,version=#{api_level},locale=en,orientation=portrait \\")
+      end
+    end
+  end
+
+  Dir.chdir('./Android/') do
+    UI.message 'Compile Tests'
+    buildResult = system("./gradlew app:assembleAndroidTest")
+    UI.build_failure!('Tests failed to build.') unless buildResult    
+    
+    UI.header 'Run Tests'
+    testResult = system("gcloud firebase test android run \
+      --project mobile-apps-firebase-test \
+      --type instrumentation \
+      --app=../#{app_info.app_path}app/build/outputs/apk/#{apk_path} \
+      --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+      #{devices}
+      --results-history-name=UITest-#{app_info.app_name} \
+      --results-dir=#{ENV['GCLOUD_RESULTS_DIR']} \
+      --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars} \
+      --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=2")
+      UI.test_failure!('Tests failed.') unless testResult
+  end
+end
+
+#
+# iOS Helper Functions
+#
+def base_ios_test_setup(options)
+  run_type = options[:type]
+  template = options[:template]
+  UI.user_error!('Please specify run type.') unless(run_type or template)
+  sfdx = options[:sfdx]
+  device = options[:device]
+  ios = options[:ios]
+  adv_auth = options[:adv_auth]
+  rerun = options[:rerun]
+  xcargs = []
+  complexHybrid = options[:complexHybrid]
+
+  if template 
+    templateName = template.split('/').last.split('#').first
+    if templateName.start_with?('iOS')
+      templateName = templateName[3, templateName.length]
+    end
+    if templateName.end_with?('Template')
+      templateName = templateName[0, templateName.length - 8]
+    end
+    templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
+  end
+
+  app_name = 'ios'.concat(template ? templateName : "#{run_type}").gsub('_', '')
+  $password = get_password(is_native_login(app_name))
+  system("rm -rf ../../test_output/#{app_name}")
+  bundle_name = is_hybird(app_name) ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
+  start_emulator(device, ios)
+  
+  Dir.chdir('../../') do
+    generate_app('ios', run_type, template, sfdx) unless rerun
+    app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
+
+    if is_hybird(app_name)
+      setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
+      app_path.concat('platforms/ios/')
+    elsif is_react(app_name)
+      setup_react_native(app_path, false)
+      app_path.concat('ios/')
+
+      Dir.chdir(app_path) do
+        silence_output { system("pod install") }
+      end
+    end
+
+    app_info = App_Info.new('ios', app_name, app_path, bundle_name, xcargs)
+    if adv_auth
+      setup_adv_auth(app_info)
+      xcargs.push("ADV_AUTH=true")
+    end
+
+    if complexHybrid
+      xcargs.push("COMPLEX_HYBRID=#{complexHybrid}")
+    end
+
+    if is_native_login(app_name) 
+      setup_native_login(app_info, false)
+    end
+
+    return app_info
+  end
+end
+
+def start_emulator(device, ios) 
+  if device
+    device.gsub!(' ', '-')
+  else
+    device = $default_device
+  end
+
+  if ios
+    ios.gsub!('.', '-')
+  else
+    ios = $default_ios
+  end
+  ios.concat('-0') unless ios.include?('-')
+
+  loop do
+    break unless system("xcrun simctl delete #{$sim_name} > /dev/null 2>&1")
+  end
+  UI.important "Creating test device: #{device}, ios: #{ios}." 
+  sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
+
+  # Start Simulator
+  system("xcrun simctl boot #{sim_id}")
+  # Wait for Simulator to boot
+  sleep(3)
+  system("open #{$simulator_path} --args -CurrentDeviceUDID #{sim_id}")
+end
+
+def install_ios_app(app_info, release = nil)
+  Dir.chdir('../../' + app_info.app_path) do
+    UI.important 'Build for Simulator'
+    
+    if File.exist?("#{app_info.app_name}.xcworkspace")
+      UI.important "Using #{app_info.app_name}.xcworkspace"
+      workspace_or_project = "-workspace #{app_info.app_name}.xcworkspace"
+    else
+      UI.important "No xcworkspace found, Using #{app_info.app_name}.xcodeproj"
+      workspace_or_project = "-project #{app_info.app_name}.xcodeproj"
+    end
+
+    xcbeautify_xcodebuild("-scheme #{app_info.app_name} #{workspace_or_project}")
+
+    # xcodebuild's derivedDataPath is nondeterministic.
+    build_path = ''
+    if Dir.exist?('./DerivedData/Build/')
+      build_path = './DerivedData/Build/'
+    elsif Dir.exist?('./Build/')
+      build_path = './Build/'
+    else
+      UI.build_failure!("#{app_info.app_name}.app could not be found.")
+    end
+    UI.important 'Installing App on Simulator'
+    result = silence_output { system("xcrun simctl install booted #{build_path}/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
+    UI.build_failure!('Failed to install app on simulator.') unless result
+  end
+end
+
+def run_ios_tests(test_scheme, bundle_name, xcargs)
+  xcargs_string = ''
+  xcargs.each { |arg| xcargs_string += "'#{arg}' " } unless xcargs.nil?
+  app_type = bundle_name.split('.').last
+
+  Dir.chdir('../../iOS/') do
+    ios_version = `xcrun xctrace list devices 2>&1 | grep #{$sim_name} | awk -F"[()]" "{print $2}"`.delete("\n")
+    # Remove patch version, if it exists
+    ios_version = ios_version[/(\d+\.\d+)/, 0]
+    begin
+      scan(
+        project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',
+        scheme: test_scheme,
+        device: "#{$sim_name} (#{ios_version})",
+        output_directory: "test_output/#{app_type}",
+        skip_detect_devices: true,
+        clean: true,
+        xcodebuild_formatter: "xcbeautify -q --is-ci --renderer github-actions",
+        xcargs: "'TEST_APP_BUNDLE=#{bundle_name}' 'PASSWORD=#{$password}' #{xcargs_string}"
+      )
+    ensure
+      system("xcrun simctl shutdown #{$sim_name}")
+    end
+  end
+end
+
+def silence_output(silence_error = false)
+  begin
+    Dir.mkdir 'test_output' unless Dir.exist? 'test_output'
+    out_file = 'test_output/output.txt'
+    stderr, stdout = $stderr.clone, $stdout.clone
+    $stderr.reopen(File.new(out_file, 'w'))
+    $stdout.reopen(File.new(out_file, 'w'))
+    yield
+  rescue Exception => e
+    $stdout.reopen(stdout)
+    $stderr.reopen(stderr)
+  ensure
+    $stdout.reopen(stdout)
+    $stderr.reopen(stderr)
+  end
+end
+
+def setup_react_native(app_path, is_android = true)
+  Dir.chdir(app_path) do
+    UI.important 'Running React Native Setup'
+    silence_output { system("./install*.js") }
+    system('kill -9 `pgrep -f start`')
+    system('npm start&')
+
+    if is_android
+      if $is_ci
+        system('sudo npm i -g react-native')
+        system('sudo npm install -i -g --force react-native-cli')
+        system('mkdir android/app/src/main/assets')
+        system('sudo npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+      else
+        system('mkdir android/app/src/main/assets')
+        system('npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle')
+      end
+    end
+  end
+end
+
+def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, old_uri = nil)
+  old_key = $default_consumer_key unless old_key
+  old_uri = $default_redirect_uri unless old_uri
+  config_path = app_info.app_path.clone
+
+  # Determine iOS/Android
+  if app_info.os == 'android'
+    if is_hybird(app_info.app_name)
+      config_path.concat('../../www/bootconfig.json')
+    else
+      config_path.concat('app/src/main/res/values/bootconfig.xml')
+    end
+
+    if is_react(app_info.app_name)
+      android_build = 'assembleRelease'
+    else
+      android_build = 'assemble'
+    end
+  else
+    # iOS
+    if is_hybird(app_info.app_name)
+      config_path.concat('www/bootconfig.json')
+    else
+      config_path.concat(app_info.app_name + '/bootconfig.plist')
+    end
+  end
+
+  modify_source(config_path, old_key, consumer_key)
+  modify_source(config_path, old_uri, redirect_uri)
+
+  UI.important 'Rebuilding with modified source files'
+  Dir.chdir(app_info.app_path) do
+    if app_info.os == 'android'
+      result = silence_output { system("./gradlew #{android_build} --no-daemon") }
+      UI.build_failure!('Failed to rebuild with modified source files.') unless result
+    end
+  end
+end
+
+def setup_adv_auth(app_info)
+  scheme, path = $adv_auth_redirect_uri.split('://')
+
+  if app_info.os == 'android'
+    manifest_path = app_info.app_path + 'app/src/main/AndroidManifest.xml'
+    case app_info.app_name
+    when 'androidnative', 'androidnativekotlin'
+      servers_path = app_info.app_path + '/mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
+    when 'androidhybridlocal', 'androidhybridremote'
+      servers_path = app_info.app_path + 'SalesforceSDK/res/xml/servers.xml'
+    when 'androidreactnative', 'androidmobilesyncreactnative'
+      servers_path = app_info.app_path + '../mobile_sdk/SalesforceMobileSDK-Android/libs/SalesforceSDK/res/xml/servers.xml'
+    end
+
+    # Uncomment single single instance in AndroidManifest
+    uncomment_manifest_block(manifest_path, $android_login_activity)
+    
+    # Replace scheme and path
+    modify_source(manifest_path, 'testsfdc', scheme)
+    modify_source(manifest_path, '/mobilesdk/detect/oauth/done', path)
+
+    # Change connection
+    modify_source(servers_path, 'login', 'msdk-enhanced-dev-ed.my')
+  else
+    plist_path = app_info.app_path + app_info.app_name 
+    case app_info.app_name
+    when 'iosnative', 'iosnativeswift', 'iosreactnative', 'iosmobilesyncreactnative'
+      plist_path.concat('/Info.plist')
+    when 'ioshybridlocal', 'ioshybridremote'
+      plist_path.concat(app_info.app_name + '-Info.plist')
+    end
+
+    plist = Plist.parse_xml(plist_path)
+    plist["CFBundleURLTypes"] = [{"CFBundleURLName" => scheme}, {"CFBundleURLSchemes" => [scheme]}] 
+    plist["SFDCOAuthLoginHost"] = "msdk-enhanced-dev-ed.my.salesforce.com"
+    File.open(plist_path, 'w') { |file| file.puts plist.to_plist } 
+  end
+
+  change_connected_app(app_info, $adv_auth_consumer_key, $adv_auth_redirect_uri)
+end
+
+def modify_source(config_path, old_code, new_code)
+  modified_souce_code = File.read(config_path).gsub(old_code, new_code)
+  File.open(config_path, 'w') { |file| file.puts modified_souce_code }
+end
+
+# Start line is the first line of the block to uncomment.
+# The line preceding start line should only include "<!--"
+def uncomment_manifest_block(config_path, start_line)
+  source_array = File.read(config_path).split(/\n+/)
+  start_index = source_array.index {|line| line.include?(start_line)}
+  UI.user_error!('Improper start line for manifest uncomment.') unless (source_array[start_index - 1].strip == '<!--')
+
+  end_index = start_index
+  loop do
+    if (source_array[end_index += 1].include?('-->') or (end_index >= source_array.size - 1))
+      break
+    end
+  end
+
+  UI.user_error!('Improper comment manifest comment block.') unless (source_array[end_index].strip == '-->')
+  source_array.delete_at(end_index)
+  source_array.delete_at(start_index - 1)
+  File.open(config_path, 'w') { |file| file.puts source_array.join("\n") }
+end
+
+def setup_complex_hybrid(complexHybrid, app_path)
+  silence_output(true) { system('git clone git@github.com:forcedotcom/SalesforceMobileSDK-Shared.git') 
+  Dir.chdir('SalesforceMobileSDK-Shared') do
+    system('git checkout dev')
+    system("ls ../#{app_path}/www/")
+    system("cp -RL ./samples/#{complexHybrid}/* ../#{app_path}/www/")
+    system("ls ../#{app_path}/www/")f
+  end
+  Dir.chdir(app_path) do
+    system('cordova prepare') 
+  end }
+end
+
+def setup_native_login(app_info, is_android = true)
+  if is_android
+    source_path = app_info.app_path + 'app/src/main/java/com/salesforce/androidnativelogin/MainApplication.kt'
+    modify_source(source_path, "val clientId = \"your-client-id\"", "val clientId = \"#{$native_login_consumer_key}\"")
+    modify_source(source_path, "val redirectUri = \"your-redirect-uri\"", "val redirectUri = \"#{$native_login_redirect_uri}\"")
+    modify_source(source_path, "val loginUrl = \"your-community-url\"", "val loginUrl = \"#{$native_login_url}\"")
+  
+    UI.important 'Rebuilding with modified source files'
+    Dir.chdir(app_info. app_path) do
+      result = silence_output { system("./gradlew assemble --no-daemon") }
+      UI.build_failure!('Failed to rebuild with modified source files.') unless result
+    end
+  else
+    source_path = app_info.app_path + app_info.app_name + '/SceneDelegate.swift'
+    modify_source(source_path, "let clientId = \"your-client-id\"", "let clientId = \"#{$native_login_consumer_key}\"")
+    modify_source(source_path, "let redirectUri = \"your-redirect-uri\"", "let redirectUri = \"#{$native_login_redirect_uri}\"")
+    modify_source(source_path, "let loginUrl = \"your-community-url\"", "let loginUrl = \"#{$native_login_url}\"")
+  end
+end
+
+def xcbeautify_xcodebuild(args)
+  system("set -o pipefail && xcodebuild build #{args} -sdk iphonesimulator -derivedDataPath ./DerivedData | xcbeautify --renderer github-actions")
+end
+
+# Generic Helpers
+def is_hybird(app_name)
+  app_name.downcase.include?('hybrid')
+end
+
+def is_react(app_name)
+  app_name.downcase.include?('react')
+end
+
+def is_native_login(app_name)
+  app_name.downcase == 'androidnativelogin' or app_name.downcase == 'iosnativelogin'
+end
