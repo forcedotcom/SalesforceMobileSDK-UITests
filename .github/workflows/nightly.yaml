@@ -1,0 +1,129 @@
+name: Build and Test All Apps
+
+on: 
+  schedule:
+    - cron: "0 6 * * 0"  # cron is UTC, this translates to 10 PM PST Saturday.
+  # This lets us trigger the workflow from a browser.
+  workflow_dispatch:
+
+jobs:
+  android-base:
+    name: ${{ matrix.app_type }} Android
+    strategy:
+      fail-fast: false
+      matrix:
+        app_type:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, AndroidNativeLoginTemplate]
+        include:
+            - app_type: MobileSyncExplorerReactNative
+              template: true
+            - app_type: AndroidNativeLoginTemplate
+              template: true
+    uses: ./.github/workflows/android-reusable-workflow.yaml
+    with:
+      app_type: ${{ matrix.app_type }}
+      template: ${{ matrix.template || false }}
+    secrets: inherit
+
+  android-sfdx:
+    name: ${{ matrix.app_type }} Android sfdx
+    strategy:
+      fail-fast: false
+      matrix:
+        app_type:  [native, hybrid_local, react_native]
+    uses: ./.github/workflows/android-reusable-workflow.yaml
+    with:
+      app_type: ${{ matrix.app_type }}
+      sfdx: true
+    secrets: inherit
+
+  android-adv-auth:
+    name: Android Adv Auth
+    uses: ./.github/workflows/android-reusable-workflow.yaml
+    with:
+      app_type: native
+      adv_auth: true
+    secrets: inherit
+
+  android-complex-hybrid:
+    name: Android Complex Hybrid
+    uses: ./.github/workflows/android-reusable-workflow.yaml
+    with:
+      app_type: hybrid_local
+      complex_hybrid: true
+    secrets: inherit
+    
+  ios-build-all:
+    name: ${{ matrix.app_type }} iOS ${{ matrix.ios }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, iOSNativeLoginTemplate]
+        ios: ["18.2", "17.5"]
+        include:
+            - ios: "18.2"
+              xcode: "16.2"
+            - ios: "17.5"
+              xcode: "15.4"
+            - app_type: MobileSyncExplorerReactNative
+              template: true
+            - app_type: MobileSyncExplorerSwift
+              template: true
+            - app_type: iOSNativeLoginTemplate
+              template: true
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
+    with:
+      app_type: ${{ matrix.app_type }}
+      ios: ${{ matrix.ios }}
+      xcode: ${{ matrix.xcode }}
+      template: ${{ matrix.template || false }}
+    secrets: inherit
+
+  ios-sfdx:
+    name: ${{ matrix.app_type }} iOS sfdx
+    strategy:
+      fail-fast: false
+      matrix:
+        app_type: [native, hybrid_local, react_native]
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
+    with:
+      app_type: ${{ matrix.app_type }}
+      sfdx: true
+    secrets: inherit
+
+  ios-adv-auth:
+    name: iOS ${{ matrix.ios }} Adv Auth
+    strategy:
+      fail-fast: false
+      matrix:
+        ios: ["18.2", "17.5"]
+        include:
+          - ios: "18.2"
+            xcode: "16.2"
+          - ios: "17.5"
+            xcode: "15.4"
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
+    with:
+      app_type: native
+      adv_auth: true
+      ios: ${{ matrix.ios }}
+      xcode: ${{ matrix.xcode }}
+    secrets: inherit
+
+  ios-complex-hybrid:
+    name: ios ${{ matrix.ios }} Complex Hybrid
+    strategy:
+      fail-fast: false
+      matrix:
+        ios: ["18.2", "17.5"]
+        include:
+          - ios: "18.2"
+            xcode: "16.2"
+          - ios: "17.5"
+            xcode: "15.4"
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
+    with:
+      app_type: hybrid_local
+      complex_hybrid: true
+      ios: ${{ matrix.ios }}
+      xcode: ${{ matrix.xcode }}
+    secrets: inherit

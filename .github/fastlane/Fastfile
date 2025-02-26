@@ -1,6 +1,6 @@
 require 'xcodeproj'
 
-$is_ci = ENV.has_key? 'CIRCLECI'
+$is_ci = ENV.has_key? 'GITHUB_WORKFLOW'
 $password
 $sim_name = 'testsim'
 $simulator_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
@@ -17,13 +17,13 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-SE-3rd-generation'
-$default_ios = '17-5'
+$default_ios = '18-2'
 
 #
 # Defualt Android Firebase Info
 # 
-$min_api = 26
-$max_api = 34 
+$min_api = 28
+$max_api = 35 
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 
@@ -98,7 +98,7 @@ lane :test_carthage do |options|
     project.save
 
     UI.important('Build Project')
-    results = silence_output(true) { system('xcodebuild build -scheme CarthageTest -sdk iphonesimulator -derivedDataPath ./DerivedData') }
+    results = xcbeautify_xcodebuild("-scheme CarthageTest")
     UI.build_failure!('Failed to build app.') unless results
 
     UI.important('Installing App on Simulator')
@@ -123,14 +123,14 @@ def get_password(native_login = false)
   end
   
   # Crash if not set for CI
-  UI.crash!('Error: Password should be set in CircleCI Environment Variables.') if $is_ci
+  UI.crash!('Error: Password should be set in Github Action Environment Variables.') if $is_ci
 
   # Let user recover for local run
   UI.important 'Error: CI User Password not set!!!'
   if native_login 
-    UI.important 'For future use please execute: export CI_USER_NATIVE_PASSWORD=<password>'
+    UI.important 'To avoid this on future runs execute: export CI_USER_NATIVE_PASSWORD=<password>'
   else
-    UI.important 'For future use please execute: export CI_USER_PASSWORD=<password>'
+    UI.important 'To avoid this on future runs execute: export CI_USER_PASSWORD=<password>'
   end
   UI.important 'CI User Password can be found here: https://salesforce.quip.com/RmK0A8aSX3Cc'
   return prompt(text: 'To recover now, enter the password for CI User:')
@@ -165,11 +165,17 @@ def generate_app(os, type = nil, template = nil, sfdx = nil)
     generate_command.concat(' --use-sfdx')
   end
   
-  result = system(generate_command)
-  if result 
-    UI.important 'Test App Generated'
+  if os.eql?('android')
+    result = system(generate_command)
   else
-    UI.user_error!('Test app was not successfully created.')
+    # The xcodebuilds (without xcpretty/xcbeautify) in package repo add so many lines the CI logs get truncated.
+    result = silence_output { system(generate_command) }
+  end
+
+  if result 
+    UI.important 'Test App Generated Successfully!'
+  else
+    UI.user_error!('Test app was NOT successfully created.')
   end
 end
 
@@ -288,11 +294,11 @@ def run_android_tests_firebase(test_class, app_info)
 
   devices = ''
   if app_info.sfdx
-    devices = "--device model=MediumPhone.arm,version=30,locale=en,orientation=portrait \\"
+    devices = "--device model=MediumPhone.arm,version=34,locale=en,orientation=portrait \\"
   else
     for api_level in $min_api..$max_api do
       #These emulators don't have chrome
-      if adv_auth && api_level.between?(26, 28)
+      if adv_auth && api_level.eql?(28)
         next
       else
         devices.concat("--device model=MediumPhone.arm,version=#{api_level},locale=en,orientation=portrait \\")
@@ -313,7 +319,7 @@ def run_android_tests_firebase(test_class, app_info)
       --test=app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
       #{devices}
       --results-history-name=UITest-#{app_info.app_name} \
-      --results-dir=UITest-#{app_info.app_name}-#{ENV['CIRCLE_BUILD_NUM']} \
+      --results-dir=#{ENV['GCLOUD_RESULTS_DIR']} \
       --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars} \
       --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=2")
       UI.test_failure!('Tests failed.') unless testResult
@@ -401,7 +407,7 @@ def start_emulator(device, ios)
   ios.concat('-0') unless ios.include?('-')
 
   loop do
-    break unless system("xcrun simctl delete #{$sim_name}")
+    break unless system("xcrun simctl delete #{$sim_name} > /dev/null 2>&1")
   end
   UI.important "Creating test device: #{device}, ios: #{ios}." 
   sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
@@ -416,7 +422,16 @@ end
 def install_ios_app(app_info, release = nil)
   Dir.chdir('../../' + app_info.app_path) do
     UI.important 'Build for Simulator'
-    silence_output { system("xcodebuild build -scheme #{app_info.app_name} -workspace #{app_info.app_name}.xcworkspace -sdk iphonesimulator -derivedDataPath ./DerivedData -quiet") }
+    
+    if File.exist?("#{app_info.app_name}.xcworkspace")
+      UI.important "Using #{app_info.app_name}.xcworkspace"
+      workspace_or_project = "-workspace #{app_info.app_name}.xcworkspace"
+    else
+      UI.important "No xcworkspace found, Using #{app_info.app_name}.xcodeproj"
+      workspace_or_project = "-project #{app_info.app_name}.xcodeproj"
+    end
+
+    xcbeautify_xcodebuild("-scheme #{app_info.app_name} #{workspace_or_project}")
 
     # xcodebuild's derivedDataPath is nondeterministic.
     build_path = ''
@@ -428,7 +443,8 @@ def install_ios_app(app_info, release = nil)
       UI.build_failure!("#{app_info.app_name}.app could not be found.")
     end
     UI.important 'Installing App on Simulator'
-    silence_output { system("xcrun simctl install booted #{build_path}/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
+    result = silence_output { system("xcrun simctl install booted #{build_path}/Products/Debug-iphonesimulator/#{app_info.app_name}.app") }
+    UI.build_failure!('Failed to install app on simulator.') unless result
   end
 end
 
@@ -438,14 +454,18 @@ def run_ios_tests(test_scheme, bundle_name, xcargs)
   app_type = bundle_name.split('.').last
 
   Dir.chdir('../../iOS/') do
-    destination = "#{$sim_name} (" + `xcrun xctrace list devices 2>&1 | grep #{$sim_name} | awk -F"[()]" '{print $2}'`.delete("\n") + ")"
+    ios_version = `xcrun xctrace list devices 2>&1 | grep #{$sim_name} | awk -F"[()]" "{print $2}"`.delete("\n")
+    # Remove patch version, if it exists
+    ios_version = ios_version[/(\d+\.\d+)/, 0]
     begin
       scan(
         project: 'iOS/SalesforceMobileSDK-UITest.xcodeproj',
         scheme: test_scheme,
-        device: destination,
+        device: "#{$sim_name} (#{ios_version})",
         output_directory: "test_output/#{app_type}",
+        skip_detect_devices: true,
         clean: true,
+        xcodebuild_formatter: "xcbeautify -q --is-ci --renderer github-actions",
         xcargs: "'TEST_APP_BUNDLE=#{bundle_name}' 'PASSWORD=#{$password}' #{xcargs_string}"
       )
     ensure
@@ -553,7 +573,7 @@ def setup_adv_auth(app_info)
     modify_source(manifest_path, '/mobilesdk/detect/oauth/done', path)
 
     # Change connection
-    modify_source(servers_path, 'login', 'msdk-dev-ed.my')
+    modify_source(servers_path, 'login', 'msdk-enhanced-dev-ed.my')
   else
     plist_path = app_info.app_path + app_info.app_name 
     case app_info.app_name
@@ -565,7 +585,7 @@ def setup_adv_auth(app_info)
 
     plist = Plist.parse_xml(plist_path)
     plist["CFBundleURLTypes"] = [{"CFBundleURLName" => scheme}, {"CFBundleURLSchemes" => [scheme]}] 
-    plist["SFDCOAuthLoginHost"] = "msdk-dev-ed.my.salesforce.com"
+    plist["SFDCOAuthLoginHost"] = "msdk-enhanced-dev-ed.my.salesforce.com"
     File.open(plist_path, 'w') { |file| file.puts plist.to_plist } 
   end
 
@@ -628,6 +648,10 @@ def setup_native_login(app_info, is_android = true)
     modify_source(source_path, "let redirectUri = \"your-redirect-uri\"", "let redirectUri = \"#{$native_login_redirect_uri}\"")
     modify_source(source_path, "let loginUrl = \"your-community-url\"", "let loginUrl = \"#{$native_login_url}\"")
   end
+end
+
+def xcbeautify_xcodebuild(args)
+  system("set -o pipefail && xcodebuild build #{args} -sdk iphonesimulator -derivedDataPath ./DerivedData | xcbeautify --renderer github-actions")
 end
 
 # Generic Helpers

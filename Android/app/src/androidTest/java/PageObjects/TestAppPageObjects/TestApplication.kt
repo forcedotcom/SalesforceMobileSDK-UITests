@@ -39,7 +39,7 @@ import pageobjects.AppType
 class TestApplication {
     private val packageName = InstrumentationRegistry.getArguments().getString("packageName") as String
     val name = packageName.split(".").last()
-    val advAuth = InstrumentationRegistry.getArguments().getString("advAuth")?.let { it.toBoolean() } ?: false
+    val advAuth = InstrumentationRegistry.getArguments().getString("advAuth")?.toBoolean() ?: false
     val complexHybrid: String = InstrumentationRegistry.getArguments().getString("complexHybrid", "")
     val type = when (name) {
         "androidnative" -> AppType.NATIVE

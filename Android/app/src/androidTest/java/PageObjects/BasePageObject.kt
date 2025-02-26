@@ -26,7 +26,6 @@
  */
 package pageobjects
 
-import android.os.Build
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 

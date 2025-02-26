@@ -1,0 +1,77 @@
+on:
+  workflow_call:
+    inputs:
+      app_type:
+        type: string
+        default: native
+      template:
+        type: boolean
+        default: false
+      sfdx:
+        type: boolean
+        default: false
+      adv_auth:
+        type: boolean
+        default: false
+      complex_hybrid:
+        type: boolean
+        default: false
+      is_pr:
+        type: boolean
+        default: false
+      ios: 
+        type: string
+        default: "18.2"
+      xcode:
+        type: string
+        default: "16.2"
+      macos:
+        type: string
+        default: macos-15
+      device:
+        type: string
+        default: "iPhone-SE-3rd-generation"
+    
+jobs:
+  test-ios:
+    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} complex_hybrifd:${{ inputs.complex_hybrid }}
+    runs-on: ${{ inputs.macos }}
+    env:
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
+      CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
+      CI_USER_NATIVE_PASSWORD: ${{ secrets.CI_USER_NATIVE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ inputs.is_pr }}
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/checkout@v4
+        if: ${{ ! inputs.is_pr }}
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install Dependencies
+        run: ./install.sh
+      - name: Build ${{ inputs.app_type }} ${{ inputs.ios }} and Test Login
+        if: ${{ ! inputs.complex_hybrid }}
+        env:
+          GITHUB_RUN_NUM: ${{ github.run_number }}
+        run: |
+          TYPE="type"
+
+          if ${{ inputs.template }} ; then
+            TYPE="template"
+          fi
+
+          cd .github && fastlane ios ${TYPE}:${{ inputs.app_type }} ios:${{ inputs.ios }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }}
+      - name: Build Complex Hybrid Account Editor ${{ inputs.ios }} and Test Login
+        continue-on-error: true
+        if: ${{ inputs.complex_hybrid }} 
+        env:
+          GITHUB_RUN_NUM: ${{ github.run_number }}
+        run: cd .github && fastlane ios type:hybrid_local complexHybrid:accounteditor ios:${{ inputs.ios }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }}
+      - name: Build Complex Hybrid Mobile Sync Explorer ${{ inputs.ios }} and Test Login
+        continue-on-error: true
+        if: ${{ inputs.complex_hybrid }}
+        env:
+          GITHUB_RUN_NUM: ${{ github.run_number }}
+        run: cd .github && fastlane ios type:hybrid_local complexHybrid:mobilesyncexplorer ios:${{ inputs.ios }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }}
