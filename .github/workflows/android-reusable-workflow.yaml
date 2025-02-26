@@ -1,0 +1,107 @@
+on:
+  workflow_call:
+    inputs:
+      app_type:
+        type: string
+        default: native
+      template:
+        type: boolean
+        default: false
+      sfdx:
+        type: boolean
+        default: false
+      adv_auth:
+        type: boolean
+        default: false
+      complex_hybrid:
+        type: boolean
+        default: false
+      is_pr:
+        type: boolean
+        default: false
+
+jobs:
+  test-android:
+    name: ${{ inputs.app_type }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} complex_hybrid:${{ inputs.complex_hybrid }}
+    runs-on: ubuntu-latest
+    env:
+      FASTLANE_SKIP_UPDATE_CHECK: "true"
+      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-adv_auth:${{ inputs.adv_auth }}-complex_hybrid:${{ inputs.complex_hybrid }}-build:${{ github.run_number }}"
+      CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
+      CI_USER_NATIVE_PASSWORD: ${{ secrets.CI_USER_NATIVE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ inputs.is_pr }}
+        with:
+          # We need a sufficient depth or Danger will occasionally run into issues checking which files were modified.
+          fetch-depth: 100
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/checkout@v4
+        if: ${{ ! inputs.is_pr }}
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install Dependencies
+        run: ./install.sh
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10
+          add-job-summary: on-failure
+          add-job-summary-as-pr-comment: on-failure
+      - uses: 'google-github-actions/auth@v2'
+        if: success() || failure()
+        with:
+          credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
+      - uses: 'google-github-actions/setup-gcloud@v2'
+        if: success() || failure()
+      - name: Build ${{ inputs.app_type }} and Test Login
+        continue-on-error: true
+        if: ${{ ! inputs.complex_hybrid }}
+        run: |
+          TYPE="type"
+
+          if ${{ inputs.template }} ; then
+            TYPE="template"
+          fi
+
+          cd .github && fastlane android ${TYPE}:${{ inputs.app_type }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }}
+      - name: Build Complex Hybrid Account Editor and Test Login
+        continue-on-error: true
+        if: ${{ inputs.complex_hybrid }}
+        run: cd .github && fastlane android type:hybrid_local complexHybrid:accounteditor sfdx:${{ inputs.sfdx }}
+      - name: Build Complex Hybrid Mobile Sync Explorer and Test Login
+        continue-on-error: true
+        if: ${{ inputs.complex_hybrid }}
+        run: cd .github && fastlane android type:hybrid_local complexHybrid:mobilesyncexplorer sfdx:${{ inputs.sfdx }}
+      - name: Copy Test Results
+        continue-on-error: true
+        if: success() || failure()
+        run: |
+          mkdir -p firebase/results
+          gsutil -m cp -r gs://test-lab-w87i9sz6q175u-kwp8ium6js0zw/${GCLOUD_RESULTS_DIR} ./firebase/ || true
+
+          for result in $(find ./firebase/ -name '*test_results_merged*'); do
+            mv $result ./firebase/results/ || true 
+          done    
+      - name: Test Report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure()
+        with:
+          check_name: ${{ inputs.app_type }} Test Results
+          job_name: ${{ inputs.app_type }} Test Results
+          require_tests: true
+          check_retries: true
+          flaky_summary: true
+          fail_on_failure: true
+          group_reports: false
+          include_passed: true
+          skip_annotations: true
+          skip_success_summary: true
+          include_empty_in_summary: false
+          simplified_summary: true
+          report_paths: 'firebase/results/**.xml'

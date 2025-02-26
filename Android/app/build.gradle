@@ -14,9 +14,9 @@ buildscript {
 
 android {
     namespace 'com.salesforce.mobilesdk.mobilesdkuitest'
-    compileSdk 34
+    compileSdk 35
     defaultConfig {
-        minSdkVersion 26
+        minSdkVersion 28
         targetSdkVersion 35
         versionCode 1
         versionName '1.0'
@@ -24,19 +24,19 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = '17'
+        jvmTarget = '21'
     }
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'androidx.appcompat:appcompat:1.7.0'
-    androidTestImplementation 'androidx.test:runner:1.6.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test:core:1.6.1'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
