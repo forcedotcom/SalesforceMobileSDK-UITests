@@ -623,7 +623,7 @@ def setup_complex_hybrid(complexHybrid, app_path)
     system('git checkout dev')
     system("ls ../#{app_path}/www/")
     system("cp -RL ./samples/#{complexHybrid}/* ../#{app_path}/www/")
-    system("ls ../#{app_path}/www/")f
+    system("ls ../#{app_path}/www/")
   end
   Dir.chdir(app_path) do
     system('cordova prepare') 
