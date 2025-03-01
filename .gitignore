@@ -59,8 +59,8 @@ freeline/
 freeline_project_description.json
 
 # Fastlane
-.circleci/fastlane/README.md
-.circleci/fastlane/report.xml
+.github/fastlane/README.md
+.github/fastlane/report.xml
 
 # Forcedotcom CLI
 forcehybrid-*.tgz

@@ -13,12 +13,12 @@ on:
       adv_auth:
         type: boolean
         default: false
-      complex_hybrid:
-        type: boolean
-        default: false
       is_pr:
         type: boolean
         default: false
+      complex_hybrid:
+        required: false
+        type: string
 
 jobs:
   test-android:
@@ -50,7 +50,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.10
+          gradle-version: "8.7"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
       - uses: 'google-github-actions/auth@v2'
@@ -61,7 +61,6 @@ jobs:
         if: success() || failure()
       - name: Build ${{ inputs.app_type }} and Test Login
         continue-on-error: true
-        if: ${{ ! inputs.complex_hybrid }}
         run: |
           TYPE="type"
 
@@ -69,15 +68,7 @@ jobs:
             TYPE="template"
           fi
 
-          cd .github && fastlane android ${TYPE}:${{ inputs.app_type }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }}
-      - name: Build Complex Hybrid Account Editor and Test Login
-        continue-on-error: true
-        if: ${{ inputs.complex_hybrid }}
-        run: cd .github && fastlane android type:hybrid_local complexHybrid:accounteditor sfdx:${{ inputs.sfdx }}
-      - name: Build Complex Hybrid Mobile Sync Explorer and Test Login
-        continue-on-error: true
-        if: ${{ inputs.complex_hybrid }}
-        run: cd .github && fastlane android type:hybrid_local complexHybrid:mobilesyncexplorer sfdx:${{ inputs.sfdx }}
+          cd .github && fastlane android ${TYPE}:${{ inputs.app_type }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }} complexHybrid:${{ inputs.complex_hybrid }}
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()

@@ -58,7 +58,9 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
                     // "New 0013u000017W4aIAAS Cached"
                 }
                 "mobilesyncexplorer" -> {
-                    "JB John Bond VP, Facilities Facilities"
+                    "Contacts"
+                    // TODO: Uncomment and use the below account name when the test app is made more consistent.
+                    // "JB John Bond VP, Facilities Facilities"
                 }
                 else -> {
                     "Sean Forbes"

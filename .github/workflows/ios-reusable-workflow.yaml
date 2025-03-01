@@ -13,15 +13,18 @@ on:
       adv_auth:
         type: boolean
         default: false
-      complex_hybrid:
+      carthage:
         type: boolean
         default: false
       is_pr:
         type: boolean
         default: false
+      complex_hybrid:
+        required: false
+        type: string
       ios: 
         type: string
-        default: "18.2"
+        default: "18.3"
       xcode:
         type: string
         default: "16.2"
@@ -34,7 +37,7 @@ on:
     
 jobs:
   test-ios:
-    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} complex_hybrifd:${{ inputs.complex_hybrid }}
+    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} carthage:${{ inputs.carthage }} complex_hybrid:${{ inputs.complex_hybrid }}
     runs-on: ${{ inputs.macos }}
     env:
       FASTLANE_SKIP_UPDATE_CHECK: "true"
@@ -47,12 +50,10 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/checkout@v4
         if: ${{ ! inputs.is_pr }}
-        with:
-          ref: ${{ github.head_ref }}
       - name: Install Dependencies
         run: ./install.sh
       - name: Build ${{ inputs.app_type }} ${{ inputs.ios }} and Test Login
-        if: ${{ ! inputs.complex_hybrid }}
+        if: ${{ ! inputs.carthage }}
         env:
           GITHUB_RUN_NUM: ${{ github.run_number }}
         run: |
@@ -62,16 +63,9 @@ jobs:
             TYPE="template"
           fi
 
-          cd .github && fastlane ios ${TYPE}:${{ inputs.app_type }} ios:${{ inputs.ios }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }}
-      - name: Build Complex Hybrid Account Editor ${{ inputs.ios }} and Test Login
-        continue-on-error: true
-        if: ${{ inputs.complex_hybrid }} 
+          cd .github && fastlane ios ${TYPE}:${{ inputs.app_type }} ios:${{ inputs.ios }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }} complexHybrid:${{ inputs.complex_hybrid }}
+      - name: Carthage Build and Test
+        if: ${{ inputs.carthage }}
         env:
           GITHUB_RUN_NUM: ${{ github.run_number }}
-        run: cd .github && fastlane ios type:hybrid_local complexHybrid:accounteditor ios:${{ inputs.ios }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }}
-      - name: Build Complex Hybrid Mobile Sync Explorer ${{ inputs.ios }} and Test Login
-        continue-on-error: true
-        if: ${{ inputs.complex_hybrid }}
-        env:
-          GITHUB_RUN_NUM: ${{ github.run_number }}
-        run: cd .github && fastlane ios type:hybrid_local complexHybrid:mobilesyncexplorer ios:${{ inputs.ios }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }}
+        run: cd .github && fastlane test_carthage ios:${{ inputs.ios }} device:${{ inputs.device }}
