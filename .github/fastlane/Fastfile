@@ -24,8 +24,7 @@ $default_ios = '18-3'
 # Defualt Android Firebase Info
 # 
 $min_api = 28
-$max_api = 35 
-$pr_api = 34
+$max_api = 35
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 
@@ -300,7 +299,7 @@ def run_android_tests_firebase(test_class, app_info)
 
   devices = ''
   if app_info.sfdx
-    devices = "--device model=MediumPhone.arm,version=#{$pr_api},locale=en,orientation=portrait \\"
+    devices = "--device model=MediumPhone.arm,version=#{$max_api},locale=en,orientation=portrait \\"
   else
     for api_level in $min_api..$max_api do
       #These emulators don't have chrome
