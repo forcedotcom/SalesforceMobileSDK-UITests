@@ -1,10 +1,10 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/forcedotcom/SalesforceMobileSDK-UITests/tree/master)
+[![Build and Test All Apps](https://github.com/forcedotcom/SalesforceMobileSDK-UITests/actions/workflows/nightly.yaml/badge.svg?branch=master)](https://github.com/forcedotcom/SalesforceMobileSDK-UITests/actions/workflows/nightly.yaml)
 
 # Salesforce MobileSDK UI Tests
 
 This repo contains tests designed to validate the functionality of apps created using the MobileSDK CLI tools [forcedroid](https://www.npmjs.com/package/forcedroid), [forceios](https://www.npmjs.com/package/forceios), and [forcehybrid](https://www.npmjs.com/package/forcehybrid).  Android and iOS test frameworks exist in their own directories and use separate technologies (UIAutomator and XCUITest, respectively).  However, they share a common fastlane file for end-to-end execution:
 1.  `install.sh`
-2.  From the `.circleci` directory execute: `fastlane <os> (type:<AppType> || template:<TemplateName>) [options]` 
+2.  From the `.github` directory execute: `fastlane <os> (type:<AppType> || template:<TemplateName>) [options]` 
 
 Additional options: `adv_auth:<true/false>`, `sfdx:<true/false>`, `rerun:<true/false>`.
 

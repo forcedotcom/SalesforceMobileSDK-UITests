@@ -3,6 +3,7 @@ require 'xcodeproj'
 $is_ci = ENV.has_key? 'GITHUB_WORKFLOW'
 $password
 $sim_name = 'testsim'
+$sim_id = ''
 $simulator_path = '/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
 $default_consumer_key = '3MVG98dostKihXN53TYStBIiS8FC2a3tE3XhGId0hQ37iQjF0xe4fxMSb2mFaWZn9e3GiLs1q67TNlyRji.Xw'
 $default_redirect_uri = 'testsfdc:///mobilesdk/detect/oauth/done'
@@ -17,13 +18,14 @@ $android_login_activity = '<activity android:name="com.salesforce.androidsdk.ui.
 # Default iOS Device info
 #
 $default_device = 'iPhone-SE-3rd-generation'
-$default_ios = '18-2'
+$default_ios = '18-3'
 
 #
 # Defualt Android Firebase Info
 # 
 $min_api = 28
 $max_api = 35 
+$pr_api = 34
 
 App_Info = Struct.new(:os, :app_name, :app_path, :package_name, :xcargs, :sfdx)
 
@@ -71,8 +73,7 @@ lane :test_carthage do |options|
 
   Dir.chdir('../../CarthageTest') do
     UI.important('Carthage Bootstrap')
-    ENV["XCODE_XCCONFIG_FILE"] = Dir.pwd + "/tmp.xcconfig"
-    carthage_result = system("carthage bootstrap --use-xcframeworks")
+    carthage_result = system("carthage bootstrap --use-xcframeworks --platform iOS --verbose")
     UI.build_failure!("Carthage bootstrap failed.") unless carthage_result
     
     project = Xcodeproj::Project.open('CarthageTest.xcodeproj')
@@ -193,6 +194,10 @@ def base_android_test_setup(options)
   rerun = options[:rerun]
   complexHybrid = options[:complexHybrid]
 
+  if complexHybrid and complexHybrid.strip.empty?
+    complexHybrid = nil
+  end
+
   if template 
     templateName = template.split('/').last.split('#').first
     templateName.gsub!(/(?<=[[:lower:]])[[:upper:]]+/, ‘_\&’).downcase!
@@ -209,12 +214,13 @@ def base_android_test_setup(options)
   app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
   UI.build_failure!('App did not generate successfully.') unless Dir.exist?(app_path)
 
-  if is_hybird(app_name)
+  if is_hybrid(app_name)
     if complexHybrid 
       setup_complex_hybrid(complexHybrid, app_path)
       app_path.concat('platforms/android/')
       UI.important 'Rebuilding with modified source files'
       Dir.chdir(app_path) do
+        system("rm -rf app/build/outputs/apk/")
         result = silence_output { system("./gradlew assemble --no-daemon") }
         UI.build_failure!('Failed to rebuild with modified source files.') unless result
       end
@@ -227,7 +233,7 @@ def base_android_test_setup(options)
 
     Dir.chdir(app_path) do
       UI.important 'Building Release APK for React Native'
-      system('./gradlew app:assembleRelease -PreactNativeDevServerPort=8081 --no-daemon')
+      system('./gradlew app:assemble -PreactNativeDevServerPort=8081 --no-daemon')
       
       build_tools_dir = Dir.glob(ENV["ANDROID_HOME"] + '/build-tools/*').sort.first
       silence_output{ 
@@ -294,7 +300,7 @@ def run_android_tests_firebase(test_class, app_info)
 
   devices = ''
   if app_info.sfdx
-    devices = "--device model=MediumPhone.arm,version=34,locale=en,orientation=portrait \\"
+    devices = "--device model=MediumPhone.arm,version=#{$pr_api},locale=en,orientation=portrait \\"
   else
     for api_level in $min_api..$max_api do
       #These emulators don't have chrome
@@ -321,7 +327,7 @@ def run_android_tests_firebase(test_class, app_info)
       --results-history-name=UITest-#{app_info.app_name} \
       --results-dir=#{ENV['GCLOUD_RESULTS_DIR']} \
       --environment-variables class=#{test_class},packageName=#{app_info.package_name},password=#{$password},firebase=true#{optional_vars} \
-      --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=2")
+      --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=1")
       UI.test_failure!('Tests failed.') unless testResult
   end
 end
@@ -340,6 +346,10 @@ def base_ios_test_setup(options)
   rerun = options[:rerun]
   xcargs = []
   complexHybrid = options[:complexHybrid]
+  
+  if complexHybrid and complexHybrid.strip.empty?
+    complexHybrid = nil
+  end
 
   if template 
     templateName = template.split('/').last.split('#').first
@@ -355,14 +365,14 @@ def base_ios_test_setup(options)
   app_name = 'ios'.concat(template ? templateName : "#{run_type}").gsub('_', '')
   $password = get_password(is_native_login(app_name))
   system("rm -rf ../../test_output/#{app_name}")
-  bundle_name = is_hybird(app_name) ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
+  bundle_name = is_hybrid(app_name) ? "com.salesforce.#{app_name}" : "com.salesforce.#{app_name.gsub('_', '-')}"
   start_emulator(device, ios)
   
   Dir.chdir('../../') do
     generate_app('ios', run_type, template, sfdx) unless rerun
     app_path = Dir.glob("tmp*").sort.first.concat("/#{app_name}/")
 
-    if is_hybird(app_name)
+    if is_hybrid(app_name)
       setup_complex_hybrid(complexHybrid, app_path) unless complexHybrid == nil
       app_path.concat('platforms/ios/')
     elsif is_react(app_name)
@@ -410,13 +420,13 @@ def start_emulator(device, ios)
     break unless system("xcrun simctl delete #{$sim_name} > /dev/null 2>&1")
   end
   UI.important "Creating test device: #{device}, ios: #{ios}." 
-  sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
+  $sim_id = `xcrun simctl create #{$sim_name} com.apple.CoreSimulator.SimDeviceType.#{device} com.apple.CoreSimulator.SimRuntime.iOS-#{ios}`.delete("\n")
 
   # Start Simulator
-  system("xcrun simctl boot #{sim_id}")
+  system("xcrun simctl boot #{$sim_id}")
   # Wait for Simulator to boot
   sleep(3)
-  system("open #{$simulator_path} --args -CurrentDeviceUDID #{sim_id}")
+  system("open #{$simulator_path} --args -CurrentDeviceUDID #{$sim_id}")
 end
 
 def install_ios_app(app_info, release = nil)
@@ -519,20 +529,14 @@ def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, ol
 
   # Determine iOS/Android
   if app_info.os == 'android'
-    if is_hybird(app_info.app_name)
+    if is_hybrid(app_info.app_name)
       config_path.concat('../../www/bootconfig.json')
     else
       config_path.concat('app/src/main/res/values/bootconfig.xml')
     end
-
-    if is_react(app_info.app_name)
-      android_build = 'assembleRelease'
-    else
-      android_build = 'assemble'
-    end
   else
     # iOS
-    if is_hybird(app_info.app_name)
+    if is_hybrid(app_info.app_name)
       config_path.concat('www/bootconfig.json')
     else
       config_path.concat(app_info.app_name + '/bootconfig.plist')
@@ -545,7 +549,7 @@ def change_connected_app(app_info, consumer_key, redirect_uri, old_key = nil, ol
   UI.important 'Rebuilding with modified source files'
   Dir.chdir(app_info.app_path) do
     if app_info.os == 'android'
-      result = silence_output { system("./gradlew #{android_build} --no-daemon") }
+      result = silence_output { system("./gradlew assemble --no-daemon") }
       UI.build_failure!('Failed to rebuild with modified source files.') unless result
     end
   end
@@ -618,16 +622,15 @@ def uncomment_manifest_block(config_path, start_line)
 end
 
 def setup_complex_hybrid(complexHybrid, app_path)
-  silence_output(true) { system('git clone git@github.com:forcedotcom/SalesforceMobileSDK-Shared.git') 
+  UI.important 'Complex Hybrid Setup'
+  system('git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git')
   Dir.chdir('SalesforceMobileSDK-Shared') do
-    system('git checkout dev')
-    system("ls ../#{app_path}/www/")
     system("cp -RL ./samples/#{complexHybrid}/* ../#{app_path}/www/")
-    system("ls ../#{app_path}/www/")
   end
   Dir.chdir(app_path) do
-    system('cordova prepare') 
-  end }
+    result = system('cordova prepare') 
+    UI.build_failure!('Cordova Prepare failed.') unless result
+  end
 end
 
 def setup_native_login(app_info, is_android = true)
@@ -651,11 +654,11 @@ def setup_native_login(app_info, is_android = true)
 end
 
 def xcbeautify_xcodebuild(args)
-  system("set -o pipefail && xcodebuild build #{args} -sdk iphonesimulator -derivedDataPath ./DerivedData | xcbeautify --renderer github-actions")
+  system("set -o pipefail && xcodebuild build #{args} -destination 'id=#{$sim_id}' -derivedDataPath ./DerivedData | xcbeautify --renderer github-actions")
 end
 
 # Generic Helpers
-def is_hybird(app_name)
+def is_hybrid(app_name)
   app_name.downcase.include?('hybrid')
 end
 

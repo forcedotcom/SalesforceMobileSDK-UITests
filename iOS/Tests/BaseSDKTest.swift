@@ -60,13 +60,9 @@ class BaseSDKTest: XCTestCase {
         case .nativeSwift:
             let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
-           
-            // TODO: Remove this when min supported version is iOS 16
-            let contacts = (ProcessInfo().operatingSystemVersion.majorVersion >= 16)
-                ? app.collectionViews.cells
-                : app.tables.cells
                 
             // Accounts List
+            let contacts = app.collectionViews.cells
              _ = contacts.firstMatch.waitForExistence(timeout: timeout)
              XCTAssertGreaterThan(contacts.count, 0, "Swift UI did not load Account List.")
             
@@ -87,21 +83,20 @@ class BaseSDKTest: XCTestCase {
                 verifyInWebView(app: app, text: "Tim Barr")
             } else {
                 verifyInWebView(app: app, text: "Contacts")
-                verifyInWebView(app: app, text: "Sean Forbes") 
+                verifyInWebView(app: app, text: "Sean Forbes")
             }
         case .reactNative:
             let titleElement = app.otherElements[sampleAppTitle].firstMatch
             XCTAssert(titleElement.waitForExistence(timeout: timeout * 3), appLoadError)
         case .mobileSyncSwift:
-            let title = app.navigationBars["MobileSync Explorer"].staticTexts["MobileSync Explorer"]
+            let title = app.navigationBars["Contacts"].staticTexts["Contacts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
-            // TODO: Remove this when min supported version is iOS 16
-            let contact = (ProcessInfo().operatingSystemVersion.majorVersion >= 16)
-                ? app.collectionViews/*@START_MENU_TOKEN@*/.buttons["John Bond, VP, Facilities"]/*[[".cells.buttons[\"John Bond, VP, Facilities\"]",".buttons[\"John Bond, VP, Facilities\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
-                : app.tables/*@START_MENU_TOKEN@*/.buttons["John Bond, VP, Facilities"]/*[[".cells[\"John Bond, VP, Facilities\"].buttons[\"John Bond, VP, Facilities\"]",".buttons[\"John Bond, VP, Facilities\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
+            let contact = app.collectionViews.staticTexts["VP, Facilities"]
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
+            contact.tap()
+            XCTAssert(app.navigationBars["John Bond"].waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
             let title = app.otherElements["Contacts"].firstMatch
             XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
