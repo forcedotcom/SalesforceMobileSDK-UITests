@@ -62,9 +62,9 @@ jobs:
       fail-fast: false
       matrix:
         app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, iOSNativeLoginTemplate]
-        ios: ["18.3", "17.5"]
+        ios: ["18.2", "17.5"]
         include:
-            - ios: "18.3"
+            - ios: "18.2"
               xcode: "16.2"
             - ios: "17.5"
               xcode: "15.4"
@@ -99,9 +99,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ios: ["18.3", "17.5"]
+        ios: ["18.2", "17.5"]
         include:
-          - ios: "18.3"
+          - ios: "18.2"
             xcode: "16.2"
           - ios: "17.5"
             xcode: "15.4"
@@ -119,9 +119,9 @@ jobs:
       fail-fast: false
       matrix:
         hybrid_type: ["accounteditor", "mobilesyncexplorer"]
-        ios: ["18.3", "17.5"]
+        ios: ["18.2", "17.5"]
         include:
-          - ios: "18.3"
+          - ios: "18.2"
             xcode: "16.2"
           - ios: "17.5"
             xcode: "15.4"
@@ -138,9 +138,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ios: ["18.3", "17.5"]
+        ios: ["18.2", "17.5"]
         include:
-          - ios: "18.3"
+          - ios: "18.2"
             xcode: "16.2"
           - ios: "17.5"
             xcode: "15.4"
