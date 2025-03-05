@@ -24,7 +24,7 @@ on:
         type: string
       ios: 
         type: string
-        default: "18.3"
+        default: "18.2"
       xcode:
         type: string
         default: "16.2"
