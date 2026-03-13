@@ -64,11 +64,6 @@
             value = "$(PASSWORD)"
             isEnabled = "YES">
          </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "ADV_AUTH"
-            value = "$(ADV_AUTH)"
-            isEnabled = "YES">
-         </EnvironmentVariable>
       </EnvironmentVariables>
       <Testables>
          <TestableReference

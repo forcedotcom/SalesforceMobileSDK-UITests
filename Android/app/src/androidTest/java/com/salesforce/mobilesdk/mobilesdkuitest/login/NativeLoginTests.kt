@@ -26,16 +26,14 @@
  */
 package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import PageObjects.LoginPageObjects.NativeLoginPageObject
+import pageobjects.loginpageobjects.NativeLoginPageObject
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import pageobjects.BasePageObject
-import pageobjects.loginpageobjects.LoginPageObject
 import pageobjects.testapppageobjects.NativeAppPageObject
 import pageobjects.testapppageobjects.TestApplication
-import testutility.UserUtility
 
 @RunWith(AndroidJUnit4::class)
 class NativeLoginTests {
@@ -49,8 +47,8 @@ class NativeLoginTests {
     @Test
     fun testLogin() {
         val loginPage = NativeLoginPageObject()
-        loginPage.setUsername(UserUtility.nativeLoginUsername)
-        loginPage.setPassword(UserUtility.password)
+//        loginPage.setUsername(UserUtility.nativeLoginUsername)
+//        loginPage.setPassword(UserUtility.password)
         loginPage.tapLogin()
 
         Thread.sleep(BasePageObject().timeout)

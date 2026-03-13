@@ -37,7 +37,6 @@ import XCTest
 class TestApplication: XCUIApplication {
     var bundleString = ""
     var type: AppType = .nativeObjC
-    var advAuth = false
     var name: String
     var complexHybrid: String
     
@@ -49,7 +48,6 @@ class TestApplication: XCUIApplication {
         // Get the Test App Bundle from command line arg
         bundleString = ProcessInfo.processInfo.environment["TEST_APP_BUNDLE"]!
         name = String(bundleString.split(separator: ".").last!)
-        advAuth = (ProcessInfo.processInfo.environment["ADV_AUTH"] != "")
         complexHybrid = (ProcessInfo.processInfo.environment["COMPLEX_HYBRID"] ?? "")
         
         switch bundleString {

@@ -26,9 +26,13 @@
  */
 package com.salesforce.mobilesdk.mobilesdkuitest.login
 
+import android.os.Build
 import pageobjects.*
-import testutility.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.salesforce.KnownLoginHostConfig
+import com.salesforce.KnownUserConfig
+import com.salesforce.androidTestConfig
 import org.junit.Assert
 import org.junit.runner.RunWith
 import org.junit.Before
@@ -41,7 +45,13 @@ import pageobjects.testapppageobjects.*
  */
 @RunWith(AndroidJUnit4::class)
 class LoginTests {
-    private var app = TestApplication()
+    val app = TestApplication()
+    val knownUserConfig: KnownUserConfig by lazy {
+        val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
+            .applicationInfo.minSdkVersion
+        val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.entries.toTypedArray().count()
+        KnownUserConfig.entries[userNumber]
+    }
 
     @Before
     fun setupTestApp() {
@@ -50,11 +60,11 @@ class LoginTests {
 
     @Test
     fun testLogin() {
-        Assert.assertEquals("Wrong browser is used for login.", app.advAuth, ChromePageObject().isAdvAuth())
-
+        val (username, password) = androidTestConfig.getUser(KnownLoginHostConfig.REGULAR_AUTH, knownUserConfig)
         val loginPage = LoginPageObject()
-        loginPage.setUsername(UserUtility.username)
-        loginPage.setPassword(UserUtility.password)
+
+        loginPage.setUsername(username)
+        loginPage.setPassword(password)
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllowIfPresent()
 

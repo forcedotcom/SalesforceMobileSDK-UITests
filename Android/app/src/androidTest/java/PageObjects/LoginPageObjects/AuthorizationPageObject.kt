@@ -37,26 +37,11 @@ import pageobjects.BasePageObject
 class AuthorizationPageObject : BasePageObject() {
 
     fun tapAllowIfPresent() {
-        val chromePageObject = ChromePageObject()
-        val advAuth = chromePageObject.isAdvAuth()
-        if (advAuth) {
-            chromePageObject.dismissSavePasswordDialog()
-        }
-
         val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
         Log.i("uia", "Waiting for allow button to be present.")
         if (allowButton.waitForExists(timeout)) {
             allowButton.click()
             Thread.sleep(timeout)
-        }
-
-        /*
-         *  TODO: This is an issue we have no control over, remove this if fixed by Google.
-         *  If chrome doesn't redirect to the app by itself, close it by tapping back.
-         */
-        if (advAuth and allowButton.waitForExists(timeout)) {
-            Log.i("uia", "Chrome Custom Tab did not close properly, manually tapping back.")
-            chromePageObject.tapCloseButton()
         }
     }
 }

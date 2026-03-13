@@ -39,16 +39,12 @@ class LoginTests: BaseSDKTest {
         let app = TestApplication()
         let loginPage = LoginPageObject(testApp: app)
         let authPage = AuthorizationPageObject(testApp: app)
-        let isAdvAuth = app.advAuth
         app.launch()
-        
+
         loginPage.setUsername(name: username)
         loginPage.setPassword(password: password)
         loginPage.tapLogin()
-        
-        if !isAdvAuth {
-            authPage.tapAllowIfPresent()
-        }
+        authPage.tapAllowIfPresent()
         
         // Assert App loads
         assertAppLoads(app: app)
