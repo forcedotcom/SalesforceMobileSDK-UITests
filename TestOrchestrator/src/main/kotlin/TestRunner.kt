@@ -3,42 +3,53 @@ package com.salesforce
 import com.salesforce.Test.Companion.ADB
 import com.salesforce.Test.Companion.ANDROID_TEST_DIR
 import com.salesforce.Test.Companion.GCLOUD_RESULTS_DIR
+import com.salesforce.Util.progress
+import com.salesforce.Util.runCommand
+import java.io.File
 
-fun runTests(
-    appInfo: AppInfo,
-    iOSVersion: String,
-    useFirebase: Boolean,
-    print: Printer,
-) {
+const val ANDROID_TEST_CLASS = "com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests"
+
+fun runTests(appInfo: AppInfo, iOSVersion: String, useFirebase: Boolean) {
     when (appInfo.os) {
-        OS.ANDROID if useFirebase -> runAndroidTestsFirebase(appInfo, print)
-        OS.ANDROID if !useFirebase -> runAndroidTestsLocal(appInfo, print)
-        OS.IOS -> runIosTestsLocally(appInfo, iOSVersion, print)
+        OS.ANDROID if useFirebase -> runAndroidTestsFirebase(appInfo)
+        OS.ANDROID if !useFirebase -> runAndroidTestsLocal(appInfo)
+        OS.IOS -> runIosTestsLocally(appInfo, iOSVersion)
         else -> {}
     }
+
+    progress?.update {
+        context = context.advance("Done!")
+        completed += 1
+    }
+    progress?.stop()
 }
 
-private fun runAndroidTestsLocal(appInfo: AppInfo, print: Printer) {
+private fun runAndroidTestsLocal(appInfo: AppInfo) {
     // Push config to device so androidTestConfig can load it
     "$ADB push shared/test/android/ui_test_config.json /data/local/tmp/ui_test_config.json".runCommand()
 
     "$ADB uninstall ${appInfo.packageName}".runCommand()
 
-    print("Installing App")
-    print("apk path: ${appInfo.apkPath}")
+//    print("Installing App")
+//    print("apk path: ${appInfo.apkPath}")
 
+    progress?.update {
+        context = context.advance("Install App")
+        completed += 1
+    }
     "$ADB install -r ${appInfo.apkPath}".runCommand()
-
-    print("Running Tests Locally")
-
-    print("package name: ${appInfo.packageName}")
 
     // Grant Push
     "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS".runCommand()
 
     // Test params
-    val classParam =  "-Pandroid.testInstrumentationRunnerArguments.class=com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests"
+    val classParam =  "-Pandroid.testInstrumentationRunnerArguments.class=$ANDROID_TEST_CLASS"
     val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
+
+    progress?.update {
+        context = context.advance("Run Login Test")
+        completed += 1
+    }
 
     val testResult = "./gradlew $classParam $packageParam connectedAndroidTest"
         .runCommand(workingDir = ANDROID_TEST_DIR)
@@ -47,11 +58,7 @@ private fun runAndroidTestsLocal(appInfo: AppInfo, print: Printer) {
 
 
 
-private fun runAndroidTestsFirebase(appInfo: AppInfo, log: Printer) {
-    val password = ""
-
-
-
+private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     """
         gcloud firebase test android run \
             --project mobile-apps-firebase-test \
@@ -61,7 +68,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo, log: Printer) {
             #{devices}
             --results-history-name=UITest-${appInfo.appName} \
             --results-dir=$GCLOUD_RESULTS_DIR \
-            --environment-variables class=#{test_class},packageName=${appInfo.packageName},password=$password,firebase=true#{optional_vars} \
+            --environment-variables class=$ANDROID_TEST_CLASS,packageName=${appInfo.packageName} \
             --no-performance-metrics --no-auto-google-login --num-flaky-test-attempts=1"
     """.trimIndent().runCommand(workingDir = ANDROID_TEST_DIR)
 }
@@ -69,7 +76,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo, log: Printer) {
 private const val SIM_NAME = "testsim"
 private const val IOS_TEST_DIR = "./iOS/"
 
-private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, print: Printer) {
+private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String) {
     // Clean up any existing test simulator
     print("Cleaning up existing simulators")
     do {
@@ -100,9 +107,10 @@ private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, print: Prin
 
     // Install app on simulator
     print("Installing app on simulator")
+    val iosRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/ios" else appInfo.appPath
     val buildPath = when {
-        java.io.File("${appInfo.appPath}/DerivedData/Build/").exists() -> "${appInfo.appPath}/DerivedData/Build"
-        java.io.File("${appInfo.appPath}/Build/").exists() -> "${appInfo.appPath}/Build"
+        File("$iosRoot/DerivedData/Build/").exists() -> "$iosRoot/DerivedData/Build"
+        File("$iosRoot/Build/").exists() -> "$iosRoot/Build"
         else -> throw Exception("${appInfo.appName}.app could not be found.")
     }
     val configuration = if (appInfo.debugBuild) "Debug" else "Release"
@@ -112,7 +120,7 @@ private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, print: Prin
     val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "TestNativeLogin" else "TestLogin"
 
     // Clean up previous test results
-    val resultBundlePath = java.io.File(IOS_TEST_DIR, "test_output/${appInfo.appName}")
+    val resultBundlePath = File(IOS_TEST_DIR, "test_output/${appInfo.appName}")
     resultBundlePath.deleteRecursively()
 
     print("Running iOS Tests")

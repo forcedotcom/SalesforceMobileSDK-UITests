@@ -1,5 +1,7 @@
 package com.salesforce
 
+import com.salesforce.Util.runCommand
+import com.salesforce.Util.verbosePrinter
 import java.io.File
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
@@ -8,13 +10,14 @@ import kotlin.io.path.pathString
 fun generateApp(
     appSource: AppSource,
     useSF: Boolean,
-    print: Printer,
+    preserverGeneratedApps: Boolean,
 ): AppInfo {
-    // Remove previous generations
-    File(".").listFiles { files ->
-        files.isDirectory && files.name.startsWith("tmp")
-    }?.forEach { it.deleteRecursively() }
-
+    if (!preserverGeneratedApps) {
+        // Remove previous generations
+        File(".").listFiles { files ->
+            files.isDirectory && files.name.startsWith("tmp")
+        }?.forEach { it.deleteRecursively() }
+    }
     val generationCommand = mutableListOf(
         "./SalesforceMobileSDK-Package/test/test_force.js",
         "--os=${appSource.osName}"
@@ -35,7 +38,7 @@ fun generateApp(
                 appSource.template
             } else {
                 print("Generating ${appSource.template} Template App")
-                "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}/dev"
+                "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}#\\dev"
             }
 
             generationCommand.add("--templaterepouri=$templateUrl")
@@ -47,9 +50,9 @@ fun generateApp(
     }
 
     when(val result = generationCommand.runCommand()) {
-        0 -> { print("Success!") }
+        0 -> { verbosePrinter?.success("Success!") }
         else -> {
-            print("Error: $result", err = true)
+            verbosePrinter?.invoke("Error: $result", err = true)
             // Throw???
         }
     }
@@ -68,6 +71,8 @@ fun getAppInfo(appSource: AppSource): AppInfo {
             appName = appName,
             appPath = "$tmpPath/$appName",
             packageName = "com.salesforce.$appName",
+            isHybrid = isHybrid,
+            isReact = isReact,
         )
     }
 }

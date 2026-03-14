@@ -11,7 +11,8 @@ data class AppInfo(
     val isReact: Boolean = false,
     val debugBuild: Boolean = false,
 ) {
-    val apkPath = "$appPath/app/build/outputs/apk/${
+    val androidRoot = if (isHybrid) "$appPath/platforms/android" else appPath
+    val apkPath = "$androidRoot/app/build/outputs/apk/${
         if (debugBuild) {
             "debug/app-debug.apk"
         } else {
@@ -57,7 +58,10 @@ abstract class AppSource(open val os: OS) {
                 .replace(oldValue = "_", newValue = "")
                 .removeSuffix("template")
 
-            if (templateName == "mobilesyncexplorerreactnative") {
+            if (templateName == "mobilesyncexplorerreactnative"
+                || templateName.startsWith("android")
+                || templateName.startsWith("ios")) {
+
                 templateName
             } else {
                 "${osName}$templateName"

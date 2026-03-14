@@ -6,6 +6,7 @@ plugins {
 
 group = "com.salesforce"
 version = "1.0"
+val mordantVersion = "5.1.0"
 
 repositories {
     mavenCentral()
@@ -13,8 +14,10 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.ajalt.clikt:clikt:5.1.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("com.github.ajalt.clikt:clikt:$mordantVersion")
+    implementation("com.github.ajalt.clikt:clikt-markdown:$mordantVersion")
+    implementation("com.github.ajalt.mordant:mordant-coroutines:3.0.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 }
 
 application {

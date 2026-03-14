@@ -1,27 +1,42 @@
 package com.salesforce
 
 import com.salesforce.Test.Companion.ANDROID_BUILD_DIR
+import com.salesforce.Util.progress
+import com.salesforce.Util.runCommand
+import com.salesforce.Util.verbosePrinter
 import java.io.File
 
 fun compileApp(
     appInfo: AppInfo,
     debug: Boolean = false,
     knownAppConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
-    log: Printer,
 ) {
     val testConfig = if (appInfo.os == OS.ANDROID) androidTestConfig else iosTestConfig
     val loginUrl = testConfig.loginHosts.first().url
     val appConfig = testConfig.getApp(knownAppConfig)
     val configuration = if (debug) "Debug" else "Release"
 
-    log("Setting Login URL")
+    progress?.update {
+        context = context.advance("Set Login URL")
+        completed += 1
+    }
     setLoginUrl(appInfo, loginUrl)
 
-    log("Setting OAuth Config")
+    progress?.update {
+        context = context.advance("Set OAuth Config")
+        completed += 1
+    }
+
+    verbosePrinter?.invoke("Setting OAuth Config")
     with(appInfo) {
         when {
-            isHybrid -> {
-                val bootConfig = File(appPath, "www/bootconfig.json")
+            isHybrid && os == OS.ANDROID -> {
+                val bootConfig = File(appPath, "platforms/android/app/src/main/assets/www/bootconfig.json")
+                updateJsonBootConfig(bootConfig, appConfig)
+            }
+
+            isHybrid && os == OS.IOS -> {
+                val bootConfig = File(appPath, "platforms/ios/www/bootconfig.json")
                 updateJsonBootConfig(bootConfig, appConfig)
             }
 
@@ -36,18 +51,24 @@ fun compileApp(
             }
         }
 
-        log("Compiling App")
+        progress?.update {
+            context = context.advance("Compile App")
+            completed += 1
+        }
+        verbosePrinter?.invoke("Compiling App")
+
+        val androidRoot = if (isHybrid) "$appPath/platforms/android" else appPath
         when (os) {
             OS.ANDROID -> {
                 // TODO: Does RN need  -PreactNativeDevServerPort=8081 --no-daemon ???
-                "./gradlew assemble$configuration".runCommand(appPath)
+                "./gradlew assemble$configuration".runCommand(androidRoot)
 
                 if (!debug) {
-                    log("Signing Release APK")
                     signReleaseApk(apkPath)
                 }
             }
             OS.IOS -> {
+                val iosRoot = if (isHybrid) "$appPath/platforms/ios" else appPath
                 listOf(
                     "xcodebuild", "build",
                     "-workspace", "$appName.xcworkspace",
@@ -55,7 +76,7 @@ fun compileApp(
                     "-sdk", "iphonesimulator",
                     "-configuration", configuration,
                     "-derivedDataPath", "./DerivedData"
-                ).runCommand(appPath)
+                ).runCommand(iosRoot)
             }
         }
     }
@@ -64,7 +85,8 @@ fun compileApp(
 private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
     when (appInfo.os) {
         OS.ANDROID -> {
-            val serversFile = File(appInfo.appPath, "app/src/main/res/xml/servers.xml")
+            val androidRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/android" else appInfo.appPath
+            val serversFile = File(androidRoot, "app/src/main/res/xml/servers.xml")
             serversFile.writeText(
                 """<?xml version="1.0" encoding="utf-8"?>
                 |<servers>
@@ -74,7 +96,9 @@ private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
             )
         }
         OS.IOS -> {
-            val plistPath = File(appInfo.appPath, "${appInfo.appName}/Info.plist")
+            val iosRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/ios" else appInfo.appPath
+            val plistName = if (appInfo.isHybrid) "${appInfo.appName}-Info.plist" else "Info.plist"
+            val plistPath = File(iosRoot, "${appInfo.appName}/$plistName")
             val loginHost = loginUrl.removePrefix("https://").removePrefix("http://")
             val content = plistPath.readText()
             val key = "<key>SFDCOAuthLoginHost</key>"
@@ -142,6 +166,12 @@ private fun signReleaseApk(apkPath: String) {
     val keystoreFile = File("uitest.keystore")
     val keystorePass = "test12"
 
+    progress?.update {
+        context = context.advance("Sign Release APK")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Sign Release APK")
+
     // Create Keystore
     if (!keystoreFile.exists()) {
         val keystoreResult = listOf(
@@ -155,8 +185,6 @@ private fun signReleaseApk(apkPath: String) {
             "-keypass", keystorePass,
             "-dname", "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown"
         ).runCommand()
-
-        println("Keystore result: $keystoreResult")
     }
 
     // Sign
@@ -166,5 +194,4 @@ private fun signReleaseApk(apkPath: String) {
         "--ks-pass", "pass:$keystorePass",
         apkPath
     ).runCommand()
-    println("Sign APK result: $signApk")
 }
