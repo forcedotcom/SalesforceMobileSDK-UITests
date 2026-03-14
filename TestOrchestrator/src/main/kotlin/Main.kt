@@ -10,6 +10,8 @@ import com.github.ajalt.clikt.parameters.options.help
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.installMordantMarkdown
+import com.github.ajalt.clikt.parameters.arguments.multiple
+import com.github.ajalt.clikt.parameters.arguments.unique
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.types.boolean
@@ -24,13 +26,14 @@ import com.github.ajalt.mordant.widgets.progress.progressBarContextLayout
 import com.github.ajalt.mordant.widgets.progress.spinner
 import com.github.ajalt.mordant.widgets.progress.text
 import com.github.ajalt.mordant.widgets.progress.timeElapsed
-import com.salesforce.Util.ArgumentsFirstHelpFormatter
-import com.salesforce.Util.PanelProgressBarMaker
-import com.salesforce.Util.Printer
-import com.salesforce.Util.ProgressState
-import com.salesforce.Util.verbosePrinter
-import com.salesforce.Util.progress
-import com.salesforce.Util.utilVerboseOutput
+import com.salesforce.util.ArgumentsFirstHelpFormatter
+import com.salesforce.util.PanelProgressBarMaker
+import com.salesforce.util.Printer
+import com.salesforce.util.ProgressState
+import com.salesforce.util.verbosePrinter
+import com.salesforce.util.progress
+import com.salesforce.util.verboseCommandOutput
+import java.io.File
 import kotlin.io.path.Path
 import kotlin.system.exitProcess
 import kotlin.io.path.listDirectoryEntries
@@ -52,7 +55,7 @@ class Test : CliktCommand() {
         .help("android or ios")
     val iOSVersion: String? by option("--ios", "--iOSVersion")
         .help("iOS version number (ex: $DEFAULT_IOS_VERSION).")
-    val appSource: AppSource by argument("app type or template")
+    val appSources: Set<AppSource> by argument("app type or template")
         .help("An app type (${AppType.entries.joinToString(", ") { it.name.lowercase() }}) " +
                 "\u0085or a template URL/name")
         .convert { input ->
@@ -63,6 +66,7 @@ class Test : CliktCommand() {
                 AppSource.ByTemplate(os, template = input)
             }
         }
+        .multiple().unique()
     val useSF: Boolean by option("--sf", "--sfdx").flag()
         .help("Use SF (formerly SFDX) to generate the app.")
     val debug: Boolean by option("-d", "--compileDebug").flag()
@@ -78,61 +82,80 @@ class Test : CliktCommand() {
     // TODO: complexHybrid
 
     override fun run() {
-        utilVerboseOutput = verboseOutput || IS_CI
+        val failures = mutableListOf<Pair<String, Exception>>()
+        verboseCommandOutput = verboseOutput || IS_CI
 
-        when(os) {
+        when (os) {
             OS.ANDROID -> {
                 if (iOSVersion != null) {
                     throw UsageError("--iOSVersion can only be used with iOS")
                 }
-                if (appSource.appName.contains("swift")) {
+                if (appSources.find { it.appName.contains("swift") } != null) {
                     throw UsageError("Swift apps can only be built with iOS")
                 }
             }
+
             OS.IOS -> {
-                if (appSource.appName.contains("kotlin")) {
+                if (appSources.find { it.appName.contains("kotlin") } != null) {
                     throw UsageError("Kotlin apps can only be built with Android")
                 }
             }
         }
 
-        if (verboseOutput) {
-            verbosePrinter = Printer(terminal)
-        } else {
-            val marker = PanelProgressBarMaker
-            marker.title = "Testing ${appSource.appName}"
-            val progressBanner = progressBarContextLayout<ProgressState> {
-                text {
-                    context.completedSteps.joinToString("\n") { "${TextColors.green("✔")} $it" }
-                }; text("")
-                text { "${TextColors.yellow("⟳")} ${context.currentStep}" }; spinner(Spinner.Lines())
-                text("Time Elapsed"); timeElapsed()
-                text("Progress"); progressBar()
-            }.animateOnThread(
-                terminal,
-                context = ProgressState(currentStep = "Generate App"),
-                total = 7,
-                maker = marker,
-            )
-            progressBanner.execute()
-
-            progress = progressBanner
+        if (!preserverGeneratedApps && !reRunTest) {
+            // Remove previous generations
+            File(".").listFiles { files ->
+                files.isDirectory && files.name.startsWith("tmp")
+            }?.forEach { it.deleteRecursively() }
         }
 
-        try {
-            val appInfo = if (!reRunTest) {
-                generateApp(appSource, useSF, preserverGeneratedApps)
+        appSources.forEach { appSource ->
+            if (verboseOutput || IS_CI) {
+                verbosePrinter = Printer(terminal)
             } else {
-                verbosePrinter?.invoke("Skipping App Generation...")
-                getAppInfo(appSource)
-            }
-            compileApp(appInfo, debug)
+                val marker = PanelProgressBarMaker
+                marker.title = "Testing ${appSource.appName}"
+                val progressBanner = progressBarContextLayout<ProgressState> {
+                    text {
+                        context.completedSteps.joinToString("\n") { "${TextColors.green("✔")} $it" }
+                    }; text("")
+                    text { "${TextColors.yellow("⟳")} ${context.currentStep}" }; spinner(Spinner.Lines())
+                    text("Time Elapsed"); timeElapsed()
+                    text("Progress"); progressBar()
+                }.animateOnThread(
+                    terminal,
+                    context = ProgressState(currentStep = "Generate App"),
+                    total = 7,
+                    maker = marker,
+                )
+                progressBanner.execute()
 
-            runTests(appInfo, iOSVersion ?: DEFAULT_IOS_VERSION, useFirebase)
-        } catch (e: Exception) {
-            progress?.stop()
-            terminal.println()
-            terminal.println(TextColors.red(e.stackTraceToString()), stderr = true)
+                progress = progressBanner
+            }
+
+            try {
+                val appInfo = if (!reRunTest) {
+                    generateApp(appSource, useSF)
+                } else {
+                    verbosePrinter?.invoke("Skipping App Generation...")
+                    getAppInfo(appSource)
+                }
+                compileApp(appInfo, debug)
+
+                runTests(appInfo, iOSVersion ?: DEFAULT_IOS_VERSION, useFirebase)
+            } catch (e: Exception) {
+                progress?.stop()
+                terminal.println()
+                terminal.println(TextColors.red(e.stackTraceToString()), stderr = true)
+                failures.add(appSource.appName to e)
+            }
+        }
+
+        if (failures.isNotEmpty()) {
+            terminal.println(TextColors.red("\n${failures.size} app(s) failed:"), stderr = true)
+            failures.forEach { (name, e) ->
+                terminal.println(TextColors.red("  - $name: ${e.message}"), stderr = true)
+            }
             exitProcess(1)
         }
     }

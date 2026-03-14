@@ -1,9 +1,9 @@
 package com.salesforce
 
 import com.salesforce.Test.Companion.ANDROID_BUILD_DIR
-import com.salesforce.Util.progress
-import com.salesforce.Util.runCommand
-import com.salesforce.Util.verbosePrinter
+import com.salesforce.util.progress
+import com.salesforce.util.runCommand
+import com.salesforce.util.verbosePrinter
 import java.io.File
 
 fun compileApp(

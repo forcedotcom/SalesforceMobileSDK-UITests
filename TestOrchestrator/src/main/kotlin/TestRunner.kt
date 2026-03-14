@@ -3,8 +3,8 @@ package com.salesforce
 import com.salesforce.Test.Companion.ADB
 import com.salesforce.Test.Companion.ANDROID_TEST_DIR
 import com.salesforce.Test.Companion.GCLOUD_RESULTS_DIR
-import com.salesforce.Util.progress
-import com.salesforce.Util.runCommand
+import com.salesforce.util.progress
+import com.salesforce.util.runCommand
 import java.io.File
 
 const val ANDROID_TEST_CLASS = "com.salesforce.mobilesdk.mobilesdkuitest.login.LoginTests"
@@ -78,9 +78,8 @@ private const val IOS_TEST_DIR = "./iOS/"
 
 private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String) {
     // Clean up any existing test simulator
-    print("Cleaning up existing simulators")
     do {
-        val result = "xcrun simctl delete $SIM_NAME".runCommand()
+        val result = "xcrun simctl delete $SIM_NAME".runCommand(suppressErrors = true)
     } while (result == 0)
 
     // Create simulator

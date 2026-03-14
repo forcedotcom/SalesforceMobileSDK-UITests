@@ -1,23 +1,13 @@
 package com.salesforce
 
-import com.salesforce.Util.runCommand
-import com.salesforce.Util.verbosePrinter
+import com.salesforce.util.runCommand
+import com.salesforce.util.verbosePrinter
 import java.io.File
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 
-fun generateApp(
-    appSource: AppSource,
-    useSF: Boolean,
-    preserverGeneratedApps: Boolean,
-): AppInfo {
-    if (!preserverGeneratedApps) {
-        // Remove previous generations
-        File(".").listFiles { files ->
-            files.isDirectory && files.name.startsWith("tmp")
-        }?.forEach { it.deleteRecursively() }
-    }
+fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
     val generationCommand = mutableListOf(
         "./SalesforceMobileSDK-Package/test/test_force.js",
         "--os=${appSource.osName}"
@@ -61,15 +51,22 @@ fun generateApp(
 }
 
 fun getAppInfo(appSource: AppSource): AppInfo {
-    val tmpPath = Path(".").listDirectoryEntries()
-        .first { it.fileName.toString().startsWith("tmp") }
-        .pathString
+    val tmpDirs = Path(".").listDirectoryEntries()
+        .filter { it.fileName.toString().startsWith("tmp") }
+    val appDirs = tmpDirs.flatMap { it.listDirectoryEntries() }
+    val path = appDirs.firstOrNull { it.fileName.toString() == appSource.appName }
+        ?: throw Exception(
+            "Could not find app directory for '${appSource.appName}'. " +
+            "tmp dirs: ${tmpDirs.map { it.fileName }}, " +
+            "app dirs: ${appDirs.map { it.fileName }}"
+        )
+    val pathString = path.pathString
 
     with(appSource) {
         return AppInfo(
             os = os,
             appName = appName,
-            appPath = "$tmpPath/$appName",
+            appPath = pathString,
             packageName = "com.salesforce.$appName",
             isHybrid = isHybrid,
             isReact = isReact,

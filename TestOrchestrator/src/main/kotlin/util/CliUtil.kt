@@ -1,4 +1,4 @@
-package com.salesforce.Util
+package com.salesforce.util
 
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.output.HelpFormatter.ParameterHelp
@@ -18,11 +18,9 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.windowed
 
-var utilVerboseOutput = false
 var progress: ThreadProgressTaskAnimator<ProgressState>? = null
 
 var verbosePrinter: Printer? = null
-
 data class ProgressState(
     val completedSteps: List<String> = emptyList(),
     val currentStep: String = "",
