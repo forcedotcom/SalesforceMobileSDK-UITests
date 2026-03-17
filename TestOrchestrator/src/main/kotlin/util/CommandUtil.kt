@@ -5,8 +5,33 @@ import java.lang.ProcessBuilder.Redirect.INHERIT
 
 var verboseCommandOutput = false
 
+data class CommandResult(val exitCode: Int, val output: String?)
+
 fun String.runCommand(workingDir: String = ".", suppressErrors: Boolean = false): Int =
     split(" ").runCommand(workingDir, suppressErrors)
+
+fun List<String>.runCommandCapture(workingDir: String = "."): CommandResult {
+    val command = if (this.first().contains("xcodebuild")) {
+        listOf("/bin/bash", "-c", "set -o pipefail && ${joinToString(" ") { if (' ' in it) "'$it'" else it }} | xcbeautify")
+    } else {
+        this
+    }
+
+    val process = ProcessBuilder(command)
+        .directory(File(workingDir))
+        .redirectErrorStream(true)
+        .start()
+
+    val output = StringBuilder()
+    process.inputStream.bufferedReader().useLines { lines ->
+        for (line in lines) {
+            if (verboseCommandOutput) println(line)
+            output.appendLine(line)
+        }
+    }
+    val exitCode = process.waitFor()
+    return CommandResult(exitCode, output.toString())
+}
 
 fun List<String>.runCommand(workingDir: String = ".", suppressErrors: Boolean = false): Int {
     val isAdb = this.first().contains("adb")

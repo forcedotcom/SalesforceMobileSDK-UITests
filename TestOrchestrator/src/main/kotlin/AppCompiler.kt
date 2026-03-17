@@ -16,18 +16,14 @@ fun compileApp(
     val appConfig = testConfig.getApp(knownAppConfig)
     val configuration = if (debug) "Debug" else "Release"
 
-    progress?.update {
-        context = context.advance("Set Login URL")
-        completed += 1
-    }
     setLoginUrl(appInfo, loginUrl)
 
     progress?.update {
         context = context.advance("Set OAuth Config")
         completed += 1
     }
-
     verbosePrinter?.invoke("Setting OAuth Config")
+
     with(appInfo) {
         when {
             isHybrid && os == OS.ANDROID -> {
@@ -83,6 +79,12 @@ fun compileApp(
 }
 
 private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
+    progress?.update {
+        context = context.advance("Set Login URL")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Setting Login URL")
+
     when (appInfo.os) {
         OS.ANDROID -> {
             val androidRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/android" else appInfo.appPath

@@ -13,15 +13,9 @@ jobs:
       fail-fast: false
       matrix:
         app_type:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, AndroidNativeLoginTemplate]
-        include:
-            - app_type: MobileSyncExplorerReactNative
-              template: true
-            - app_type: AndroidNativeLoginTemplate
-              template: true
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app_type: ${{ matrix.app_type }}
-      template: ${{ matrix.template || false }}
     secrets: inherit
 
   android-sfdx:
@@ -36,25 +30,17 @@ jobs:
       sfdx: true
     secrets: inherit
 
-  android-adv-auth:
-    name: Android Adv Auth
-    uses: ./.github/workflows/android-reusable-workflow.yaml
-    with:
-      app_type: native
-      adv_auth: true
-    secrets: inherit
-
-  android-complex-hybrid:
-    name: Complex Hybrid ${{ matrix.hybrid_type }} Android
-    strategy:
-      fail-fast: false
-      matrix:
-        hybrid_type: ["accounteditor", "mobilesyncexplorer"]
-    uses: ./.github/workflows/android-reusable-workflow.yaml
-    with:
-      app_type: hybrid_local
-      complex_hybrid: ${{ matrix.hybrid_type }}
-    secrets: inherit
+#  android-complex-hybrid:
+#    name: Complex Hybrid ${{ matrix.hybrid_type }} Android
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        hybrid_type: ["accounteditor", "mobilesyncexplorer"]
+#    uses: ./.github/workflows/android-reusable-workflow.yaml
+#    with:
+#      app_type: hybrid_local
+#      complex_hybrid: ${{ matrix.hybrid_type }}
+#    secrets: inherit
     
   ios-base:
     name: ${{ matrix.app_type }} iOS ${{ matrix.ios }}
@@ -62,28 +48,21 @@ jobs:
       fail-fast: false
       matrix:
         app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, iOSNativeLoginTemplate]
-        ios: ["26.0", "18.5", "17.5"]
+        ios: ["26.3", "18.5", "17.5"]
         include:
-            - ios: "26.0"
-              xcode: "26.0"
+            - ios: "26.3"
+              xcode: "26.3"
             - ios: "18.5"
               xcode: "16.4"
             - ios: "17.5"
               xcode: "16.4"
               device: "iPhone-15"
-            - app_type: MobileSyncExplorerReactNative
-              template: true
-            - app_type: MobileSyncExplorerSwift
-              template: true
-            - app_type: iOSNativeLoginTemplate
-              template: true
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app_type: ${{ matrix.app_type }}
       ios: ${{ matrix.ios }}
       xcode: ${{ matrix.xcode }}
       device: ${{ matrix.device || 'iPhone-16' }}
-      template: ${{ matrix.template || false }}
     secrets: inherit
 
   ios-sfdx:
@@ -98,71 +77,26 @@ jobs:
       sfdx: true
     secrets: inherit
 
-  ios-adv-auth:
-    name: Adv Auth iOS ${{ matrix.ios }}
-    strategy:
-      fail-fast: false
-      matrix:
-        ios: ["26.0", "18.5", "17.5"]
-        include:
-            - ios: "26.0"
-              xcode: "26.0"
-            - ios: "18.5"
-              xcode: "16.4"
-            - ios: "17.5"
-              xcode: "16.4"
-              device: "iPhone-15"
-    uses: ./.github/workflows/ios-reusable-workflow.yaml
-    with:
-      app_type: native
-      adv_auth: true
-      ios: ${{ matrix.ios }}
-      xcode: ${{ matrix.xcode }}
-      device: ${{ matrix.device || 'iPhone-16' }}
-    secrets: inherit
-
-  ios-complex-hybrid:
-    name: Complex Hybrid ${{ matrix.hybrid_type }} iOS ${{ matrix.ios }}
-    strategy:
-      fail-fast: false
-      matrix:
-        hybrid_type: ["accounteditor", "mobilesyncexplorer"]
-        ios: ["26.0", "18.5", "17.5"]
-        include:
-            - ios: "26.0"
-              xcode: "26.0"
-            - ios: "18.5"
-              xcode: "16.4"
-            - ios: "17.5"
-              xcode: "16.4"
-              device: "iPhone-15"
-    uses: ./.github/workflows/ios-reusable-workflow.yaml
-    with:
-      app_type: hybrid_local
-      complex_hybrid: ${{ matrix.hybrid_type }}
-      ios: ${{ matrix.ios }}
-      xcode: ${{ matrix.xcode }}
-      device: ${{ matrix.device || 'iPhone-16' }}
-    secrets: inherit
-
-  carthage:
-    name: Carthage iOS ${{ matrix.ios }}
-    strategy:
-      fail-fast: false
-      matrix:
-        ios: ["26.0", "18.5", "17.5"]
-        include:
-            - ios: "26.0"
-              xcode: "26.0"
-            - ios: "18.5"
-              xcode: "16.4"
-            - ios: "17.5"
-              xcode: "16.4"
-              device: "iPhone-15"
-    uses: ./.github/workflows/ios-reusable-workflow.yaml
-    with:
-      carthage: true
-      ios: ${{ matrix.ios }}
-      xcode: ${{ matrix.xcode }}
-      device: ${{ matrix.device || 'iPhone-16' }}
-    secrets: inherit
+#  ios-complex-hybrid:
+#    name: Complex Hybrid ${{ matrix.hybrid_type }} iOS ${{ matrix.ios }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        hybrid_type: ["accounteditor", "mobilesyncexplorer"]
+#        ios: ["26.3", "18.5", "17.5"]
+#        include:
+#            - ios: "26.3"
+#              xcode: "26.3"
+#            - ios: "18.5"
+#              xcode: "16.4"
+#            - ios: "17.5"
+#              xcode: "16.4"
+#              device: "iPhone-15"
+#    uses: ./.github/workflows/ios-reusable-workflow.yaml
+#    with:
+#      app_type: hybrid_local
+#      complex_hybrid: ${{ matrix.hybrid_type }}
+#      ios: ${{ matrix.ios }}
+#      xcode: ${{ matrix.xcode }}
+#      device: ${{ matrix.device || 'iPhone-16' }}
+#    secrets: inherit

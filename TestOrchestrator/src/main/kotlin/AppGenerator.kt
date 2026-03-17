@@ -2,7 +2,6 @@ package com.salesforce
 
 import com.salesforce.util.runCommand
 import com.salesforce.util.verbosePrinter
-import java.io.File
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
@@ -39,12 +38,8 @@ fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
         generationCommand.add("--use-sfdx")
     }
 
-    when(val result = generationCommand.runCommand()) {
-        0 -> { verbosePrinter?.success("Success!") }
-        else -> {
-            verbosePrinter?.invoke("Error: $result", err = true)
-            // Throw???
-        }
+    if (generationCommand.runCommand() != 0) {
+        throw Exception("Unable to generate app.")
     }
 
     return getAppInfo(appSource)

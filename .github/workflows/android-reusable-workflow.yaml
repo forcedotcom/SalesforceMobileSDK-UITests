@@ -4,13 +4,7 @@ on:
       app_type:
         type: string
         default: native
-      template:
-        type: boolean
-        default: false
       sfdx:
-        type: boolean
-        default: false
-      adv_auth:
         type: boolean
         default: false
       is_pr:
@@ -25,10 +19,7 @@ jobs:
     name: ${{ inputs.app_type }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} complex_hybrid:${{ inputs.complex_hybrid }}
     runs-on: ubuntu-latest
     env:
-      FASTLANE_SKIP_UPDATE_CHECK: "true"
-      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-adv_auth:${{ inputs.adv_auth }}-complex_hybrid:${{ inputs.complex_hybrid }}-build:${{ github.run_number }}"
-      CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
-      CI_USER_NATIVE_PASSWORD: ${{ secrets.CI_USER_NATIVE_PASSWORD }}
+      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-complex_hybrid:${{ inputs.complex_hybrid }}-build:${{ github.run_number }}"
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -41,7 +32,9 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
       - name: Install Dependencies
-        run: ./install.sh
+        run: |
+          ./install.sh
+          echo $ANDROID_UI_TEST_CONFIG > ./shared/test/android/ui_test_config.json
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -62,13 +55,13 @@ jobs:
       - name: Build ${{ inputs.app_type }} and Test Login
         continue-on-error: true
         run: |
-          TYPE="type"
+          SFDX=""
 
-          if ${{ inputs.template }} ; then
-            TYPE="template"
+          if ${{ inputs.sfdx }} ; then
+            TYPE="--sf"
           fi
 
-          cd .github && fastlane android ${TYPE}:${{ inputs.app_type }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }} complexHybrid:${{ inputs.complex_hybrid }}
+          ./test android ${TYPE}:${{ inputs.app_type }} ${SFDX}
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()

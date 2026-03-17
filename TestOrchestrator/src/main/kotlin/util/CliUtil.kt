@@ -8,6 +8,7 @@ import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.rendering.TextStyles
 import com.github.ajalt.mordant.rendering.Widget
 import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.widgets.Padding
 import com.github.ajalt.mordant.widgets.Panel
 import com.github.ajalt.mordant.widgets.Text
 import com.github.ajalt.mordant.widgets.definitionList
@@ -21,26 +22,36 @@ import kotlin.collections.windowed
 var progress: ThreadProgressTaskAnimator<ProgressState>? = null
 
 var verbosePrinter: Printer? = null
+
 data class ProgressState(
     val completedSteps: List<String> = emptyList(),
     val currentStep: String = "",
+    val testPassed: Boolean = false,
+    val error: String? = null,
 ) {
     fun advance(nextStep: String) = ProgressState(
         completedSteps = completedSteps + currentStep,
         currentStep = nextStep,
     )
+
+    fun fail(message: String) = copy(error = message)
+
+    fun pass() = copy(testPassed = true)
 }
 
 class Printer(private val terminal: Terminal) {
     operator fun invoke(message: String, err: Boolean = false) {
-        if (err) {
-            terminal.println(TextColors.red("\n\n$message\n\n"), stderr = true)
+        val widget = if (err) {
+            Panel(Text(TextColors.red(message)), padding = Padding(1),)
         } else {
-            terminal.println(TextStyles.bold("\n\n$message\n\n"))
+            Panel(Text(TextStyles.bold(message)), padding = Padding(1),)
         }
+        terminal.println(widget, stderr = err)
     }
 
-    fun success(message: String) = terminal.println(TextColors.green("\n\n$message\n\n"))
+    fun success(message: String) = terminal.println(
+        widget = Panel(Text(TextColors.green(message)), padding = Padding(1))
+    )
 }
 
 object PanelProgressBarMaker : ProgressBarWidgetMaker {
@@ -53,7 +64,12 @@ object PanelProgressBarMaker : ProgressBarWidgetMaker {
                 entry(term, desc)
             }
         }
-        return Panel(inner, title = Text(title))
+        return Panel(
+            content = inner,
+            title = Text(title),
+            expand = true,
+            padding = Padding( 1, 2, 1, 2),
+        )
     }
 }
 

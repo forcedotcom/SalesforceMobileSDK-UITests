@@ -4,16 +4,7 @@ on:
       app_type:
         type: string
         default: native
-      template:
-        type: boolean
-        default: false
       sfdx:
-        type: boolean
-        default: false
-      adv_auth:
-        type: boolean
-        default: false
-      carthage:
         type: boolean
         default: false
       is_pr:
@@ -39,10 +30,6 @@ jobs:
   test-ios:
     name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} carthage:${{ inputs.carthage }} complex_hybrid:${{ inputs.complex_hybrid }}
     runs-on: ${{ inputs.macos }}
-    env:
-      FASTLANE_SKIP_UPDATE_CHECK: "true"
-      CI_USER_PASSWORD: ${{ secrets.CI_USER_PASSWORD }}
-      CI_USER_NATIVE_PASSWORD: ${{ secrets.CI_USER_NATIVE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -51,24 +38,20 @@ jobs:
       - uses: actions/checkout@v4
         if: ${{ ! inputs.is_pr }}
       - name: Install Dependencies
-        run: ./install.sh
+        run: |
+          ./install.sh
+          echo $IOS_UI_TEST_CONFIG > ./shared/test/ios/ui_test_config.json
       - name: Install iOS 17 runtime if needed
         if: ${{ inputs.ios == '17.5' }}
         run: xcodes runtimes install "iOS 17.5"
       - name: Build ${{ inputs.app_type }} ${{ inputs.ios }} and Test Login
-        if: ${{ ! inputs.carthage }}
         env:
           GITHUB_RUN_NUM: ${{ github.run_number }}
         run: |
-          TYPE="type"
+          SFDX=""
 
-          if ${{ inputs.template }} ; then
-            TYPE="template"
+          if ${{ inputs.sfdx }} ; then
+            TYPE="--sf"
           fi
 
-          cd .github && fastlane ios ${TYPE}:${{ inputs.app_type }} ios:${{ inputs.ios }} adv_auth:${{ inputs.adv_auth }} sfdx:${{ inputs.sfdx }} device:${{ inputs.device }} complexHybrid:${{ inputs.complex_hybrid }}
-      - name: Carthage Build and Test
-        if: ${{ inputs.carthage }}
-        env:
-          GITHUB_RUN_NUM: ${{ github.run_number }}
-        run: cd .github && fastlane test_carthage ios:${{ inputs.ios }} device:${{ inputs.device }}
+          ./test ios ${TYPE}:${{ inputs.app_type }} ios:${{ inputs.ios }} device:${{ inputs.device }} ${SFDX}

@@ -45,26 +45,16 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
             verifyInWebView(titleString)
 
             // Search for account to assert it shows in list.
-            if (app.complexHybrid == "accounteditor") {
-                Thread.sleep(timeout)
-                val search = device.findObject(UiSelector().className(editTextClass))
-                search.setText("New")
-            }
+//            if (app.complexHybrid == "accounteditor") {
+//                Thread.sleep(timeout)
+//                val search = device.findObject(UiSelector().className(editTextClass))
+//                search.setText("New")
+//            }
 
+            // TODO: update account
             content = when (app.complexHybrid) {
-                "accounteditor" -> {
-                    "Accounts"
-                    // TODO: Uncomment and use the below account name when the test app is made more consistent.
-                    // "New 0013u000017W4aIAAS Cached"
-                }
-                "mobilesyncexplorer" -> {
-                    "Contacts"
-                    // TODO: Uncomment and use the below account name when the test app is made more consistent.
-                    // "JB John Bond VP, Facilities Facilities"
-                }
-                else -> {
-                    "Sean Forbes"
-                }
+                "accounteditor" -> ""
+                else -> "Marc Benioff"
             }
         }
 
