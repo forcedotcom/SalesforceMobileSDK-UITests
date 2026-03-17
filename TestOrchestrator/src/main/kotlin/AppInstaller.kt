@@ -2,7 +2,7 @@ package com.salesforce
 
 import com.salesforce.Test.Companion.ADB
 import com.salesforce.Test.Companion.SIM_NAME
-import com.salesforce.util.progress
+import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
 import com.salesforce.util.verbosePrinter
 import java.io.File
@@ -12,7 +12,7 @@ fun installAndroidApp(appInfo: AppInfo) {
     "$ADB push shared/test/android/ui_test_config.json /data/local/tmp/ui_test_config.json".runCommand()
     "$ADB uninstall ${appInfo.packageName}".runCommand()
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Install App")
         completed += 1
     }
@@ -26,7 +26,7 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
         val result = "xcrun simctl delete $SIM_NAME".runCommand(suppressErrors = true)
     } while (result == 0)
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Create Simulator")
         completed += 1
     }
@@ -43,7 +43,7 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
         throw Exception("Failed to create simulator (exit $createExitCode): $simId")
     }
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Boot Simulator")
         completed += 1
     }
@@ -51,7 +51,7 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
     "xcrun simctl boot $simId".runCommand()
     Thread.sleep(3000)
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Install App")
         completed += 1
     }

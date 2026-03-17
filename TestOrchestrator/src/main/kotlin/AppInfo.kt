@@ -8,6 +8,7 @@ data class AppInfo(
     val isHybrid: Boolean = false,
     val isReact: Boolean = false,
     val debugBuild: Boolean = false,
+    val complexHybridType: String? = null,
 ) {
     val androidRoot = if (isHybrid) "$appPath/platforms/android" else appPath
     val apkPath = "$androidRoot/app/build/outputs/apk/${
@@ -47,6 +48,12 @@ abstract class AppSource(open val os: OS) {
                         || type == AppType.COMPLEX_HYBRID_MOBILE_SYNC
             }
             else -> false
+        }
+    }
+    val complexHybridName: String? by lazy {
+        when(this) {
+            is ByType -> if (isComplexHybrid) type.scriptValue else null
+            else -> null
         }
     }
     val isReact by lazy { appName.contains("react") }

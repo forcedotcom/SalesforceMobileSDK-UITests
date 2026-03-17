@@ -19,10 +19,14 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.windowed
 
-var progress: ThreadProgressTaskAnimator<ProgressState>? = null
+var progressBanner: ThreadProgressTaskAnimator<ProgressState>? = null
 
 var verbosePrinter: Printer? = null
 
+fun ThreadProgressTaskAnimator<ProgressState>.finish() {
+    Thread.sleep(500)
+    this.stop()
+}
 data class ProgressState(
     val completedSteps: List<String> = emptyList(),
     val currentStep: String = "",

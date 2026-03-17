@@ -1,6 +1,6 @@
 package com.salesforce
 
-import com.salesforce.util.progress
+import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
 import com.salesforce.util.verbosePrinter
 import java.io.File
@@ -55,8 +55,9 @@ fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
 }
 
 private fun setupComplexHybrid(appInfo: AppInfo) {
-    val complexType = appInfo.appName.removePrefix("complex_hybrid")
-    progress?.update {
+    val complexType = appInfo.complexHybridType
+        ?: throw Exception("Complex hybrid type not set on AppInfo.")
+    progressBanner?.update {
         context = context.advance("Setup Complex Hybrid")
         completed += 1
     }
@@ -107,6 +108,7 @@ fun getAppInfo(appSource: AppSource): AppInfo {
             packageName = "com.salesforce.$appName",
             isHybrid = isHybrid,
             isReact = isReact,
+            complexHybridType = complexHybridName,
         )
     }
 }

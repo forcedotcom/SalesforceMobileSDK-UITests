@@ -1,8 +1,9 @@
 package com.salesforce
 
 import com.salesforce.Test.Companion.ANDROID_BUILD_DIR
-import com.salesforce.util.progress
+import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
+import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
 import java.io.File
 
@@ -18,7 +19,7 @@ fun compileApp(
 
     setLoginUrl(appInfo, loginUrl)
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Set OAuth Config")
         completed += 1
     }
@@ -47,7 +48,7 @@ fun compileApp(
             }
         }
 
-        progress?.update {
+        progressBanner?.update {
             context = context.advance("Compile App")
             completed += 1
         }
@@ -57,7 +58,11 @@ fun compileApp(
         when (os) {
             OS.ANDROID -> {
                 // TODO: Does RN need  -PreactNativeDevServerPort=8081 --no-daemon ???
-                "./gradlew assemble$configuration".runCommand(androidRoot)
+                val buildResult = "./gradlew assemble$configuration"
+                    .split(" ").runCommandCapture(androidRoot)
+                if (buildResult.exitCode != 0) {
+                    throw Exception("Android build failed.\n${buildResult.output?.takeLast(500)}")
+                }
 
                 if (!debug) {
                     signReleaseApk(apkPath)
@@ -65,21 +70,24 @@ fun compileApp(
             }
             OS.IOS -> {
                 val iosRoot = if (isHybrid) "$appPath/platforms/ios" else appPath
-                listOf(
+                val buildResult = listOf(
                     "xcodebuild", "build",
                     "-workspace", "$appName.xcworkspace",
                     "-scheme", appName,
                     "-sdk", "iphonesimulator",
                     "-configuration", configuration,
                     "-derivedDataPath", "./DerivedData"
-                ).runCommand(iosRoot)
+                ).runCommandCapture(iosRoot)
+                if (buildResult.exitCode != 0) {
+                    throw Exception("iOS build failed.\n${buildResult.output?.takeLast(500)}")
+                }
             }
         }
     }
 }
 
 private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Set Login URL")
         completed += 1
     }
@@ -168,7 +176,7 @@ private fun signReleaseApk(apkPath: String) {
     val keystoreFile = File("uitest.keystore")
     val keystorePass = "test12"
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Sign Release APK")
         completed += 1
     }

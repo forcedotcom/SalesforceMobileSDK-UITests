@@ -1,0 +1,48 @@
+{
+  "configurations" : [
+    {
+      "id" : "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "environmentVariableEntries" : [
+      {
+        "key" : "USERNAME",
+        "value" : "$(USERNAME)"
+      },
+      {
+        "key" : "PASSWORD",
+        "value" : "$(PASSWORD)"
+      },
+      {
+        "key" : "TEST_APP_BUNDLE",
+        "value" : "$(TEST_APP_BUNDLE)"
+      },
+      {
+        "key" : "COMPLEX_HYBRID",
+        "value" : "$(COMPLEX_HYBRID)"
+      }
+    ],
+    "maximumTestRepetitions" : 2,
+    "testRepetitionMode" : "retryOnFailure"
+  },
+  "testTargets" : [
+    {
+      "skippedTests" : [
+        "BaseSDKTest",
+        "LoginTests",
+        "PasscodeTests"
+      ],
+      "target" : {
+        "containerPath" : "container:SalesforceMobileSDK-UITest.xcodeproj",
+        "identifier" : "A34A749E20239B4E00846B32",
+        "name" : "SalesforceMobileSDK-UITest"
+      }
+    }
+  ],
+  "version" : 1
+}

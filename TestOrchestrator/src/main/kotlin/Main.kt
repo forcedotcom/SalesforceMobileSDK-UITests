@@ -30,7 +30,8 @@ import com.salesforce.util.ArgumentsFirstHelpFormatter
 import com.salesforce.util.PanelProgressBarMaker
 import com.salesforce.util.Printer
 import com.salesforce.util.ProgressState
-import com.salesforce.util.progress
+import com.salesforce.util.finish
+import com.salesforce.util.progressBanner
 import com.salesforce.util.verboseCommandOutput
 import com.salesforce.util.verbosePrinter
 import java.io.File
@@ -129,14 +130,11 @@ class Test : CliktCommand() {
                     OS.ANDROID -> 7
                     OS.IOS -> 9
                 }
-                if (useFirebase) {
-                    totalSteps--
-                }
                 if (appSource.isComplexHybrid) {
                     totalSteps++
                 }
 
-                val progressBanner = progressBarContextLayout<ProgressState> {
+                progressBanner = progressBarContextLayout<ProgressState> {
                     text {
                         context.completedSteps.joinToString("\n") { "${TextColors.green("✔")} $it" }
                     }; text("")
@@ -167,10 +165,7 @@ class Test : CliktCommand() {
                     context = ProgressState(currentStep = "Generate App"),
                     total = totalSteps,
                     maker = marker,
-                )
-                progressBanner.execute()
-
-                progress = progressBanner
+                ).also { it.execute() }
             }
 
             try {
@@ -186,11 +181,11 @@ class Test : CliktCommand() {
                 runTests(appInfo, iOSVersion ?: DEFAULT_IOS_VERSION, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)
-                progress?.update {
+                progressBanner?.update {
                     context = context.fail(e.message ?: e.toString())
                 }
-                sleep(200)
-                progress?.stop()
+                progressBanner?.finish()
+                verbosePrinter?.invoke("${appSource.appName} failed: ${e.message ?: e.toString()}", err = true)
             }
         }
 

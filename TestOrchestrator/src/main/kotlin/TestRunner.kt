@@ -4,7 +4,8 @@ import com.salesforce.Test.Companion.ANDROID_TEST_DIR
 import com.salesforce.Test.Companion.GCLOUD_RESULTS_DIR
 import com.salesforce.Test.Companion.IOS_TEST_DIR
 import com.salesforce.Test.Companion.SIM_NAME
-import com.salesforce.util.progress
+import com.salesforce.util.finish
+import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
 import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
@@ -26,12 +27,11 @@ fun runTests(appInfo: AppInfo, iOSVersion: String, iOSDevice: String, useFirebas
         OS.IOS -> runIosTestsLocally(appInfo, iOSVersion, iOSDevice)
     }
 
-    progress?.update {
+    progressBanner?.update {
         context = context.pass()
         completed += 1
     }
-    Thread.sleep(500)
-    progress?.stop()
+    progressBanner?.finish()
 }
 
 private fun runAndroidTestsLocal(appInfo: AppInfo) {
@@ -44,15 +44,18 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
     val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "TestNativeLogin" else "TestLogin"
     val classParam =  "-Pandroid.testInstrumentationRunnerArguments.class=${ANDROID_TEST_CLASS_DIR}.$testClass"
     val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
+    val complexHybridParam = appInfo.complexHybridType?.let {
+        "-Pandroid.testInstrumentationRunnerArguments.complexHybrid=$it"
+    } ?: ""
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Run Login Test")
         completed += 1
     }
     verbosePrinter?.invoke("Running Login Test")
 
-    val result = "./gradlew $classParam $packageParam connectedAndroidTest"
-        .split(" ").runCommandCapture(workingDir = ANDROID_TEST_DIR)
+    val result = "./gradlew $classParam $packageParam $complexHybridParam connectedAndroidTest"
+        .split(" ").filter { it.isNotEmpty() }.runCommandCapture(workingDir = ANDROID_TEST_DIR)
 
     if (result.exitCode != 0) {
         throw Exception(parseTestFailure(result.output))
@@ -60,7 +63,19 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
 }
 
 private fun runAndroidTestsFirebase(appInfo: AppInfo) {
-    progress?.update {
+    progressBanner?.update {
+        context = context.advance("Compile Tests")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Compiling Test APK")
+
+    val buildResult = "./gradlew app:assembleAndroidTest"
+        .split(" ").runCommandCapture(workingDir = ANDROID_TEST_DIR)
+    if (buildResult.exitCode != 0) {
+        throw Exception("Test APK failed to build.\n${buildResult.output?.takeLast(500)}")
+    }
+
+    progressBanner?.update {
         context = context.advance("Run Login Test")
         completed += 1
     }
@@ -82,7 +97,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
             $devices
             --results-history-name=UITest-${appInfo.appName}
             --results-dir=$GCLOUD_RESULTS_DIR
-            --environment-variables class=${ANDROID_TEST_CLASS_DIR}.$testClass,packageName=${appInfo.packageName}
+            --environment-variables class=${ANDROID_TEST_CLASS_DIR}.$testClass,packageName=${appInfo.packageName}${appInfo.complexHybridType?.let { ",complexHybrid=$it" } ?: ""}
             --no-performance-metrics 
             --no-auto-google-login 
             --num-flaky-test-attempts=1
@@ -102,22 +117,26 @@ private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, iOSDevice: 
     val resultBundlePath = File(IOS_TEST_DIR, "test_output/${appInfo.appName}")
     resultBundlePath.deleteRecursively()
 
-    progress?.update {
+    progressBanner?.update {
         context = context.advance("Run Login Tests")
         completed += 1
     }
     verbosePrinter?.invoke("Running Login Tests")
     val user = iosTestConfig.getUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
-    val result = listOf(
-        "xcodebuild", "test",
-        "-project", "SalesforceMobileSDK-UITest.xcodeproj",
-        "-scheme", testScheme,
-        "-destination", "platform=iOS Simulator,name=$SIM_NAME",
-        "-resultBundlePath", "test_output/${appInfo.appName}",
-        "TEST_APP_BUNDLE=${appInfo.packageName}",
-        "USERNAME=${user.username}",
-        "PASSWORD=${user.password}",
-    ).runCommandCapture(workingDir = IOS_TEST_DIR)
+    val testCommand = buildList {
+        addAll(listOf(
+            "xcodebuild", "test",
+            "-project", "SalesforceMobileSDK-UITest.xcodeproj",
+            "-scheme", testScheme,
+            "-destination", "platform=iOS Simulator,name=$SIM_NAME",
+            "-resultBundlePath", "test_output/${appInfo.appName}",
+            "TEST_APP_BUNDLE=${appInfo.packageName}",
+            "USERNAME=${user.username}",
+            "PASSWORD=${user.password}",
+        ))
+        appInfo.complexHybridType?.let { add("COMPLEX_HYBRID=$it") }
+    }
+    val result = testCommand.runCommandCapture(workingDir = IOS_TEST_DIR)
 
     // Shutdown simulator
     "xcrun simctl shutdown $SIM_NAME".runCommand()
