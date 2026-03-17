@@ -8,21 +8,22 @@ import com.salesforce.util.progress
 import com.salesforce.util.runCommand
 import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
-import jdk.internal.platform.Container.metrics
-import jdk.internal.vm.vector.VectorSupport.test
-import sun.security.jgss.GSSUtil.login
 import java.io.File
 
 const val MIN_API_LEVEL = 28
 const val MAX_API_LEVEL = 36
 const val ANDROID_TEST_CLASS_DIR = "com.salesforce.mobilesdk.mobilesdkuitest.login"
 
-fun runTests(appInfo: AppInfo, iOSVersion: String, useFirebase: Boolean) {
+fun runTests(appInfo: AppInfo, iOSVersion: String, iOSDevice: String, useFirebase: Boolean) {
     when (appInfo.os) {
-        OS.ANDROID if useFirebase -> runAndroidTestsFirebase(appInfo)
-        OS.ANDROID if !useFirebase -> runAndroidTestsLocal(appInfo)
-        OS.IOS -> runIosTestsLocally(appInfo, iOSVersion)
-        else -> {}
+        OS.ANDROID -> {
+            if (useFirebase) {
+                runAndroidTestsFirebase(appInfo)
+            } else {
+                runAndroidTestsLocal(appInfo)
+            }
+        }
+        OS.IOS -> runIosTestsLocally(appInfo, iOSVersion, iOSDevice)
     }
 
     progress?.update {
@@ -57,9 +58,6 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
         throw Exception(parseTestFailure(result.output))
     }
 }
-
-
-
 
 private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     progress?.update {
@@ -96,12 +94,10 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
         }
 }
 
-private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String) {
-    installIosApp(appInfo, iOSVersion)
+private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
+    installIosApp(appInfo, iOSVersion, iOSDevice)
 
-    // Determine test scheme
     val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "TestNativeLogin" else "TestLogin"
-
     // Clean up previous test results
     val resultBundlePath = File(IOS_TEST_DIR, "test_output/${appInfo.appName}")
     resultBundlePath.deleteRecursively()

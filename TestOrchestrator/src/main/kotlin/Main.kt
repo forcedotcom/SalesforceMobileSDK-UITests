@@ -1,30 +1,26 @@
 package com.salesforce
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.UsageError
+import com.github.ajalt.clikt.core.installMordantMarkdown
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.terminal
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.arguments.help
-import com.github.ajalt.clikt.parameters.options.help
-import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.core.UsageError
-import com.github.ajalt.clikt.core.installMordantMarkdown
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.arguments.unique
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.help
+import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.boolean
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.mordant.animation.progress.animateOnThread
 import com.github.ajalt.mordant.animation.progress.execute
 import com.github.ajalt.mordant.rendering.TextColors
-import com.github.ajalt.mordant.rendering.TextStyle
-import com.github.ajalt.mordant.rendering.Widget
 import com.github.ajalt.mordant.terminal.Terminal
-import com.github.ajalt.mordant.widgets.ProgressBar
 import com.github.ajalt.mordant.widgets.Spinner
-import com.github.ajalt.mordant.widgets.progress.completed
 import com.github.ajalt.mordant.widgets.progress.progressBar
 import com.github.ajalt.mordant.widgets.progress.progressBarContextLayout
 import com.github.ajalt.mordant.widgets.progress.spinner
@@ -34,17 +30,18 @@ import com.salesforce.util.ArgumentsFirstHelpFormatter
 import com.salesforce.util.PanelProgressBarMaker
 import com.salesforce.util.Printer
 import com.salesforce.util.ProgressState
-import com.salesforce.util.verbosePrinter
 import com.salesforce.util.progress
 import com.salesforce.util.verboseCommandOutput
+import com.salesforce.util.verbosePrinter
 import java.io.File
 import java.lang.Thread.sleep
 import kotlin.io.path.Path
-import kotlin.system.exitProcess
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
+import kotlin.system.exitProcess
 
-const val DEFAULT_IOS_VERSION = "26.2"
+const val DEFAULT_IOS_VERSION = "26.3"
+const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
 
 class Test : CliktCommand() {
 
@@ -60,15 +57,18 @@ class Test : CliktCommand() {
         .help("android or ios")
     val iOSVersion: String? by option("--ios", "--iOSVersion")
         .help("iOS version number (ex: $DEFAULT_IOS_VERSION).")
+    val iOSDevice: String? by option("--device", "--iOSDevice")
+        .help("iOS Simulator device type (ex: $DEFAULT_IOS_DEVICE). Uses SimDeviceType identifier format.")
     val appSources: Set<AppSource> by argument("app type or template")
         .help("App type (${AppType.entries.joinToString(", ") { it.name.lowercase() }}) " +
-                "\u0085or a template URL/name (multiple allowed, space separated)")
+                "\u0085or a template URL/name (CamelCase or URL)" +
+                "\u0085or a complex hybrid sample name (e.g. accounteditor)" +
+                "\u0085(multiple allowed, space separated)")
         .convert { input ->
             val appType = AppType.entries.find { it.name.equals(input, ignoreCase = true) }
-            if (appType != null) {
-                AppSource.ByType(os, type = appType)
-            } else {
-                AppSource.ByTemplate(os, template = input)
+            when {
+                appType != null -> AppSource.ByType(os, type = appType)
+                else -> AppSource.ByTemplate(os, template = input)
             }
         }
         .multiple().unique()
@@ -84,7 +84,7 @@ class Test : CliktCommand() {
         .help("Show all command output. Automatically on for CI.")
     val preserverGeneratedApps: Boolean by option("-p", "--preserverGeneratedApps").flag()
         .help("Do not cleanup generated apps from previous runs.")
-    // TODO: complexHybrid
+
 
     override fun run() {
         val failures = mutableListOf<Pair<String, Exception>>()
@@ -94,6 +94,9 @@ class Test : CliktCommand() {
             OS.ANDROID -> {
                 if (iOSVersion != null) {
                     throw UsageError("--iOSVersion can only be used with iOS")
+                }
+                if (iOSDevice != null) {
+                    throw UsageError("--device can only be used with iOS")
                 }
                 if (appSources.find { it.appName.contains("swift") } != null) {
                     throw UsageError("Swift apps can only be built with iOS")
@@ -120,11 +123,15 @@ class Test : CliktCommand() {
             } else {
                 val marker = PanelProgressBarMaker
                 marker.title = "Testing ${appSource.appName}"
-                val totalSteps: Long = when(os) {
-                    OS.ANDROID -> {
-                        if (useFirebase) 6 else 7
-                    }
+                var totalSteps: Long = when(os) {
+                    OS.ANDROID -> 7
                     OS.IOS -> 9
+                }
+                if (useFirebase) {
+                    totalSteps--
+                }
+                if (appSource.isComplexHybrid) {
+                    totalSteps++
                 }
 
                 val progressBanner = progressBarContextLayout<ProgressState> {
@@ -174,7 +181,7 @@ class Test : CliktCommand() {
 
                 compileApp(appInfo, debug)
 
-                runTests(appInfo, iOSVersion ?: DEFAULT_IOS_VERSION, useFirebase)
+                runTests(appInfo, iOSVersion ?: DEFAULT_IOS_VERSION, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)
                 progress?.update {

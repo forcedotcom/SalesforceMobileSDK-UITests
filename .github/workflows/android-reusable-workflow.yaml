@@ -10,16 +10,13 @@ on:
       is_pr:
         type: boolean
         default: false
-      complex_hybrid:
-        required: false
-        type: string
 
 jobs:
   test-android:
-    name: ${{ inputs.app_type }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} complex_hybrid:${{ inputs.complex_hybrid }}
+    name: ${{ inputs.app_type }} sfdx=${{ inputs.sfdx }}
     runs-on: ubuntu-latest
     env:
-      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-complex_hybrid:${{ inputs.complex_hybrid }}-build:${{ github.run_number }}"
+      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-build:${{ github.run_number }}"
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -61,7 +58,7 @@ jobs:
             TYPE="--sf"
           fi
 
-          ./test android ${TYPE}:${{ inputs.app_type }} ${SFDX}
+          ./test android ${{ inputs.app_type }} ${SFDX}
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()

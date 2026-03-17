@@ -20,7 +20,7 @@ fun installAndroidApp(appInfo: AppInfo) {
     "$ADB install -r ${appInfo.apkPath}".runCommand()
 }
 
-fun installIosApp(appInfo: AppInfo, iOSVersion: String) {
+fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
     // Clean up any existing test simulator
     do {
         val result = "xcrun simctl delete $SIM_NAME".runCommand(suppressErrors = true)
@@ -34,7 +34,7 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String) {
     val iosRuntime = iOSVersion.replace(".", "-")
     val createProcess = ProcessBuilder(
         "xcrun", "simctl", "create", SIM_NAME,
-        "com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation",
+        "com.apple.CoreSimulator.SimDeviceType.$iOSDevice",
         "com.apple.CoreSimulator.SimRuntime.iOS-$iosRuntime"
     ).redirectErrorStream(true).start()
     val simId = createProcess.inputStream.bufferedReader().readText().trim()

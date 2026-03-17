@@ -7,14 +7,18 @@ This repo contains tests designed to validate the functionality of apps created 
 2.  Run `./test` with your desired arguments:
 
 ```terminaloutput
-Usage: test <os> <app type or template> [<options>]
+Usage: test <os> [<app type or template>]... [<options>]
 
 Arguments:
   <os>                    android or ios
-  <app type or template>  An app type (native, native_kotlin, native_swift, hybrid_local, hybrid_remote, react_native) or a template URL/name
+  <app type or template>  App type (native, native_kotlin, native_swift, hybrid_local, hybrid_remote, complex_hybrid_account_editor, complex_hybrid_mobile_sync, react_native)
+                          or a template URL/name (CamelCase or URL)
+                          or a complex hybrid sample name (e.g. accounteditor)
+                          (multiple allowed, space separated)
 
 Options:
-  -ios, --iOSVersion=<text>     iOS version number (ex: 26.2).
+  --ios, --iOSVersion=<text>    iOS version number (ex: 26.3).
+  --device, --iOSDevice=<text>  iOS Simulator device type (ex: iPhone-SE-3rd-generation). Uses SimDeviceType identifier format.
   --sf, --sfdx                  Use SF (formerly SFDX) to generate the app.
   -d, --compileDebug            Compile a debug build.
   -r, --reRun                   Run the validation test again without re-generating the app.
@@ -26,13 +30,9 @@ Options:
 
 ----------
 
-#### Platform Differences
-
-Android runs against the currently open emulator unless `--firebase` is used, which runs against all supported API levels simultaniously.
-
 ##### Local Testing
 
-iOS runs create (and later destroy) a simulator to test against.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against which ever emulator is currently open.  If the `--firebase` option is provided the test will execute against all supported API levels simultaniously.
+iOS runs create (and later destroy) a simulator to test against.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against which ever emulators are currently open.  If the `--firebase` option is provided the test will execute against all supported API levels simultaniously in Test Lab.
 
 To compile the `test` executable after making changes to the `TestOrchestrator` project simply run: 
 ```bash

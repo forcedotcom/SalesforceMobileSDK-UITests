@@ -32,16 +32,17 @@ enum class AppType(val scriptValue: String) {
     NATIVE_SWIFT("native_swift"),
     HYBRID_LOCAL("hybrid_local"),
     HYBRID_REMOTE("hybrid_remote"),
+    COMPLEX_HYBRID_ACCOUNT_EDITOR("complex_hybrid_accounteditor"),
+    COMPLEX_HYBRID_MOBILE_SYNC("complex_hybrid_mobilesyncexplorer"),
     REACT_NATIVE("react_native"),
     ;
-
-    val isHybrid: Boolean get() = this == HYBRID_LOCAL || this == HYBRID_REMOTE
 }
 
 abstract class AppSource(open val os: OS) {
     val osName by lazy { os.name.lowercase() }
     abstract val appName: String
     val isHybrid by lazy { appName.contains("hybrid") }
+    val isComplexHybrid by lazy { appName.contains("complex") }
     val isReact by lazy { appName.contains("react") }
 
     data class ByType(override val os: OS, val type: AppType) : AppSource(os) {

@@ -7,28 +7,25 @@ on:
       sfdx:
         type: boolean
         default: false
-      is_pr:
-        type: boolean
-        default: false
-      complex_hybrid:
-        required: false
-        type: string
       ios: 
         type: string
-        default: "26.0"
+        default: "26.3"
       xcode:
         type: string
-        default: "26.0"
-      macos:
-        type: string
-        default: macos-26
+        default: "26.3"
       device:
         type: string
         default: "iPhone-16"
+      macos:
+        type: string
+        default: macos-26
+      is_pr:
+        type: boolean
+        default: false
     
 jobs:
   test-ios:
-    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx:${{ inputs.sfdx }} adv_auth:${{ inputs.adv_auth }} carthage:${{ inputs.carthage }} complex_hybrid:${{ inputs.complex_hybrid }}
+    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx=${{ inputs.sfdx }}
     runs-on: ${{ inputs.macos }}
     steps:
       - uses: actions/checkout@v4
@@ -54,4 +51,4 @@ jobs:
             TYPE="--sf"
           fi
 
-          ./test ios ${TYPE}:${{ inputs.app_type }} ios:${{ inputs.ios }} device:${{ inputs.device }} ${SFDX}
+          ./test ios ${{ inputs.app_type }} --ios=${{ inputs.ios }} --device=${{ inputs.device }} ${SFDX}
