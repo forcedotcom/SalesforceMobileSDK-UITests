@@ -29,6 +29,8 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
       - name: Install Dependencies
+        env:
+          ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
         run: |
           ./install.sh
           echo $ANDROID_UI_TEST_CONFIG > ./shared/test/android/ui_test_config.json

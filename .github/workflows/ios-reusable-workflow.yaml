@@ -35,6 +35,8 @@ jobs:
       - uses: actions/checkout@v4
         if: ${{ ! inputs.is_pr }}
       - name: Install Dependencies
+        env:
+          IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
         run: |
           ./install.sh
           echo $IOS_UI_TEST_CONFIG > ./shared/test/ios/ui_test_config.json
