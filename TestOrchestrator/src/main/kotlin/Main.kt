@@ -65,7 +65,9 @@ class Test : CliktCommand() {
                 "\u0085or a complex hybrid sample name (e.g. accounteditor)" +
                 "\u0085(multiple allowed, space separated)")
         .convert { input ->
-            val appType = AppType.entries.find { it.name.equals(input, ignoreCase = true) }
+            val appType = AppType.entries.find {
+                it.name.equals(input, ignoreCase = true) || it.scriptValue.equals(input, ignoreCase = true)
+            }
             when {
                 appType != null -> AppSource.ByType(os, type = appType)
                 else -> AppSource.ByTemplate(os, template = input)

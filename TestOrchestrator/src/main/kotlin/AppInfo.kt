@@ -1,7 +1,5 @@
 package com.salesforce
 
-import java.nio.file.Path
-
 data class AppInfo(
     val os: OS,
     val appName: String,
@@ -32,8 +30,8 @@ enum class AppType(val scriptValue: String) {
     NATIVE_SWIFT("native_swift"),
     HYBRID_LOCAL("hybrid_local"),
     HYBRID_REMOTE("hybrid_remote"),
-    COMPLEX_HYBRID_ACCOUNT_EDITOR("complex_hybrid_accounteditor"),
-    COMPLEX_HYBRID_MOBILE_SYNC("complex_hybrid_mobilesyncexplorer"),
+    COMPLEX_HYBRID_ACCOUNT_EDITOR("accounteditor"),
+    COMPLEX_HYBRID_MOBILE_SYNC("mobilesyncexplorer"),
     REACT_NATIVE("react_native"),
     ;
 }
@@ -42,12 +40,23 @@ abstract class AppSource(open val os: OS) {
     val osName by lazy { os.name.lowercase() }
     abstract val appName: String
     val isHybrid by lazy { appName.contains("hybrid") }
-    val isComplexHybrid by lazy { appName.contains("complex") }
+    val isComplexHybrid by lazy {
+        when(this) {
+            is ByType -> {
+                type == AppType.COMPLEX_HYBRID_ACCOUNT_EDITOR
+                        || type == AppType.COMPLEX_HYBRID_MOBILE_SYNC
+            }
+            else -> false
+        }
+    }
     val isReact by lazy { appName.contains("react") }
 
     data class ByType(override val os: OS, val type: AppType) : AppSource(os) {
         // <android/ios><native/hybridlocal/etc>
-        override val appName = "${osName}${type.scriptValue.replace(oldValue = "_", newValue = "")}"
+        override val appName = when(type) {
+            AppType.COMPLEX_HYBRID_ACCOUNT_EDITOR, AppType.COMPLEX_HYBRID_MOBILE_SYNC -> "${osName}hybridlocal"
+            else -> "${osName}${type.scriptValue.replace(oldValue = "_", newValue = "")}"
+        }
     }
 
     data class ByTemplate(override val os: OS, val template: String) : AppSource(os) {
