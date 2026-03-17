@@ -13,7 +13,7 @@ on:
 
 jobs:
   test-android:
-    name: ${{ inputs.app_type }} sfdx=${{ inputs.sfdx }}
+    name: ${{ inputs.app_type }}
     runs-on: ubuntu-latest
     env:
       GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-build:${{ github.run_number }}"

@@ -41,7 +41,7 @@ import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 import kotlin.system.exitProcess
 
-const val DEFAULT_IOS_VERSION = "26.3"
+const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
 
 class Test : CliktCommand() {
@@ -57,7 +57,7 @@ class Test : CliktCommand() {
     val os: OS by argument().enum<OS>(ignoreCase = true, key = { it.name.lowercase() })
         .help("android or ios")
     val iOSVersion: String? by option("--ios", "--iOSVersion")
-        .help("iOS version number (ex: $DEFAULT_IOS_VERSION).")
+        .help("iOS major version or major.minor (ex: 26 or 26.2). If only the major version is provided, the highest available minor version is used.")
     val iOSDevice: String? by option("--device", "--iOSDevice")
         .help("iOS Simulator device type (ex: $DEFAULT_IOS_DEVICE). Uses SimDeviceType identifier format.")
     val appSources: Set<AppSource> by argument("app type or template")
@@ -66,8 +66,11 @@ class Test : CliktCommand() {
                 "\u0085or a complex hybrid sample name (e.g. accounteditor)" +
                 "\u0085(multiple allowed, space separated)")
         .convert { input ->
+            val normalizedInput = input.replace("_", "")
             val appType = AppType.entries.find {
-                it.name.equals(input, ignoreCase = true) || it.scriptValue.equals(input, ignoreCase = true)
+                it.name.equals(input, ignoreCase = true)
+                        || it.scriptValue.equals(input, ignoreCase = true)
+                        || it.name.replace("_", "").equals(normalizedInput, ignoreCase = true)
             }
             when {
                 appType != null -> AppSource.ByType(os, type = appType)

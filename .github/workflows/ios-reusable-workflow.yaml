@@ -7,9 +7,9 @@ on:
       sfdx:
         type: boolean
         default: false
-      ios: 
+      ios:
         type: string
-        default: "26.3"
+        default: "26"
       xcode:
         type: string
         default: "26.3"
@@ -25,7 +25,7 @@ on:
     
 jobs:
   test-ios:
-    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }} sfdx=${{ inputs.sfdx }}
+    name: ${{ inputs.app_type }} iOS ${{ inputs.ios }}
     runs-on: ${{ inputs.macos }}
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
           ./install.sh
           echo $IOS_UI_TEST_CONFIG > ./shared/test/ios/ui_test_config.json
       - name: Install iOS 17 runtime if needed
-        if: ${{ inputs.ios == '17.5' }}
+        if: ${{ inputs.ios == '17' }}
         run: xcodes runtimes install "iOS 17.5"
       - name: Build ${{ inputs.app_type }} ${{ inputs.ios }} and Test Login
         env:

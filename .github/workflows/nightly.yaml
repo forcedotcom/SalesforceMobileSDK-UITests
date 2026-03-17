@@ -36,13 +36,13 @@ jobs:
       fail-fast: false
       matrix:
         app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, iOSNativeLoginTemplate, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
-        ios: ["26.3", "18.5", "17.5"]
+        ios: ["26", "18", "17"]
         include:
-            - ios: "26.3"
+            - ios: "26"
               xcode: "26.3"
-            - ios: "18.5"
+            - ios: "18"
               xcode: "16.4"
-            - ios: "17.5"
+            - ios: "17"
               xcode: "16.4"
               device: "iPhone-15"
     uses: ./.github/workflows/ios-reusable-workflow.yaml

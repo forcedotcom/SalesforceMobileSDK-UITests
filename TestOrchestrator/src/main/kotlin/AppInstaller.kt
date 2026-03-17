@@ -31,11 +31,12 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
         completed += 1
     }
     verbosePrinter?.invoke("Creating Simulator")
-    val iosRuntime = iOSVersion.replace(".", "-")
+    val runtime = resolveIosRuntime(iOSVersion)
+    verbosePrinter?.invoke("Using runtime: $runtime")
     val createProcess = ProcessBuilder(
         "xcrun", "simctl", "create", SIM_NAME,
         "com.apple.CoreSimulator.SimDeviceType.$iOSDevice",
-        "com.apple.CoreSimulator.SimRuntime.iOS-$iosRuntime"
+        runtime
     ).redirectErrorStream(true).start()
     val simId = createProcess.inputStream.bufferedReader().readText().trim()
     val createExitCode = createProcess.waitFor()
@@ -64,4 +65,54 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
     }
     val configuration = if (appInfo.debugBuild) "Debug" else "Release"
     "xcrun simctl install booted $buildPath/Products/$configuration-iphonesimulator/${appInfo.appName}.app".runCommand()
+}
+
+/**
+ * Resolves the iOS simulator runtime identifier for the requested version.
+ * Accepts major (e.g. "26") or major.minor (e.g. "26.2").
+ * If only major is provided, picks the highest available minor version.
+ * If major.minor doesn't exist, falls back to the highest minor for that major.
+ */
+private fun resolveIosRuntime(requestedVersion: String): String {
+    val process = ProcessBuilder("xcrun", "simctl", "list", "runtimes", "-j")
+        .redirectErrorStream(true).start()
+    val output = process.inputStream.bufferedReader().readText()
+    process.waitFor()
+
+    val requestedParts = requestedVersion.split(".")
+    val requestedMajor = requestedParts.first()
+
+    val allIdentifiers = Regex("""com\.apple\.CoreSimulator\.SimRuntime\.iOS-[\d-]+""")
+        .findAll(output)
+        .map { it.value }
+        .distinct()
+        .toList()
+
+    verbosePrinter?.invoke("Available iOS runtimes: $allIdentifiers")
+
+    // Sort numerically by extracting version components from the identifier
+    fun runtimeSortKey(id: String): List<Int> =
+        id.substringAfter("iOS-").split("-").mapNotNull { it.toIntOrNull() }
+
+    // If major.minor provided, try exact match first
+    if (requestedParts.size > 1) {
+        val exactId = "com.apple.CoreSimulator.SimRuntime.iOS-${requestedVersion.replace(".", "-")}"
+        if (exactId in allIdentifiers) return exactId
+    }
+
+    // Match by major version, pick the highest minor numerically
+    val majorMatch = allIdentifiers
+        .filter { it.startsWith("com.apple.CoreSimulator.SimRuntime.iOS-$requestedMajor-") }
+        .maxByOrNull { runtimeSortKey(it).drop(1).firstOrNull() ?: 0 }
+
+    if (majorMatch != null) return majorMatch
+
+    // Fallback: highest available iOS runtime
+    return allIdentifiers
+        .sortedByDescending { runtimeSortKey(it).firstOrNull() ?: 0 }
+        .firstOrNull()
+        ?: throw Exception(
+            "No iOS simulator runtimes found. Requested version: $requestedVersion\n" +
+            "simctl output: ${output.take(500)}"
+        )
 }
