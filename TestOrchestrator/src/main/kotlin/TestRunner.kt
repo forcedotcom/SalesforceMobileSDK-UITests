@@ -122,7 +122,8 @@ private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, iOSDevice: 
         completed += 1
     }
     verbosePrinter?.invoke("Running Login Tests")
-    val user = iosTestConfig.getUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.FIRST)
+    val userIndex = iOSVersion.substringBefore(".").toInt() % KnownUserConfig.entries.size
+    val user = iosTestConfig.getUser(KnownLoginHostConfig.REGULAR_AUTH, KnownUserConfig.entries[userIndex])
     val testCommand = buildList {
         addAll(listOf(
             "xcodebuild", "test",
