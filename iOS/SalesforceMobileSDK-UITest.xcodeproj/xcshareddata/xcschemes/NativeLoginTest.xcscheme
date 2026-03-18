@@ -28,12 +28,6 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "NO"
       codeCoverageEnabled = "YES">
-      <TestPlans>
-         <TestPlanReference
-            reference = "container:NativeLoginTest.xctestplan"
-            default = "YES">
-         </TestPlanReference>
-      </TestPlans>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"

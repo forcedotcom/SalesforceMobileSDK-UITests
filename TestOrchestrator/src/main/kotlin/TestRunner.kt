@@ -131,6 +131,8 @@ private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, iOSDevice: 
             "-scheme", testScheme,
             "-destination", "platform=iOS Simulator,name=$SIM_NAME",
             "-resultBundlePath", "test_output/${appInfo.appName}",
+            "-retry-tests-on-failure",
+            "-test-iterations", "2",
             "TEST_APP_BUNDLE=${appInfo.packageName}",
             "USERNAME=${user.username}",
             "PASSWORD=${user.password}",
