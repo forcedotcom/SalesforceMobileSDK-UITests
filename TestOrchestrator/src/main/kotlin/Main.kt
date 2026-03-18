@@ -66,10 +66,12 @@ class Test : CliktCommand() {
                 "\u0085or a complex hybrid sample name (e.g. accounteditor)" +
                 "\u0085(multiple allowed, space separated)")
         .convert { input ->
+            val strippedInput = input.removePrefix("complex_hybrid_")
             val normalizedInput = input.replace("_", "")
             val appType = AppType.entries.find {
                 it.name.equals(input, ignoreCase = true)
                         || it.scriptValue.equals(input, ignoreCase = true)
+                        || it.scriptValue.equals(strippedInput, ignoreCase = true)
                         || it.name.replace("_", "").equals(normalizedInput, ignoreCase = true)
             }
             when {

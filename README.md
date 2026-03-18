@@ -17,7 +17,7 @@ Arguments:
                           (multiple allowed, space separated)
 
 Options:
-  --ios, --iOSVersion=<text>    iOS version number (ex: 26.3).
+  --ios, --iOSVersion=<text>    iOS major version or major.minor (ex: 26 or 26.2). If only the major version is provided, the highest available minor version is used.
   --device, --iOSDevice=<text>  iOS Simulator device type (ex: iPhone-SE-3rd-generation). Uses SimDeviceType identifier format.
   --sf, --sfdx                  Use SF (formerly SFDX) to generate the app.
   -d, --compileDebug            Compile a debug build.

@@ -34,7 +34,7 @@
     {
       "skippedTests" : [
         "BaseSDKTest",
-        "NativeLoginTests",
+        "NativeLoginTest",
         "PasscodeTests"
       ],
       "target" : {

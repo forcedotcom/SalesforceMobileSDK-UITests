@@ -28,22 +28,22 @@ fun compileApp(
     with(appInfo) {
         when {
             isHybrid && os == OS.ANDROID -> {
-                val bootConfig = File(appPath, "platforms/android/app/src/main/assets/www/bootconfig.json")
+                val bootConfig = File(androidRoot, "app/src/main/assets/www/bootconfig.json")
                 updateJsonBootConfig(bootConfig, appConfig)
             }
 
             isHybrid && os == OS.IOS -> {
-                val bootConfig = File(appPath, "platforms/ios/www/bootconfig.json")
+                val bootConfig = File(iosRoot, "www/bootconfig.json")
                 updateJsonBootConfig(bootConfig, appConfig)
             }
 
             os == OS.ANDROID -> {
-                val bootConfig = File(appPath, "app/src/main/res/values/bootconfig.xml")
+                val bootConfig = File(androidRoot, "app/src/main/res/values/bootconfig.xml")
                 updateXmlBootConfig(bootConfig, appConfig)
             }
 
             else -> {
-                val bootConfig = File(appPath, "$appName/bootconfig.plist")
+                val bootConfig = File(iosRoot, "$appName/bootconfig.plist")
                 updatePlistBootConfig(bootConfig, appConfig)
             }
         }
@@ -54,14 +54,12 @@ fun compileApp(
         }
         verbosePrinter?.invoke("Compiling App")
 
-        val androidRoot = if (isHybrid) "$appPath/platforms/android" else appPath
         when (os) {
             OS.ANDROID -> {
-                // TODO: Does RN need  -PreactNativeDevServerPort=8081 --no-daemon ???
                 val buildResult = "./gradlew assemble$configuration"
                     .split(" ").runCommandCapture(androidRoot)
                 if (buildResult.exitCode != 0) {
-                    throw Exception("Android build failed.\n${buildResult.output?.takeLast(500)}")
+                    throw Exception("Android build failed.\n${buildResult.parseBuildFailure()}")
                 }
 
                 if (!debug) {
@@ -69,17 +67,19 @@ fun compileApp(
                 }
             }
             OS.IOS -> {
-                val iosRoot = if (isHybrid) "$appPath/platforms/ios" else appPath
-                val buildResult = listOf(
-                    "xcodebuild", "build",
-                    "-workspace", "$appName.xcworkspace",
+                val workspaceOrProject = if (File(iosRoot, "$appName.xcworkspace").exists()) {
+                    listOf("-workspace", "$appName.xcworkspace")
+                } else {
+                    listOf("-project", "$appName.xcodeproj")
+                }
+                val buildResult = (listOf("xcodebuild", "build") + workspaceOrProject + listOf(
                     "-scheme", appName,
                     "-sdk", "iphonesimulator",
                     "-configuration", configuration,
                     "-derivedDataPath", "./DerivedData"
-                ).runCommandCapture(iosRoot)
+                )).runCommandCapture(iosRoot)
                 if (buildResult.exitCode != 0) {
-                    throw Exception("iOS build failed.\n${buildResult.output?.takeLast(500)}")
+                    throw Exception("iOS build failed.\n${buildResult.parseBuildFailure()}")
                 }
             }
         }
@@ -95,8 +95,8 @@ private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
 
     when (appInfo.os) {
         OS.ANDROID -> {
-            val androidRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/android" else appInfo.appPath
-            val serversFile = File(androidRoot, "app/src/main/res/xml/servers.xml")
+            val serversFile = File(appInfo.androidRoot, "app/src/main/res/xml/servers.xml")
+            serversFile.parentFile.mkdirs()
             serversFile.writeText(
                 """<?xml version="1.0" encoding="utf-8"?>
                 |<servers>
@@ -106,9 +106,8 @@ private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
             )
         }
         OS.IOS -> {
-            val iosRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/ios" else appInfo.appPath
             val plistName = if (appInfo.isHybrid) "${appInfo.appName}-Info.plist" else "Info.plist"
-            val plistPath = File(iosRoot, "${appInfo.appName}/$plistName")
+            val plistPath = File(appInfo.iosRoot, "${appInfo.appName}/$plistName")
             val loginHost = loginUrl.removePrefix("https://").removePrefix("http://")
             val content = plistPath.readText()
             val key = "<key>SFDCOAuthLoginHost</key>"

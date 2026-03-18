@@ -10,7 +10,16 @@ data class AppInfo(
     val debugBuild: Boolean = false,
     val complexHybridType: String? = null,
 ) {
-    val androidRoot = if (isHybrid) "$appPath/platforms/android" else appPath
+    val androidRoot = when {
+        isHybrid -> "$appPath/platforms/android"
+        isReact -> "$appPath/android"
+        else -> appPath
+    }
+    val iosRoot = when {
+        isHybrid -> "$appPath/platforms/ios"
+        isReact -> "$appPath/ios"
+        else -> appPath
+    }
     val apkPath = "$androidRoot/app/build/outputs/apk/${
         if (debugBuild) {
             "debug/app-debug.apk"

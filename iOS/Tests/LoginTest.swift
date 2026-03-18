@@ -33,7 +33,7 @@
 
 import XCTest
 
-class LoginTests: BaseSDKTest {
+class LoginTest: BaseSDKTest {
     
     func testLogin() {
         let app = TestApplication()

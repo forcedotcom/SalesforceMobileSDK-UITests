@@ -2,6 +2,7 @@ package com.salesforce
 
 import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
+import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
 import java.io.File
 import kotlin.io.path.Path
@@ -51,6 +52,10 @@ fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
         setupComplexHybrid(appInfo)
     }
 
+    if (appSource.isReact) {
+        setupReactNative(appInfo)
+    }
+
     return appInfo
 }
 
@@ -85,6 +90,53 @@ private fun setupComplexHybrid(appInfo: AppInfo) {
     val cordovaResult = "cordova prepare".runCommand(workingDir = appInfo.appPath)
     if (cordovaResult != 0) {
         throw Exception("Cordova prepare failed for complex hybrid.")
+    }
+}
+
+private fun setupReactNative(appInfo: AppInfo) {
+    progressBanner?.update {
+        context = context.advance("Setup React Native")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Setting up React Native")
+
+    if (appInfo.os == OS.IOS) {
+        // Delete stale Gemfile.lock to avoid bundler version conflicts
+        // (generated lockfile pins Bundler 1.17.2 which is incompatible with Ruby 3.2+)
+        File(appInfo.appPath, "Gemfile.lock").delete()
+        val bundleResult = listOf("bundle", "install")
+            .runCommandCapture(workingDir = appInfo.appPath)
+        if (bundleResult.exitCode != 0) {
+            throw Exception("Bundle install failed.\n${bundleResult.parseBuildFailure()}")
+        }
+    }
+
+    // Run install script (handles pod install/update for iOS, npm setup for both)
+    val installScripts = File(appInfo.appPath).listFiles { file ->
+        file.name.startsWith("install") && file.name.endsWith(".js")
+    }
+    installScripts?.firstOrNull()?.let { script ->
+        val result = "./${script.name}".runCommand(workingDir = appInfo.appPath)
+        if (result != 0) {
+            throw Exception("React Native install script failed.")
+        }
+    }
+
+    if (appInfo.os == OS.ANDROID) {
+        // Create assets directory and bundle JS
+        val assetsDir = File(appInfo.androidRoot, "app/src/main/assets")
+        assetsDir.mkdirs()
+
+        val bundleResult = listOf(
+            "npx", "react-native", "bundle",
+            "--platform", "android",
+            "--dev", "false",
+            "--entry-file", "index.js",
+            "--bundle-output", "android/app/src/main/assets/index.android.bundle"
+        ).runCommandCapture(workingDir = appInfo.appPath)
+        if (bundleResult.exitCode != 0) {
+            throw Exception("React Native bundle failed.\n${bundleResult.parseBuildFailure()}")
+        }
     }
 }
 

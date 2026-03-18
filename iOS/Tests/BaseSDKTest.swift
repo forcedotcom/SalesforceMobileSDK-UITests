@@ -55,7 +55,7 @@ class BaseSDKTest: XCTestCase {
     
     func assertAppLoads(app: TestApplication) {
         switch app.type {
-        case .nativeObjC, .carthage:
+        case .nativeObjC:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .nativeSwift:
             let title = app.navigationBars["Accounts"].staticTexts["Accounts"]

@@ -24,34 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.mobilesdk.mobilesdkuitest.login
+//
+//  NativeLoginTests.swift
+//  SalesforceMobileSDK-UITest
+//
+//  Created by Brandon Page on 4/20/24.
+//
 
-import pageobjects.loginpageobjects.NativeLoginPageObject
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import pageobjects.BasePageObject
-import pageobjects.testapppageobjects.NativeAppPageObject
-import pageobjects.testapppageobjects.TestApplication
+import XCTest
 
-@RunWith(AndroidJUnit4::class)
-class NativeLoginTests {
-    private var app = TestApplication()
-
-    @Before
-    fun setupTestApp() {
+class NativeLoginTest: BaseSDKTest {
+    
+    func testLogin() {
+        let app = TestApplication()
+        let loginPage = NativeLoginPageObject(testApp: app)
         app.launch()
-    }
-
-    @Test
-    fun testLogin() {
-        val loginPage = NativeLoginPageObject()
-//        loginPage.setUsername(UserUtility.nativeLoginUsername)
-//        loginPage.setPassword(UserUtility.password)
+        
+        loginPage.setUsername(name: nativeLoginUsername)
+        loginPage.setPassword(password: password)
         loginPage.tapLogin()
-
-        Thread.sleep(BasePageObject().timeout)
-        NativeAppPageObject(app).assertAppLoads()
+        
+        // Assert App loads
+        assertAppLoads(app: app)
     }
 }

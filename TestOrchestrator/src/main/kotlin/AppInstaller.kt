@@ -57,10 +57,9 @@ fun installIosApp(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
         completed += 1
     }
     verbosePrinter?.invoke("Installing App")
-    val iosRoot = if (appInfo.isHybrid) "${appInfo.appPath}/platforms/ios" else appInfo.appPath
     val buildPath = when {
-        File("$iosRoot/DerivedData/Build/").exists() -> "$iosRoot/DerivedData/Build"
-        File("$iosRoot/Build/").exists() -> "$iosRoot/Build"
+        File("${appInfo.iosRoot}/DerivedData/Build/").exists() -> "${appInfo.iosRoot}/DerivedData/Build"
+        File("${appInfo.iosRoot}/Build/").exists() -> "${appInfo.iosRoot}/Build"
         else -> throw Exception("${appInfo.appName}.app could not be found.")
     }
     val configuration = if (appInfo.debugBuild) "Debug" else "Release"

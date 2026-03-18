@@ -30,7 +30,7 @@
       codeCoverageEnabled = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:TestLogin.xctestplan"
+            reference = "container:NativeLoginTest.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
@@ -86,7 +86,7 @@
                   Identifier = "BaseSDKTest">
                </Test>
                <Test
-                  Identifier = "NativeLoginTests">
+                  Identifier = "LoginTest">
                </Test>
                <Test
                   Identifier = "PasscodeTests">

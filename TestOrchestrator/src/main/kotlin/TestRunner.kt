@@ -41,7 +41,7 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
     "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS".runCommand()
 
     // Test params
-    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTests" else "LoginTests"
+    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
     val classParam =  "-Pandroid.testInstrumentationRunnerArguments.class=${ANDROID_TEST_CLASS_DIR}.$testClass"
     val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
     val complexHybridParam = appInfo.complexHybridType?.let {
@@ -72,7 +72,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     val buildResult = "./gradlew app:assembleAndroidTest"
         .split(" ").runCommandCapture(workingDir = ANDROID_TEST_DIR)
     if (buildResult.exitCode != 0) {
-        throw Exception("Test APK failed to build.\n${buildResult.output?.takeLast(500)}")
+        throw Exception("Test APK failed to build.\n${buildResult.parseBuildFailure()}")
     }
 
     progressBanner?.update {
@@ -81,7 +81,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     }
     verbosePrinter?.invoke("Testing App with Firebase")
 
-    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTests" else "LoginTests"
+    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
     var devices = ""
     for (level in MIN_API_LEVEL..MAX_API_LEVEL) {
         devices += "--device model=MediumPhone.arm,version=$level,locale=en,orientation=portrait "
@@ -112,7 +112,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
 private fun runIosTestsLocally(appInfo: AppInfo, iOSVersion: String, iOSDevice: String) {
     installIosApp(appInfo, iOSVersion, iOSDevice)
 
-    val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTests" else "LoginTests"
+    val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
     // Clean up previous test results
     val resultBundlePath = File(IOS_TEST_DIR, "test_output/${appInfo.appName}")
     resultBundlePath.deleteRecursively()

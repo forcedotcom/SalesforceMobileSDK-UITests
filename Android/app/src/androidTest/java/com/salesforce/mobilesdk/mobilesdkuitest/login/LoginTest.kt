@@ -44,7 +44,7 @@ import pageobjects.testapppageobjects.*
  * Created by bpage on 2/2/18.
  */
 @RunWith(AndroidJUnit4::class)
-class LoginTests {
+class LoginTest {
     val app = TestApplication()
     val knownUserConfig: KnownUserConfig by lazy {
         val minSdk = InstrumentationRegistry.getInstrumentation().targetContext

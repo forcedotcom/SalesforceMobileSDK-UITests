@@ -5,7 +5,34 @@ import java.lang.ProcessBuilder.Redirect.INHERIT
 
 var verboseCommandOutput = false
 
-data class CommandResult(val exitCode: Int, val output: String?)
+data class CommandResult(val exitCode: Int, val output: String?) {
+    fun parseBuildFailure(): String {
+        if (output.isNullOrBlank()) return "Build failed with no output."
+
+        val lines = output.lines()
+        val errorLines = mutableListOf<String>()
+
+        for (line in lines) {
+            val trimmed = line.trim()
+            when {
+                // C++/Swift/Kotlin compilation errors
+                trimmed.contains(": error:") -> errorLines.add(trimmed)
+                // Gradle/Xcode task failures
+                trimmed.startsWith("FAILURE:") || trimmed.startsWith("* What went wrong:") -> errorLines.add(trimmed)
+                // Execution failed messages
+                trimmed.startsWith("Execution failed for task") -> errorLines.add(trimmed)
+                // Xcodebuild errors
+                trimmed.startsWith("error:") -> errorLines.add(trimmed)
+            }
+        }
+
+        return if (errorLines.isNotEmpty()) {
+            errorLines.joinToString("\n")
+        } else {
+            lines.filter { it.isNotBlank() }.takeLast(10).joinToString("\n") { it.trim() }
+        }
+    }
+}
 
 fun String.runCommand(workingDir: String = ".", suppressErrors: Boolean = false): Int =
     split(" ").runCommand(workingDir, suppressErrors)
