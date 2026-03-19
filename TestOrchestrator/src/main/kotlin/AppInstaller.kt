@@ -1,7 +1,6 @@
 package com.salesforce
 
 import com.salesforce.TestOrchestrator.Companion.ADB
-import com.salesforce.TestOrchestrator.Companion.IS_CI
 import com.salesforce.TestOrchestrator.Companion.SIM_NAME
 import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
@@ -34,13 +33,20 @@ fun createAndInstallIosSimulators(
     // Clean up all test simulators from previous runs
     cleanupTestSimulators()
 
+    // Wait for any background runtime installs to finish
+    awaitBackgroundRuntimeInstalls(iOSVersions)
+
+    // Fetch simctl data once (no simulators booted yet, so these are fast)
+    val runtimesOutput = fetchSimctlRuntimes()
+    val deviceTypesOutput = fetchSimctlDeviceTypes()
+
     val simulators = mutableListOf<SimulatorInfo>()
 
     for (version in iOSVersions) {
         val simName = "${SIM_NAME}_$version"
-        val resolved = resolveIosRuntime(version)
+        val resolved = resolveIosRuntime(version, runtimesOutput)
         verbosePrinter?.invoke("Using runtime: ${resolved.identifier}")
-        val device = resolveCompatibleDevice(iOSDevice, resolved.version)
+        val device = resolveCompatibleDevice(iOSDevice, resolved.version, deviceTypesOutput)
 
         progressBanner?.update {
             context = context.advance("Create Simulator (iOS ${resolved.version})")
@@ -115,18 +121,20 @@ private fun cleanupTestSimulators() {
     }
 }
 
-/**
- * Resolves the device type identifier compatible with the given iOS runtime version.
- * If the requested device is compatible, returns it as-is.
- * If not, picks the closest compatible device from the same product family (iPhone).
- */
-fun resolveCompatibleDevice(requestedDevice: String, runtimeVersion: String): String {
+private fun fetchSimctlDeviceTypes(): String {
     val process = ProcessBuilder("xcrun", "simctl", "list", "devicetypes", "-j")
         .redirectErrorStream(true).start()
     val output = process.inputStream.bufferedReader().readText()
     process.waitFor()
+    return output
+}
 
-    val json = Json.parseToJsonElement(output).jsonObject
+/**
+ * Resolves the device type identifier compatible with the given iOS runtime version.
+ * Uses pre-fetched devicetypes JSON output to avoid redundant simctl calls.
+ */
+fun resolveCompatibleDevice(requestedDevice: String, runtimeVersion: String, deviceTypesOutput: String): String {
+    val json = Json.parseToJsonElement(deviceTypesOutput).jsonObject
     val deviceTypes = json["devicetypes"]?.jsonArray ?: throw Exception("Failed to parse device types")
 
     val deviceId = "com.apple.CoreSimulator.SimDeviceType.$requestedDevice"
@@ -176,122 +184,15 @@ fun resolveCompatibleDevice(requestedDevice: String, runtimeVersion: String): St
     return fallbackDevice
 }
 
-private fun isRuntimeInstalled(majorVersion: String): Boolean {
-    val process = ProcessBuilder("xcrun", "simctl", "list", "runtimes", "-j")
-        .redirectErrorStream(true).start()
-    val output = process.inputStream.bufferedReader().readText()
-    process.waitFor()
-    return Regex("""com\.apple\.CoreSimulator\.SimRuntime\.iOS-$majorVersion-""")
-        .containsMatchIn(output)
-}
-
-/**
- * On CI, ensures a simulator runtime is available for the requested iOS version.
- * Checks locally installed runtimes first via simctl, then falls back to xcodes
- * to find and install the latest release for the requested major version.
- */
-private fun ensureIosRuntimeAvailableForCI(requestedVersion: String) {
-    if (!IS_CI) return
-
-    val requestedMajor = requestedVersion.split(".").first()
-
-    if (isRuntimeInstalled(requestedMajor)) {
-        verbosePrinter?.invoke("iOS $requestedMajor runtime already installed locally.")
-        return
-    }
-
-    // Not installed locally — use xcodes to find the latest available version
-    val latestVersion = findLatestXcodesVersion(requestedMajor)
-        ?: throw Exception("No iOS $requestedMajor runtimes found via xcodes.")
-
-    verbosePrinter?.invoke("Installing iOS $latestVersion runtime...")
-    progressBanner?.update {
-        context = context.advance("Install iOS $latestVersion Runtime")
-    }
-
-    // Try xcodes first
-    val xcodesProcess = ProcessBuilder("xcodes", "runtimes", "install", "iOS $latestVersion")
-        .redirectErrorStream(true).start()
-    val xcodesOutput = StringBuilder()
-    xcodesProcess.inputStream.bufferedReader().useLines { lines ->
-        for (line in lines) {
-            verbosePrinter?.invoke(line)
-            xcodesOutput.appendLine(line)
-        }
-    }
-    xcodesProcess.waitFor()
-
-    if (isRuntimeInstalled(requestedMajor)) {
-        verbosePrinter?.invoke("iOS $latestVersion runtime installed successfully via xcodes.")
-        return
-    }
-
-    // Fallback to xcodebuild -downloadPlatform
-    verbosePrinter?.invoke("xcodes did not install the runtime. Falling back to xcodebuild...")
-    val xcodebuildProcess = ProcessBuilder(
-        "xcodebuild", "-downloadPlatform", "iOS", "-buildVersion", latestVersion
-    ).redirectErrorStream(true).start()
-    val xcodebuildOutput = StringBuilder()
-    xcodebuildProcess.inputStream.bufferedReader().useLines { lines ->
-        for (line in lines) {
-            verbosePrinter?.invoke(line)
-            xcodebuildOutput.appendLine(line)
-        }
-    }
-    val xcodebuildExitCode = xcodebuildProcess.waitFor()
-
-    if (xcodebuildExitCode != 0 || !isRuntimeInstalled(requestedMajor)) {
-        throw Exception(
-            "Failed to install iOS $latestVersion runtime.\n" +
-            "xcodes output: $xcodesOutput\n" +
-            "xcodebuild output: $xcodebuildOutput"
-        )
-    }
-
-    verbosePrinter?.invoke("iOS $latestVersion runtime installed successfully via xcodebuild.")
-}
-
-/**
- * Queries xcodes for the latest available iOS version matching the requested major version.
- */
-private fun findLatestXcodesVersion(requestedMajor: String): String? {
-    val listProcess = ProcessBuilder("xcodes", "runtimes")
-        .redirectErrorStream(true).start()
-    val listOutput = listProcess.inputStream.bufferedReader().readText()
-    listProcess.waitFor()
-
-    verbosePrinter?.invoke("xcodes runtimes output:\n$listOutput")
-
-    val runtimePattern = Regex("""^iOS (\d+[\d.]*)\b""", RegexOption.MULTILINE)
-    return runtimePattern.findAll(listOutput)
-        .map { it.groupValues[1] }
-        .filter { it.split(".").first() == requestedMajor }
-        .distinct()
-        .sortedWith(compareBy<String>(
-            { it.split(".").getOrElse(0) { "0" }.toIntOrNull() ?: 0 },
-            { it.split(".").getOrElse(1) { "0" }.toIntOrNull() ?: 0 },
-            { it.split(".").getOrElse(2) { "0" }.toIntOrNull() ?: 0 },
-        ).reversed())
-        .firstOrNull()
-}
-
 /**
  * Resolves the iOS simulator runtime identifier for the requested version.
- * Accepts major (e.g. "26") or major.minor (e.g. "26.2").
- * If only major is provided, picks the highest available minor version.
- * If major.minor doesn't exist, falls back to the highest minor for that major.
+ * Uses pre-fetched runtimes output to avoid redundant simctl calls.
  */
-private fun resolveIosRuntime(requestedVersion: String): ResolvedRuntime {
-    ensureIosRuntimeAvailableForCI(requestedVersion)
-
+private fun resolveIosRuntime(requestedVersion: String, runtimesOutput: String): ResolvedRuntime {
     val requestedParts = requestedVersion.split(".")
     val requestedMajor = requestedParts.first()
-    val process = ProcessBuilder("xcrun", "simctl", "list", "runtimes", "-j")
-        .redirectErrorStream(true).start()
-    val output = process.inputStream.bufferedReader().readText()
-    process.waitFor()
     val allIdentifiers = Regex("""com\.apple\.CoreSimulator\.SimRuntime\.iOS-[\d-]+""")
-        .findAll(output)
+        .findAll(runtimesOutput)
         .map { it.value }
         .distinct()
         .toList()
@@ -301,7 +202,6 @@ private fun resolveIosRuntime(requestedVersion: String): ResolvedRuntime {
 
     verbosePrinter?.invoke("Available iOS versions: $availableVersions")
 
-    // Sort numerically by extracting version components from the identifier
     fun runtimeSortKey(id: String): List<Int> =
         id.substringAfter("iOS-").split("-").mapNotNull { it.toIntOrNull() }
 
@@ -310,7 +210,6 @@ private fun resolveIosRuntime(requestedVersion: String): ResolvedRuntime {
 
     return when {
         requestedParts.size > 1 -> {
-            // If major.minor provided, try exact match first
             val exactId = "com.apple.CoreSimulator.SimRuntime.iOS-${requestedVersion.replace(".", "-")}"
             if (exactId in allIdentifiers) {
                 ResolvedRuntime(exactId, runtimeToVersion(exactId))
@@ -319,7 +218,6 @@ private fun resolveIosRuntime(requestedVersion: String): ResolvedRuntime {
             }
         }
         else -> {
-            // Match by major version, pick the highest minor numerically
             val majorMatch = allIdentifiers
                 .filter { it.startsWith("com.apple.CoreSimulator.SimRuntime.iOS-$requestedMajor-") }
                 .maxByOrNull { runtimeSortKey(it).drop(1).firstOrNull() ?: 0 }

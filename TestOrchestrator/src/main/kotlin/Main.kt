@@ -141,6 +141,16 @@ class TestOrchestrator : CliktCommand() {
             }?.forEach { it.deleteRecursively() }
         }
 
+        // On CI, set verbose printer early so background install logs are visible
+        if (IS_CI) {
+            verbosePrinter = Printer(terminal)
+
+            // For iOS (on CI), start runtime downloads in the background before app generation
+            if (os == OS.IOS) {
+                startBackgroundRuntimeInstalls(effectiveVersions)
+            }
+        }
+
         appSources.forEach { appSource ->
             if (verboseOutput || IS_CI) {
                 verbosePrinter = Printer(terminal)

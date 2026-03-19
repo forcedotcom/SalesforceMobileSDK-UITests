@@ -56,8 +56,15 @@ fun compileApp(
 
         when (os) {
             OS.ANDROID -> {
-                val buildResult = "./gradlew assemble$configuration"
-                    .split(" ").runCommandCapture(androidRoot)
+                val buildCommand = buildList {
+                    add("./gradlew")
+                    add(if (isReact) "app:assemble$configuration" else "assemble$configuration")
+                    if (isReact) {
+                        add("-PreactNativeDevServerPort=8081")
+                        add("--no-daemon")
+                    }
+                }
+                val buildResult = buildCommand.runCommandCapture(androidRoot)
                 if (buildResult.exitCode != 0) {
                     throw Exception("Android build failed.\n${buildResult.parseBuildFailure()}")
                 }
