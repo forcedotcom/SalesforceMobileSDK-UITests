@@ -75,7 +75,10 @@ fun createAndInstallIosSimulators(
     }
 
     // Wait for all simulators to finish booting
-    Thread.sleep(3000)
+    for (sim in simulators) {
+        verbosePrinter?.invoke("Waiting for iOS ${sim.iOSVersion} simulator to boot...")
+        "xcrun simctl bootstatus ${sim.simId} -b".runCommand()
+    }
 
     // Install app on all simulators
     val buildPath = when {

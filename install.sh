@@ -15,6 +15,7 @@ npm install -g cordova
 cordova telemetry off
 
 # React Native
+npm install -g yarn
 npm install -g typescript
 
 # SF CLI

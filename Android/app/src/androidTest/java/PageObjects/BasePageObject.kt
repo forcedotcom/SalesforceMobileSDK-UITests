@@ -34,7 +34,7 @@ import androidx.test.uiautomator.UiDevice
  */
 open class BasePageObject {
     val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    var timeout:Long = 5000
+    var timeout: Long = 5_000
     val editTextClass = "android.widget.EditText"
     val viewClass = "android.view.View"
     val textViewClass = "android.widget.TextView"

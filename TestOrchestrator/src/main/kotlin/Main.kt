@@ -144,11 +144,6 @@ class TestOrchestrator : CliktCommand() {
         // On CI, set verbose printer early so background install logs are visible
         if (IS_CI) {
             verbosePrinter = Printer(terminal)
-
-            // For iOS (on CI), start runtime downloads in the background before app generation
-            if (os == OS.IOS) {
-                startBackgroundRuntimeInstalls(effectiveVersions)
-            }
         }
 
         appSources.forEach { appSource ->
@@ -208,6 +203,12 @@ class TestOrchestrator : CliktCommand() {
                 } else {
                     verbosePrinter?.invoke("Skipping App Generation")
                     getAppInfo(appSource)
+                }
+
+                // On CI for iOS, start runtime downloads after generation (network-heavy)
+                // but before compilation (CPU-heavy) so they run in parallel
+                if (os == OS.IOS && IS_CI) {
+                    startBackgroundRuntimeInstalls(effectiveVersions)
                 }
 
                 compileApp(appInfo, debug)

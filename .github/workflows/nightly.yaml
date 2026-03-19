@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app_type:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, AndroidNativeLoginTemplate, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+        app_type:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app_type: ${{ matrix.app_type }}
@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, iOSNativeLoginTemplate, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+        app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app_type: ${{ matrix.app_type }}

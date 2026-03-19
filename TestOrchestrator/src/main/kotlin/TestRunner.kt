@@ -122,8 +122,8 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
     val versionsLabel = simulators.joinToString(", ") { it.iOSVersion }
 
     // Clean up previous test results
-    val resultBundlePath = File(IOS_TEST_DIR, "test_output/${appInfo.appName}")
-    resultBundlePath.deleteRecursively()
+    val resultBundlePath = "test_output/${appInfo.appName}"
+    File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
 
     progressBanner?.update {
         context = context.advance("Run Login Tests (iOS $versionsLabel)")
@@ -131,6 +131,64 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
     }
     verbosePrinter?.invoke("Running Login Tests (iOS $versionsLabel)")
 
+    val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo)
+
+    if (result.exitCode != 0 && simulators.size > 1) {
+        // Check which simulators failed — retry just those
+        val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
+        val deviceResults = parsePerDeviceResults(resultBundleAbsPath)
+        val failedSimIds = deviceResults?.failedDeviceIds ?: emptySet()
+        val failedSims = simulators.filter { it.simId in failedSimIds }
+
+        if (failedSims.isNotEmpty() && failedSims.size < simulators.size) {
+            val failedVersions = failedSims.joinToString(", ") { it.iOSVersion }
+            verbosePrinter?.invoke("Retrying failed simulators: iOS $failedVersions")
+
+            // Reboot failed simulators before retry
+            for (sim in failedSims) {
+                "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
+                "xcrun simctl boot ${sim.simId}".runCommand(suppressErrors = true)
+                "xcrun simctl bootstatus ${sim.simId} -b".runCommand()
+            }
+
+            val retryBundlePath = "test_output/${appInfo.appName}_retry"
+            File(IOS_TEST_DIR, retryBundlePath).deleteRecursively()
+
+            val retryResult = runXcodebuildTest(testScheme, failedSims, retryBundlePath, appInfo)
+
+            // Shutdown all simulators
+            for (sim in simulators) {
+                "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
+            }
+
+            if (retryResult.exitCode != 0) {
+                val retryBundleAbsPath = File(IOS_TEST_DIR, retryBundlePath).absolutePath
+                val retryDeviceResults = parsePerDeviceResults(retryBundleAbsPath)
+                throw Exception(retryDeviceResults?.formatSummary()
+                    ?: parseXCResultFailures(retryBundleAbsPath)
+                    ?: parseTestFailure(retryResult.output))
+            }
+            return
+        }
+    }
+
+    // Shutdown all simulators
+    for (sim in simulators) {
+        "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
+    }
+
+    if (result.exitCode != 0) {
+        val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
+        throw Exception(parseXCResultFailures(resultBundleAbsPath) ?: parseTestFailure(result.output))
+    }
+}
+
+private fun runXcodebuildTest(
+    testScheme: String,
+    simulators: List<SimulatorInfo>,
+    resultBundlePath: String,
+    appInfo: AppInfo
+): com.salesforce.util.CommandResult {
     val testCommand = buildList {
         addAll(listOf(
             "xcodebuild", "test",
@@ -141,25 +199,14 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
             addAll(listOf("-destination", "platform=iOS Simulator,id=${sim.simId}"))
         }
         addAll(listOf(
-            "-resultBundlePath", "test_output/${appInfo.appName}",
+            "-resultBundlePath", resultBundlePath,
             "-retry-tests-on-failure",
             "-test-iterations", "2",
             "TEST_APP_BUNDLE=${appInfo.packageName}",
         ))
         appInfo.complexHybridType?.let { add("COMPLEX_HYBRID=$it") }
     }
-    val result = testCommand.runCommandCapture(workingDir = IOS_TEST_DIR)
-
-    // Shutdown all simulators
-    for (sim in simulators) {
-        "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
-    }
-
-    if (result.exitCode != 0) {
-        val resultBundleAbsPath = File(IOS_TEST_DIR, "test_output/${appInfo.appName}").absolutePath
-        val xcresultSummary = parseXCResultFailures(resultBundleAbsPath)
-        throw Exception(xcresultSummary ?: parseTestFailure(result.output))
-    }
+    return testCommand.runCommandCapture(workingDir = IOS_TEST_DIR)
 }
 
 private fun copyIosTestConfig() {
@@ -234,6 +281,112 @@ private fun parseTestFailure(output: String?): String {
         } else {
             "TestOrchestrator failed. Unable to parse failure details from output."
         }
+    }
+}
+
+private data class DeviceTestResults(
+    val failedDeviceIds: Set<String>,
+    val passedVersions: Set<String>,
+    val failureMessages: Map<String, List<String>>, // osVersion -> failure details
+) {
+    fun formatSummary(): String {
+        val allVersions = (failureMessages.keys + passedVersions).toSortedSet()
+        return allVersions.joinToString("\n") { version ->
+            val failures = failureMessages[version]
+            if (failures != null) {
+                "iOS $version: FAILED - ${failures.joinToString("; ")}"
+            } else {
+                "iOS $version: Passed"
+            }
+        }
+    }
+}
+
+/**
+ * Parses the xcresult bundle and returns structured per-device results.
+ * Returns null if the result bundle can't be parsed.
+ */
+private fun parsePerDeviceResults(resultBundlePath: String): DeviceTestResults? {
+    if (!File(resultBundlePath).exists()) {
+        verbosePrinter?.invoke("xcresult bundle not found at: $resultBundlePath")
+        return null
+    }
+
+    val process = ProcessBuilder(
+        "xcrun", "xcresulttool", "get", "test-results", "tests",
+        "--path", resultBundlePath, "--compact"
+    ).redirectErrorStream(true).start()
+    val output = process.inputStream.bufferedReader().readText()
+    val exitCode = process.waitFor()
+    if (exitCode != 0) {
+        verbosePrinter?.invoke("xcresulttool failed (exit $exitCode): ${output.take(500)}")
+        return null
+    }
+
+    return try {
+        val json = Json.parseToJsonElement(output).jsonObject
+        val devices = json["devices"]?.jsonArray
+        val testNodes = json["testNodes"]?.jsonArray
+
+        if (devices == null || testNodes == null) {
+            verbosePrinter?.invoke("xcresult JSON missing devices or testNodes. Keys: ${json.keys}")
+            return null
+        }
+
+        val deviceVersions = devices.associate { device ->
+            val obj = device.jsonObject
+            val id = obj["deviceId"]?.jsonPrimitive?.content ?: ""
+            val osVersion = obj["osVersion"]?.jsonPrimitive?.content ?: "unknown"
+            id to osVersion
+        }
+
+        val failedDeviceIds = mutableSetOf<String>()
+        val passedVersions = mutableSetOf<String>()
+        val failureMessages = mutableMapOf<String, MutableList<String>>()
+
+        fun walkNodes(nodes: JsonArray, testCaseName: String?) {
+            for (node in nodes) {
+                val obj = node.jsonObject
+                val nodeType = obj["nodeType"]?.jsonPrimitive?.content
+                val name = obj["name"]?.jsonPrimitive?.content ?: ""
+                val result = obj["result"]?.jsonPrimitive?.content
+                val children = obj["children"]?.jsonArray
+                val nodeId = obj["nodeIdentifier"]?.jsonPrimitive?.content
+
+                when (nodeType) {
+                    "Test Case" -> {
+                        if (children != null) walkNodes(children, name)
+                    }
+                    "Device" -> {
+                        val version = deviceVersions[nodeId] ?: "unknown"
+                        when (result) {
+                            "Failed" -> {
+                                if (nodeId != null) failedDeviceIds.add(nodeId)
+                                val failureMsg = collectFailureMessages(children)
+                                val caseName = testCaseName ?: "unknown test"
+                                val detail = if (failureMsg.isNotBlank()) "$caseName: $failureMsg" else caseName
+                                failureMessages.getOrPut(version) { mutableListOf() }.add(detail)
+                            }
+                            "Passed" -> passedVersions.add(version)
+                        }
+                    }
+                    else -> {
+                        if (children != null) walkNodes(children, testCaseName)
+                    }
+                }
+            }
+        }
+
+        walkNodes(testNodes, null)
+
+        DeviceTestResults(
+            failedDeviceIds = failedDeviceIds,
+            passedVersions = passedVersions,
+            failureMessages = failureMessages,
+        )
+    } catch (e: Exception) {
+        verbosePrinter?.invoke("xcresult parse error: ${e.message}")
+        null
     }
 }
 

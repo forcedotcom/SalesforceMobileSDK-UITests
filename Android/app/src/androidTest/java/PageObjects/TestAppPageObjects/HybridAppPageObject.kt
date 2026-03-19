@@ -37,24 +37,15 @@ import pageobjects.BasePageObject
 class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        val content: String
-        if (app.type == AppType.HYBRID_REMOTE) {
-            content = "Salesforce Mobile SDK Test"
-        } else {
-            val titleString = if (app.complexHybrid == "accounteditor") "Accounts" else "Contacts"
-            verifyInWebView(titleString)
-
-            // Search for account to assert it shows in list.
-//            if (app.complexHybrid == "accounteditor") {
-//                Thread.sleep(timeout)
-//                val search = device.findObject(UiSelector().className(editTextClass))
-//                search.setText("New")
-//            }
-
-            // TODO: update account
-            content = when (app.complexHybrid) {
-                "accounteditor" -> ""
-                else -> "Marc Benioff"
+        val content = when {
+            app.type == AppType.HYBRID_REMOTE -> "Salesforce Mobile SDK Test"
+            else -> {
+                if (app.complexHybrid == "accounteditor") {
+                    "Accounts"
+                } else {
+                    verifyInWebView("Contacts")
+                    "Marc Benioff"
+                }
             }
         }
 

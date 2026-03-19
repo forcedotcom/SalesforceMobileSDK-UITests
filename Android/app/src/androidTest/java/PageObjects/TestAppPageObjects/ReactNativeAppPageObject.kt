@@ -38,10 +38,6 @@ import pageobjects.BasePageObject
 
 class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObject() {
 
-    init {
-        timeout *= 3
-    }
-
     fun assertAppLoads() {
         val alertWindow = device.findObject(UiSelector().resourceId("android:id/alertTitle"))
         if (alertWindow.exists()) {
@@ -53,7 +49,7 @@ class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObjec
 
         val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
         val title = device.findObject(UiSelector().className(viewClass).index(0))
-        title.waitForExists(timeout * 5)
+        title.waitForExists(timeout * 10)
         Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
     }
 }
