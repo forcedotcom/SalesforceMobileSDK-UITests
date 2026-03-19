@@ -90,6 +90,7 @@ iOS/Logs/
 iOS/ModuleCache.noindex/
 iOS/info.plist
 */xcuserdata
+iOS/ui_test_config.json
 
 # Npm
 node_modules/

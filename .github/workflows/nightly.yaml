@@ -31,26 +31,15 @@ jobs:
     secrets: inherit
     
   ios-base:
-    name: ${{ matrix.app_type }} iOS ${{ matrix.ios }}
+    name: ${{ matrix.app_type }} iOS
     strategy:
       fail-fast: false
       matrix:
         app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, iOSNativeLoginTemplate, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
-        ios: ["26", "18", "17"]
-        include:
-            - ios: "26"
-              xcode: "26.3"
-            - ios: "18"
-              xcode: "16.4"
-            - ios: "17"
-              xcode: "16.4"
-              device: "iPhone-15"
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app_type: ${{ matrix.app_type }}
-      ios: ${{ matrix.ios }}
-      xcode: ${{ matrix.xcode }}
-      device: ${{ matrix.device || 'iPhone-16' }}
+      ios: "17 18 26"
     secrets: inherit
 
   ios-sfdx:

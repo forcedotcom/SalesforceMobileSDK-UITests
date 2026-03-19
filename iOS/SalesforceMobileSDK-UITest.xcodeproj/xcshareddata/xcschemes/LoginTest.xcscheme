@@ -45,11 +45,6 @@
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "USERNAME"
-            value = "$(USERNAME)"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
             key = "COMPLEX_HYBRID"
             value = "${COMPLEX_HYBRID}"
             isEnabled = "YES">
@@ -57,11 +52,6 @@
          <EnvironmentVariable
             key = "TEST_APP_BUNDLE"
             value = "$(TEST_APP_BUNDLE)"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "PASSWORD"
-            value = "$(PASSWORD)"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>

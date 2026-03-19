@@ -10,9 +10,7 @@ on:
       ios:
         type: string
         default: "26"
-      xcode:
-        type: string
-        default: "26.3"
+        description: "Space-separated iOS major versions (e.g. '17 18 26')"
       device:
         type: string
         default: "iPhone-16"
@@ -22,7 +20,7 @@ on:
       is_pr:
         type: boolean
         default: false
-    
+
 jobs:
   test-ios:
     name: ${{ inputs.app_type }} iOS ${{ inputs.ios }}
@@ -40,17 +38,13 @@ jobs:
         run: |
           ./install.sh
           echo $IOS_UI_TEST_CONFIG > ./shared/test/ios/ui_test_config.json
-      - name: Install iOS 17 runtime if needed
-        if: ${{ inputs.ios == '17' }}
-        run: xcodes runtimes install "iOS 17.5"
-      - name: Build ${{ inputs.app_type }} ${{ inputs.ios }} and Test Login
+      - name: Build ${{ inputs.app_type }} and Test Login (iOS ${{ inputs.ios }})
         env:
           GITHUB_RUN_NUM: ${{ github.run_number }}
         run: |
           SFDX=""
-
           if ${{ inputs.sfdx }} ; then
-            TYPE="--sf"
+            SFDX="--sf"
           fi
 
-          ./test ios ${{ inputs.app_type }} --ios=${{ inputs.ios }} --device=${{ inputs.device }} ${SFDX}
+          ./test ios ${{ inputs.app_type }} --ios "${{ inputs.ios }}" ${SFDX}

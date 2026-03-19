@@ -40,7 +40,7 @@ class NativeLoginTest: BaseSDKTest {
         let loginPage = NativeLoginPageObject(testApp: app)
         app.launch()
         
-        loginPage.setUsername(name: nativeLoginUsername)
+        loginPage.setUsername(name: username)
         loginPage.setPassword(password: password)
         loginPage.tapLogin()
         

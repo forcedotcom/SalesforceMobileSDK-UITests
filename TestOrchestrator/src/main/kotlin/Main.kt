@@ -13,6 +13,7 @@ import com.github.ajalt.clikt.parameters.arguments.unique
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.help
+import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.boolean
 import com.github.ajalt.clikt.parameters.types.enum
@@ -30,12 +31,12 @@ import com.salesforce.util.ArgumentsFirstHelpFormatter
 import com.salesforce.util.PanelProgressBarMaker
 import com.salesforce.util.Printer
 import com.salesforce.util.ProgressState
+import com.salesforce.util.detectTerminalWidth
 import com.salesforce.util.finish
 import com.salesforce.util.progressBanner
 import com.salesforce.util.verboseCommandOutput
 import com.salesforce.util.verbosePrinter
 import java.io.File
-import java.lang.Thread.sleep
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
@@ -44,22 +45,23 @@ import kotlin.system.exitProcess
 const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
 
-class Test : CliktCommand() {
+class TestOrchestrator : CliktCommand() {
 
     init {
         installMordantMarkdown()
         configureContext {
-            terminal = Terminal(width = 240, interactive = true)
+            terminal = Terminal(
+                width = detectTerminalWidth(),
+                interactive = true,
+                hyperlinks = true,
+            )
             helpFormatter = { ArgumentsFirstHelpFormatter(it) }
         }
     }
 
+    // Required Arguments
     val os: OS by argument().enum<OS>(ignoreCase = true, key = { it.name.lowercase() })
         .help("android or ios")
-    val iOSVersion: String? by option("--ios", "--iOSVersion")
-        .help("iOS major version or major.minor (ex: 26 or 26.2). If only the major version is provided, the highest available minor version is used.")
-    val iOSDevice: String? by option("--device", "--iOSDevice")
-        .help("iOS Simulator device type (ex: $DEFAULT_IOS_DEVICE). Uses SimDeviceType identifier format.")
     val appSources: Set<AppSource> by argument("app type or template")
         .help("App type (${AppType.entries.joinToString(", ") { it.name.lowercase() }}) " +
                 "\u0085or a template URL/name (CamelCase or URL)" +
@@ -80,27 +82,41 @@ class Test : CliktCommand() {
             }
         }
         .multiple().unique()
-    val useSF: Boolean by option("--sf", "--sfdx").flag()
-        .help("Use SF (formerly SFDX) to generate the app.")
+
+    // Options
     val debug: Boolean by option("-d", "--compileDebug").flag()
-        .help("Compile a debug build.")
+        .help("Compile and use the debug configuration of the generated app(s).")
+    val iOSVersions: List<String> by option("--ios", "--iOSVersion").multiple()
+        .help("iOS version to test. If only the major version is provided, the highest available minor version is used." +
+                "\u0085Multiple allowed with repeated flag or single quoted space separated list. " +
+                "\u0085(ex: --iOS=18.5 --iOS=18.6 or --iOS \"17 18 26\")")
+    val iOSDevice: String? by option("--device", "--iOSDevice")
+        .help("iOS Simulator device type.  Uses SimDeviceType identifier format.  (ex: $DEFAULT_IOS_DEVICE)")
     val reRunTest: Boolean by option("-r", "--reRun").flag()
         .help("Run the validation test again without re-generating the app.")
     val useFirebase: Boolean by option("-f", "--firebase").boolean().default(IS_CI)
-        .help("Run (Android) tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
-    val verboseOutput: Boolean by option("-v", "--verbose").flag()
-        .help("Show all command output. Automatically on for CI.")
+        .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
+    val useSF: Boolean by option("--sf", "--sfdx").flag()
+        .help("Use SF (formerly SFDX) to generate the app.")
     val preserverGeneratedApps: Boolean by option("-p", "--preserverGeneratedApps").flag()
         .help("Do not cleanup generated apps from previous runs.")
+    val verboseOutput: Boolean by option("-v", "--verbose").flag()
+        .help("Show all command output. Automatically on for CI.")
 
 
     override fun run() {
         val failures = mutableListOf<Pair<String, Exception>>()
         verboseCommandOutput = verboseOutput || IS_CI
 
+        // Support both "--ios 17 --ios 18" and "--ios "17 18"" (space-separated in a single value)
+        val effectiveVersions = iOSVersions
+            .flatMap { it.split(" ") }
+            .filter { it.isNotBlank() }
+            .ifEmpty { listOf(DEFAULT_IOS_VERSION) }
+
         when (os) {
             OS.ANDROID -> {
-                if (iOSVersion != null) {
+                if (iOSVersions.isNotEmpty()) {
                     throw UsageError("--iOSVersion can only be used with iOS")
                 }
                 if (iOSDevice != null) {
@@ -130,10 +146,13 @@ class Test : CliktCommand() {
                 verbosePrinter = Printer(terminal)
             } else {
                 val marker = PanelProgressBarMaker
-                marker.title = "Testing ${appSource.appName}"
+                marker.title = when(os) {
+                    OS.IOS -> "Testing ${appSource.appName} (iOS ${effectiveVersions.joinToString(", ")})"
+                    OS.ANDROID -> "Testing ${appSource.appName}"
+                }
                 var totalSteps: Long = when(os) {
                     OS.ANDROID -> 7
-                    OS.IOS -> 9
+                    OS.IOS -> 5L + 3L * effectiveVersions.size
                 }
                 if (appSource.isComplexHybrid) {
                     totalSteps++
@@ -183,7 +202,7 @@ class Test : CliktCommand() {
 
                 compileApp(appInfo, debug)
 
-                runTests(appInfo, iOSVersion ?: DEFAULT_IOS_VERSION, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
+                runTests(appInfo, effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)
                 progressBanner?.update {
@@ -216,4 +235,4 @@ class Test : CliktCommand() {
     }
 }
 
-fun main(args: Array<String>) = Test().main(args)
+fun main(args: Array<String>) = TestOrchestrator().main(args)

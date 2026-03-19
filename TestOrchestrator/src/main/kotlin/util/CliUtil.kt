@@ -15,9 +15,12 @@ import com.github.ajalt.mordant.widgets.definitionList
 import com.github.ajalt.mordant.widgets.progress.MultiProgressBarWidgetMaker
 import com.github.ajalt.mordant.widgets.progress.ProgressBarMakerRow
 import com.github.ajalt.mordant.widgets.progress.ProgressBarWidgetMaker
+import java.io.File
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.windowed
+
+const val MAX_OUTPUT_WIDTH = 240
 
 var progressBanner: ThreadProgressTaskAnimator<ProgressState>? = null
 
@@ -110,5 +113,22 @@ class ArgumentsFirstHelpFormatter(context: Context) :
                 add(styleOptionalUsageParameter("$commandMetavar $repeatedArgs"))
             }
         }.joinToString(" ")
+    }
+}
+
+// Note: this will return null for ./gradlew :TestOrchestrator:run
+fun detectTerminalWidth(): Int? {
+    return try {
+        val process = ProcessBuilder("stty", "size")
+        .redirectInput(File("/dev/tty"))
+        .redirectErrorStream(true)
+        .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        process.waitFor()
+        output.split(" ").lastOrNull()?.toIntOrNull()?.let {
+            minOf(it, MAX_OUTPUT_WIDTH)
+        }
+    } catch (_: Exception) {
+        null
     }
 }

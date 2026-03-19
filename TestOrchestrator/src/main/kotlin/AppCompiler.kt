@@ -1,6 +1,6 @@
 package com.salesforce
 
-import com.salesforce.Test.Companion.ANDROID_BUILD_DIR
+import com.salesforce.TestOrchestrator.Companion.ANDROID_BUILD_DIR
 import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
 import com.salesforce.util.runCommandCapture

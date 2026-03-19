@@ -35,9 +35,9 @@
 import XCTest
 
 class BaseSDKTest: XCTestCase {
-    var username = UserUtility().username
-    var nativeLoginUsername = UserUtility().nativeLoginUsername
-    var password = UserUtility().password
+    private lazy var testUser = UITestConfig.shared.user()
+    var username: String { testUser.username }
+    var password: String { testUser.password }
     var timeout:double_t = 60
     private var appLoadError = "App did not load."
     private var mobileSyncError = "MobileSync did not pull data."
@@ -74,16 +74,13 @@ class BaseSDKTest: XCTestCase {
             contacts.element(boundBy: 0).tap()
             XCTAssertGreaterThan(contacts.count, 0, mobileSyncError)
         case .hybridRemote:
-            verifyInWebView(app: app, text: "Salesforce Mobile SDK Test")
+            verifyInWebView(app: app, text: "Salesforce Mobile SfDK Test")
         case .hybridLocal:
             if app.complexHybrid == "accounteditor" {
                 verifyInWebView(app: app, text: "Accounts")
-            } else if app.complexHybrid == "mobilesyncexplorer" {
-                verifyInWebView(app: app, text: "Contacts")
-                verifyInWebView(app: app, text: "Tim Barr")
             } else {
                 verifyInWebView(app: app, text: "Contacts")
-                verifyInWebView(app: app, text: "Sean Forbes")
+                verifyInWebView(app: app, text: "Marc Benioff")
             }
         case .reactNative:
             let titleElement = app.otherElements[sampleAppTitle].firstMatch

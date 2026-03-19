@@ -17,14 +17,16 @@ Arguments:
                           (multiple allowed, space separated)
 
 Options:
-  --ios, --iOSVersion=<text>    iOS major version or major.minor (ex: 26 or 26.2). If only the major version is provided, the highest available minor version is used.
-  --device, --iOSDevice=<text>  iOS Simulator device type (ex: iPhone-SE-3rd-generation). Uses SimDeviceType identifier format.
-  --sf, --sfdx                  Use SF (formerly SFDX) to generate the app.
-  -d, --compileDebug            Compile a debug build.
+  -d, --compileDebug            Compile and use the debug configuration of the generated app(s).
+  --ios, --iOSVersion=<text>    iOS version to test. If only the major version is provided, the highest available minor version is used.
+                                Multiple allowed with repeated flag or single quoted space separated list.
+                                (ex: --iOS=18.5 --iOS=18.6 or --iOS "17 18 26")
+  --device, --iOSDevice=<text>  iOS Simulator device type. Uses SimDeviceType identifier format. (ex: iPhone-SE-3rd-generation)
   -r, --reRun                   Run the validation test again without re-generating the app.
-  -f, --firebase=true|false     Run (Android) tests in Firebase Test Lab. Defaults to on for CI and off otherwise. (default: false)
-  -v, --verbose                 Show all command output. Automatically on for CI.
+  -f, --firebase=true|false     Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise. (default: false)
+  --sf, --sfdx                  Use SF (formerly SFDX) to generate the app.
   -p, --preserverGeneratedApps  Do not cleanup generated apps from previous runs.
+  -v, --verbose                 Show all command output. Automatically on for CI.
   -h, --help                    Show this message and exit
 ```
 

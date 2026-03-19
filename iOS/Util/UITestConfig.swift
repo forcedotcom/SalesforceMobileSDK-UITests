@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -25,23 +25,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 //
-//  UserUtility.swift
+//  UITestConfig.swift
 //  SalesforceMobileSDK-UITest
-//
-//  Created by Brandon Page on 3/29/18.
 //
 
 import Foundation
+import UIKit
 
-class UserUtility {
-    var username = ""
-    var nativeLoginUsername = ""
-    var password = ""
+private class BundleAnchor {}
 
-    init() {
-        let envUsername = ProcessInfo.processInfo.environment["USERNAME"] ?? ""
-        username = envUsername.isEmpty ? "circleci@mobilesdk.com" : envUsername
-        nativeLoginUsername = envUsername.isEmpty ? "bpage2@salesforce.com" : envUsername
-        password = ProcessInfo.processInfo.environment["PASSWORD"]!
+struct UITestConfig: Decodable {
+    let loginHosts: [LoginHost]
+
+    struct LoginHost: Decodable {
+        let name: String
+        let url: String
+        let users: [User]
+    }
+
+    struct User: Decodable {
+        let username: String
+        let password: String
+    }
+
+    static let shared: UITestConfig = {
+        guard let url = Bundle(for: BundleAnchor.self).url(forResource: "ui_test_config", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else {
+            fatalError("ui_test_config.json not found in test bundle.")
+        }
+        return try! JSONDecoder().decode(UITestConfig.self, from: data)
+    }()
+
+    /// Returns the test user for the current iOS version.
+    /// Each major iOS version maps to a different user to avoid conflicts
+    /// when running tests on multiple simulators in parallel.
+    func user() -> User {
+        let regularAuth = loginHosts.first { $0.name == "regular_auth" }!
+        let major = Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "0") ?? 0
+        let index = major % regularAuth.users.count
+        return regularAuth.users[index]
     }
 }
