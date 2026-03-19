@@ -177,54 +177,59 @@ fun resolveCompatibleDevice(requestedDevice: String, runtimeVersion: String): St
 }
 
 /**
- * On CI, uses xcodes to find the latest minor iOS release for the requested major version
- * and installs the simulator runtime if it's not already available.
+ * On CI, ensures a simulator runtime is available for the requested iOS version.
+ * Checks locally installed runtimes first via simctl, then falls back to xcodes
+ * to find and install the latest release for the requested major version.
  */
 private fun ensureIosRuntimeAvailableForCI(requestedVersion: String) {
     if (!IS_CI) return
 
     val requestedMajor = requestedVersion.split(".").first()
 
-    // List available runtimes from xcodes
+    // Check if a matching runtime is already installed locally
+    val simctlProcess = ProcessBuilder("xcrun", "simctl", "list", "runtimes", "-j")
+        .redirectErrorStream(true).start()
+    val simctlOutput = simctlProcess.inputStream.bufferedReader().readText()
+    simctlProcess.waitFor()
+
+    val installedRuntimes = Regex("""com\.apple\.CoreSimulator\.SimRuntime\.iOS-[\d-]+""")
+        .findAll(simctlOutput).map { it.value }.toList()
+    val hasLocalRuntime = installedRuntimes.any {
+        it.startsWith("com.apple.CoreSimulator.SimRuntime.iOS-$requestedMajor-")
+    }
+
+    if (hasLocalRuntime) {
+        verbosePrinter?.invoke("iOS $requestedMajor runtime already installed locally.")
+        return
+    }
+
+    // Not installed locally — use xcodes to find the latest available version
     val listProcess = ProcessBuilder("xcodes", "runtimes")
         .redirectErrorStream(true).start()
     val listOutput = listProcess.inputStream.bufferedReader().readText()
     listProcess.waitFor()
 
-    // Parse lines like "iOS 18.5 Simulator (Installed)" or "iOS 26.2 Simulator"
-    // Each line: "iOS <version> Simulator [(<status>)]"
-    val runtimePattern = Regex("""iOS (\d+\.\d+)\s+Simulator(?:\s+\((.+?)\))?""")
-    val matchingRuntimes = runtimePattern.findAll(listOutput)
-        .filter { it.groupValues[1].startsWith("$requestedMajor.") }
-        .toList()
+    verbosePrinter?.invoke("xcodes runtimes output:\n$listOutput")
 
-    if (matchingRuntimes.isEmpty()) {
-        verbosePrinter?.invoke("No iOS $requestedMajor runtimes found via xcodes.")
-        return
-    }
+    // Parse lines like "iOS 17.5 (Installed)" or "iOS 26.2"
+    val runtimePattern = Regex("""^iOS (\d+[\d.]*)\b""", RegexOption.MULTILINE)
+    val latestVersion = runtimePattern.findAll(listOutput)
+        .map { it.groupValues[1] }
+        .filter { it.split(".").first() == requestedMajor }
+        .distinct()
+        .maxWithOrNull(compareBy(
+            { it.split(".").getOrElse(0) { "0" }.toIntOrNull() ?: 0 },
+            { it.split(".").getOrElse(1) { "0" }.toIntOrNull() ?: 0 },
+            { it.split(".").getOrElse(2) { "0" }.toIntOrNull() ?: 0 },
+        ))
 
-    // Find the latest minor version for the requested major
-    val latest = matchingRuntimes.maxByOrNull { match ->
-            match.groupValues[1].split(".").map { it.toIntOrNull() ?: 0 }
-                .let { parts ->
-                    parts.getOrElse(0) { 0 } * 1000 + parts.getOrElse(1) { 0 }
-                }
-        } ?: return
-
-    val latestVersion = latest.groupValues[1]
-    val status = latest.groupValues[2]
-
-    if (status.contains("Installed", ignoreCase = true) || status.contains("Bundled", ignoreCase = true)) {
-        verbosePrinter?.invoke("iOS $latestVersion runtime is already installed.")
-        return
-    }
-
-    verbosePrinter?.invoke("Installing iOS $latestVersion runtime via xcodes...")
+    val versionToInstall = latestVersion ?: requestedVersion
+    verbosePrinter?.invoke("Installing iOS $versionToInstall runtime via xcodes...")
     progressBanner?.update {
-        context = context.advance("Install iOS $latestVersion Runtime")
+        context = context.advance("Install iOS $versionToInstall Runtime")
     }
 
-    val installProcess = ProcessBuilder("xcodes", "runtimes", "install", "iOS $latestVersion")
+    val installProcess = ProcessBuilder("xcodes", "runtimes", "install", "iOS $versionToInstall")
         .redirectErrorStream(true).start()
     val installOutput = StringBuilder()
     installProcess.inputStream.bufferedReader().useLines { lines ->
@@ -236,10 +241,10 @@ private fun ensureIosRuntimeAvailableForCI(requestedVersion: String) {
     val installExitCode = installProcess.waitFor()
 
     if (installExitCode != 0) {
-        throw Exception("Failed to install iOS $latestVersion runtime via xcodes (exit $installExitCode):\n$installOutput")
+        throw Exception("Failed to install iOS $versionToInstall runtime via xcodes (exit $installExitCode):\n$installOutput")
     }
 
-    verbosePrinter?.invoke("iOS $latestVersion runtime installed successfully.")
+    verbosePrinter?.invoke("iOS $versionToInstall runtime installed successfully.")
 }
 
 /**
