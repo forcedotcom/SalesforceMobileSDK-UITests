@@ -83,7 +83,8 @@ fun compileApp(
                     "-scheme", appName,
                     "-sdk", "iphonesimulator",
                     "-configuration", configuration,
-                    "-derivedDataPath", "./DerivedData"
+                    "-derivedDataPath", "./DerivedData",
+                    "GENERATE_ASSET_SYMBOLS=NO",
                 )).runCommandCapture(iosRoot)
                 if (buildResult.exitCode != 0) {
                     throw Exception("iOS build failed.\n${buildResult.parseBuildFailure()}")
