@@ -63,7 +63,7 @@ class LoginPageObject {
     
     func tapLogin() -> Void {
         hideKeyboard()
-        let loginButton = app.descendants(matching: .button).matching(NSPredicate(format: "label == 'Log In'")).firstMatch
+        let loginButton = app.webViews.buttons["Log In"].firstMatch
         _ = loginButton.waitForExistence(timeout: timeout * 6)
         loginButton.tap()
     }

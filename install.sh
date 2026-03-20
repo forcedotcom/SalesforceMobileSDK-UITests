@@ -15,6 +15,7 @@ npm install -g cordova
 cordova telemetry off
 
 # React Native
+corepack disable 2>/dev/null || true
 npm install -g yarn
 npm install -g typescript
 

@@ -1,13 +1,13 @@
 package com.salesforce
 
 import com.salesforce.util.verbosePrinter
-import java.util.concurrent.ConcurrentHashMap
 
-private val installThreads = ConcurrentHashMap<String, Thread>()
-private val installErrors = ConcurrentHashMap<String, Exception>()
+private var installThread: Thread? = null
+private var installError: Exception? = null
 
 /**
- * Starts background threads to download/install iOS simulator runtimes that aren't already present.
+ * Starts a single background thread to download/install iOS simulator runtimes that aren't
+ * already present, installing them sequentially to avoid concurrent rsync failures.
  * Call early (before app generation) so downloads happen in parallel with other work.
  */
 fun startBackgroundRuntimeInstalls(versions: List<String>) {
@@ -15,51 +15,57 @@ fun startBackgroundRuntimeInstalls(versions: List<String>) {
     val runtimesOutput = fetchSimctlRuntimes()
     val xcodesOutput = fetchXcodesRuntimes()
 
+    data class PendingInstall(val major: String, val latestVersion: String)
+
+    val pending = mutableListOf<PendingInstall>()
     for (version in versions) {
         val major = version.split(".").first()
-        if (installThreads.containsKey(major)) continue
+        if (pending.any { it.major == major }) continue
 
-        val alreadyInstalled = isRuntimeInstalled(major, runtimesOutput)
-        if (alreadyInstalled) {
+        if (isRuntimeInstalled(major, runtimesOutput)) {
             verbosePrinter?.invoke("iOS $major runtime already installed locally.")
             continue
         }
 
         val latestVersion = findLatestXcodesVersion(major, xcodesOutput)
         if (latestVersion == null) {
-            installErrors[major] = Exception("No iOS $major runtimes found via xcodes.")
-            continue
+            installError = Exception("No iOS $major runtimes found via xcodes.")
+            return
         }
 
-        verbosePrinter?.invoke("Starting background install of iOS $latestVersion runtime...")
-        val thread = Thread {
+        pending.add(PendingInstall(major, latestVersion))
+    }
+
+    if (pending.isEmpty()) return
+
+    installThread = Thread {
+        for ((major, latestVersion) in pending) {
             try {
+                verbosePrinter?.invoke("Installing iOS $latestVersion runtime (sequential)...")
                 installRuntime(major, latestVersion)
             } catch (e: Exception) {
-                installErrors[major] = e
+                installError = e
+                return@Thread
             }
-        }.apply {
-            name = "runtime-install-$major"
-            isDaemon = true
-            start()
         }
-        installThreads[major] = thread
+    }.apply {
+        name = "runtime-install-sequential"
+        isDaemon = true
+        start()
     }
 }
 
 /**
- * Waits for all background runtime installs to complete.
+ * Waits for the background runtime install thread to complete.
  * Throws if any install failed.
  */
 fun awaitBackgroundRuntimeInstalls(versions: List<String>) {
-    for (version in versions) {
-        val major = version.split(".").first()
-        installThreads[major]?.let { thread ->
-            verbosePrinter?.invoke("Waiting for iOS $major runtime install to complete...")
-            thread.join()
-        }
-        installErrors[major]?.let { throw it }
+    installThread?.let { thread ->
+        val majors = versions.map { it.split(".").first() }.distinct()
+        verbosePrinter?.invoke("Waiting for iOS runtime installs (${majors.joinToString(", ")}) to complete...")
+        thread.join()
     }
+    installError?.let { throw it }
 }
 
 private fun installRuntime(major: String, latestVersion: String) {

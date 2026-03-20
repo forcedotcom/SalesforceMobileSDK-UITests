@@ -43,15 +43,18 @@ jobs:
 
           ./test ios ${{ inputs.app_type }} --ios "${{ inputs.ios }}" ${SFDX}
       - name: Convert Test Results to JUnit XML
-        continue-on-error: true
         if: success() || failure()
         run: |
           mkdir -p ios_results
           for xcresult in iOS/test_output/*.xcresult; do
             [ -e "$xcresult" ] || continue
             name=$(basename "$xcresult" .xcresult)
-            xcrun xcresulttool get test-results junit \
-              --path "$xcresult" > "ios_results/${name}_test_result.xml"
+            xml=$(xcrun xcresulttool get test-results junit --path "$xcresult" 2>&1)
+            if [ -n "$xml" ]; then
+              echo "$xml" > "ios_results/${name}_test_result.xml"
+            else
+              echo "Warning: xcresulttool produced no output for $xcresult" >&2
+            fi
           done
       - name: Test Report
         uses: mikepenz/action-junit-report@v6

@@ -198,10 +198,7 @@ class TestOrchestrator : CliktCommand() {
             }
 
             try {
-                // On CI for non-hybrid iOS, start runtime downloads before generation so the
-                // download overlaps with generation (native generation has no rsync phases).
-                // For hybrid, downloads start after generation to avoid cordova/pod rsync conflicts.
-                if (os == OS.IOS && IS_CI && !appSource.isHybrid) {
+                if (os == OS.IOS && IS_CI) {
                     startBackgroundRuntimeInstalls(effectiveVersions)
                 }
 
@@ -212,17 +209,13 @@ class TestOrchestrator : CliktCommand() {
                     getAppInfo(appSource)
                 }
 
-                if (os == OS.IOS && IS_CI && appSource.isHybrid) {
-                    startBackgroundRuntimeInstalls(effectiveVersions)
+                if (!reRunTest) {
+                    compileApp(appInfo, debug)
                 }
 
-                // Always await before compilation: xcodebuild's Embed Pods Frameworks phase
-                // uses rsync which fails with ENOBUFS if a large runtime download is in progress.
                 if (os == OS.IOS && IS_CI) {
                     awaitBackgroundRuntimeInstalls(effectiveVersions)
                 }
-
-                compileApp(appInfo, debug)
 
                 runTests(appInfo, effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
             } catch (e: Exception) {
