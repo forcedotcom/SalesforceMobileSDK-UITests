@@ -198,6 +198,13 @@ class TestOrchestrator : CliktCommand() {
             }
 
             try {
+                // On CI for non-hybrid iOS, start runtime downloads before generation so the
+                // download overlaps with generation (native generation has no rsync phases).
+                // For hybrid, downloads start after generation to avoid cordova/pod rsync conflicts.
+                if (os == OS.IOS && IS_CI && !appSource.isHybrid) {
+                    startBackgroundRuntimeInstalls(effectiveVersions)
+                }
+
                 val appInfo = if (!reRunTest) {
                     generateApp(appSource, useSF)
                 } else {
@@ -205,10 +212,14 @@ class TestOrchestrator : CliktCommand() {
                     getAppInfo(appSource)
                 }
 
-                // On CI for iOS, start runtime downloads after generation (network-heavy)
-                // but before compilation (CPU-heavy) so they run in parallel
-                if (os == OS.IOS && IS_CI) {
+                if (os == OS.IOS && IS_CI && appSource.isHybrid) {
                     startBackgroundRuntimeInstalls(effectiveVersions)
+                }
+
+                // Always await before compilation: xcodebuild's Embed Pods Frameworks phase
+                // uses rsync which fails with ENOBUFS if a large runtime download is in progress.
+                if (os == OS.IOS && IS_CI) {
+                    awaitBackgroundRuntimeInstalls(effectiveVersions)
                 }
 
                 compileApp(appInfo, debug)

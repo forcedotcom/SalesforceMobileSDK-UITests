@@ -11,12 +11,6 @@ on:
         type: string
         default: "26"
         description: "Space-separated iOS major versions (e.g. '17 18 26')"
-      device:
-        type: string
-        default: "iPhone-16"
-      macos:
-        type: string
-        default: macos-26
       is_pr:
         type: boolean
         default: false
@@ -24,7 +18,7 @@ on:
 jobs:
   test-ios:
     name: ${{ inputs.app_type }} iOS ${{ inputs.ios }}
-    runs-on: ${{ inputs.macos }}
+    runs-on: macos-26-large
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
