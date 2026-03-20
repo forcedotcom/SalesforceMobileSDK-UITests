@@ -83,8 +83,7 @@ class BaseSDKTest: XCTestCase {
                 verifyInWebView(app: app, text: "Marc Benioff")
             }
         case .reactNative:
-            let titleElement = app.otherElements[sampleAppTitle].firstMatch
-            XCTAssert(titleElement.waitForExistence(timeout: timeout * 3), appLoadError)
+            XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout * 3), appLoadError)
         case .mobileSyncSwift:
             let title = app.navigationBars["Contacts"].staticTexts["Contacts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)

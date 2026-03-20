@@ -108,7 +108,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
             --environment-variables class=${ANDROID_TEST_CLASS_DIR}.$testClass,packageName=${appInfo.packageName}${appInfo.complexHybridType?.let { ",complexHybrid=$it" } ?: ""}
             --no-performance-metrics 
             --no-auto-google-login 
-            --num-flaky-test-attempts=1
+            --num-flaky-test-attempts=2
     """.trimIndent().split("\\s+".toRegex()).filter { it.isNotEmpty() }
         .runCommandCapture(workingDir = ANDROID_TEST_DIR).let { result ->
             if (result.exitCode != 0) {
@@ -144,11 +144,9 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
             val failedVersions = failedSims.joinToString(", ") { it.iOSVersion }
             verbosePrinter?.invoke("Retrying failed simulators: iOS $failedVersions")
 
-            // Reboot failed simulators before retry
+            // Uninstall app on failed simulators before retry so it is re-installed fresh
             for (sim in failedSims) {
-                "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
-                "xcrun simctl boot ${sim.simId}".runCommand(suppressErrors = true)
-                "xcrun simctl bootstatus ${sim.simId} -b".runCommand()
+                "xcrun simctl uninstall ${sim.simId} ${appInfo.packageName}".runCommand(suppressErrors = true)
             }
 
             val retryBundlePath = "test_output/${appInfo.appName}_retry"

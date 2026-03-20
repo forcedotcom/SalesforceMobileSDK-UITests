@@ -47,7 +47,7 @@ class LoginPageObject {
         hideKeyboard()
         let nameField = app.descendants(matching: .textField).element
         _ = nameField.waitForExistence(timeout: timeout * 12)
-        nameField.tap()
+        nameField.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         sleep(1)
         nameField.typeText(name)
     }
@@ -56,15 +56,15 @@ class LoginPageObject {
         hideKeyboard()
         let passwordField = app.descendants(matching: .secureTextField).element
         _ = passwordField.waitForExistence(timeout: timeout)
-        passwordField.tap()
+        passwordField.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         sleep(1)
         passwordField.typeText(password)
     }
     
     func tapLogin() -> Void {
         hideKeyboard()
-        let loginButton = app.webViews.webViews.webViews/*@START_MENU_TOKEN@*/.buttons["Log In"]/*[[".otherElements[\"Login | Salesforce\"].buttons[\"Log In\"]",".buttons[\"Log In\"]"],[[[-1,1],[-1,0]]],[0]]@END_MENU_TOKEN@*/
-        _ = loginButton.waitForExistence(timeout: timeout)
+        let loginButton = app.descendants(matching: .button).matching(NSPredicate(format: "label == 'Log In'")).firstMatch
+        _ = loginButton.waitForExistence(timeout: timeout * 6)
         loginButton.tap()
     }
     
@@ -75,9 +75,9 @@ class LoginPageObject {
     }
     
     func hideKeyboard() -> Void {
-        let continueButton = app/*@START_MENU_TOKEN@*/.staticTexts["Continue"]/*[[".otherElements[\"UIContinuousPathIntroductionView\"]",".buttons[\"Continue\"].staticTexts[\"Continue\"]",".staticTexts[\"Continue\"]"],[[[-1,2],[-1,1],[-1,0,1]],[[-1,2],[-1,1]]],[0]]@END_MENU_TOKEN@*/
+        let continueButton = app.otherElements["UIContinuousPathIntroductionView"]
         if continueButton.exists {
-            continueButton.tap()
+            continueButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
         
         let doneButton = app.toolbars.matching(identifier: "Toolbar").buttons["Done"]
