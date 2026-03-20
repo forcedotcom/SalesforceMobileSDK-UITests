@@ -12,16 +12,28 @@ data class CommandResult(val exitCode: Int, val output: String?) {
         val lines = output.lines()
         val errorLines = mutableListOf<String>()
 
+        var capturingFailedCommands = false
         for (line in lines) {
             val trimmed = line.trim()
             when {
-                // C++/Swift/Kotlin compilation errors
-                trimmed.contains(": error:") -> errorLines.add(trimmed)
+                // C++/Swift/Kotlin compilation errors (raw xcodebuild and xcbeautify ❌ format)
+                trimmed.contains(": error:") -> { errorLines.add(trimmed); capturingFailedCommands = false }
+                // xcbeautify emoji error lines
+                trimmed.startsWith("❌") -> { errorLines.add(trimmed); capturingFailedCommands = false }
+                // Xcode build failure summary
+                trimmed == "** BUILD FAILED **" -> { errorLines.add(trimmed); capturingFailedCommands = false }
+                // Xcode "The following build commands failed:" section
+                trimmed.startsWith("The following build commands failed:") -> {
+                    errorLines.add(trimmed)
+                    capturingFailedCommands = true
+                }
+                capturingFailedCommands && trimmed.isNotEmpty() -> errorLines.add(trimmed)
+                capturingFailedCommands && trimmed.isEmpty() -> capturingFailedCommands = false
                 // Gradle/Xcode task failures
                 trimmed.startsWith("FAILURE:") || trimmed.startsWith("* What went wrong:") -> errorLines.add(trimmed)
                 // Execution failed messages
                 trimmed.startsWith("Execution failed for task") -> errorLines.add(trimmed)
-                // Xcodebuild errors
+                // Raw xcodebuild error prefix
                 trimmed.startsWith("error:") -> errorLines.add(trimmed)
             }
         }

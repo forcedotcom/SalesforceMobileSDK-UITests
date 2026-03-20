@@ -85,6 +85,7 @@ fun compileApp(
                     "-configuration", configuration,
                     "-derivedDataPath", "./DerivedData",
                     "GENERATE_ASSET_SYMBOLS=NO",
+                    "ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS=NO",
                 )).runCommandCapture(iosRoot)
                 if (buildResult.exitCode != 0) {
                     throw Exception("iOS build failed.\n${buildResult.parseBuildFailure()}")

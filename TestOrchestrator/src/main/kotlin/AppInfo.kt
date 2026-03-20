@@ -84,8 +84,7 @@ abstract class AppSource(open val os: OS) {
                 .replace(oldValue = "_", newValue = "")
                 .removeSuffix("template")
 
-            if (templateName == "mobilesyncexplorerreactnative"
-                || templateName.startsWith("android")
+            if (templateName.startsWith("android")
                 || templateName.startsWith("ios")) {
 
                 templateName
