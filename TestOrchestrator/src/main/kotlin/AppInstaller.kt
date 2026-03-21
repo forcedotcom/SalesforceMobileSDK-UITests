@@ -37,19 +37,48 @@ fun createAndInstallIosSimulators(
     iOSVersions: List<String>,
     iOSDevice: String
 ): List<SimulatorInfo> {
-    // Clean up all test simulators from previous runs
-    cleanupTestSimulators()
-
-    // Wait for any background runtime installs to finish
+    // Wait for background runtime installs (and sim creation) to finish
     awaitBackgroundRuntimeInstalls(iOSVersions)
 
-    // Fetch simctl data once (no simulators booted yet, so these are fast)
+    // Collect any simulators pre-created in the background
+    val preCreated = mutableListOf<SimulatorInfo>()
+    while (true) {
+        val sim = preCreatedSimulators.poll() ?: break
+        preCreated.add(sim)
+    }
+    val preCreatedByMajor = preCreated.associateBy { it.iOSVersion.split(".").first() }
+
+    // If no sims were pre-created (non-CI or background failed), clean up old sims
+    if (preCreated.isEmpty()) {
+        cleanupTestSimulators()
+    }
+
+    // Fetch simctl data once
     val runtimesOutput = fetchSimctlRuntimes()
     val deviceTypesOutput = fetchSimctlDeviceTypes()
 
     val simulators = mutableListOf<SimulatorInfo>()
 
     for (version in iOSVersions) {
+        val major = version.split(".").first()
+
+        // Reuse pre-created simulator if available
+        val existing = preCreatedByMajor[major]
+        if (existing != null) {
+            verbosePrinter?.invoke("Reusing pre-created simulator for iOS ${existing.iOSVersion} (${existing.simId})")
+            progressBanner?.update {
+                context = context.advance("Create Simulator (iOS ${existing.iOSVersion})")
+                completed += 1
+            }
+            progressBanner?.update {
+                context = context.advance("Boot Simulator (iOS ${existing.iOSVersion})")
+                completed += 1
+            }
+            simulators.add(existing)
+            continue
+        }
+
+        // Create a new simulator (fallback for non-CI or if background didn't cover this version)
         val simName = "${SIM_NAME}_$version"
         val resolved = resolveIosRuntime(version, runtimesOutput)
         verbosePrinter?.invoke("Using runtime: ${resolved.identifier}")
@@ -140,7 +169,7 @@ private fun cleanupTestSimulators() {
     }
 }
 
-private fun fetchSimctlDeviceTypes(): String {
+fun fetchSimctlDeviceTypes(): String {
     val process = ProcessBuilder("xcrun", "simctl", "list", "devicetypes", "-j")
         .redirectErrorStream(true).start()
     val output = process.inputStream.bufferedReader().readText()

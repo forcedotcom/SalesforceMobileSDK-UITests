@@ -1,29 +1,37 @@
 package com.salesforce
 
 import com.salesforce.util.verbosePrinter
+import kotlinx.serialization.json.*
+import java.util.concurrent.ConcurrentLinkedQueue
 
 private var installThread: Thread? = null
 private var installError: Exception? = null
 
+/** Simulators created in the background, ready for reuse by [createAndInstallIosSimulators]. */
+val preCreatedSimulators = ConcurrentLinkedQueue<SimulatorInfo>()
+
 /**
  * Starts a single background thread to download/install iOS simulator runtimes that aren't
  * already present, installing them sequentially to avoid concurrent rsync failures.
+ * After each runtime is ready, a simulator is immediately created and booted so it is
+ * warm by the time the build finishes.
  * Call early (before app generation) so downloads happen in parallel with other work.
  */
-fun startBackgroundRuntimeInstalls(versions: List<String>) {
+fun startBackgroundRuntimeInstalls(versions: List<String>, iOSDevice: String = DEFAULT_IOS_DEVICE) {
     // Fetch installed runtimes and available versions once (fast before any sims are booted)
     val runtimesOutput = fetchSimctlRuntimes()
     val xcodesOutput = fetchXcodesRuntimes()
 
-    data class PendingInstall(val major: String, val latestVersion: String)
+    data class VersionInfo(val major: String, val alreadyInstalled: Boolean, val latestVersion: String?)
 
-    val pending = mutableListOf<PendingInstall>()
+    val versionInfos = mutableListOf<VersionInfo>()
     for (version in versions) {
         val major = version.split(".").first()
-        if (pending.any { it.major == major }) continue
+        if (versionInfos.any { it.major == major }) continue
 
         if (isRuntimeInstalled(major, runtimesOutput)) {
             verbosePrinter?.invoke("iOS $major runtime already installed locally.")
+            versionInfos.add(VersionInfo(major, alreadyInstalled = true, latestVersion = null))
             continue
         }
 
@@ -33,26 +41,113 @@ fun startBackgroundRuntimeInstalls(versions: List<String>) {
             return
         }
 
-        pending.add(PendingInstall(major, latestVersion))
+        versionInfos.add(VersionInfo(major, alreadyInstalled = false, latestVersion = latestVersion))
     }
 
-    if (pending.isEmpty()) return
+    // Clean up old test simulators before creating new ones
+    cleanupTestSimulatorsBg()
 
     installThread = Thread {
-        for ((major, latestVersion) in pending) {
-            try {
-                verbosePrinter?.invoke("Installing iOS $latestVersion runtime (sequential)...")
-                installRuntime(major, latestVersion)
-            } catch (e: Exception) {
-                installError = e
-                return@Thread
+        try {
+            val deviceTypesOutput = fetchSimctlDeviceTypes()
+
+            // Create sims for already-installed runtimes immediately
+            for (info in versionInfos.filter { it.alreadyInstalled }) {
+                createAndBootSimInBackground(info.major, iOSDevice, deviceTypesOutput)
             }
+
+            // Install missing runtimes, creating a sim after each one
+            for (info in versionInfos.filter { !it.alreadyInstalled }) {
+                verbosePrinter?.invoke("Installing iOS ${info.latestVersion} runtime (sequential)...")
+                installRuntime(info.major, info.latestVersion!!)
+                createAndBootSimInBackground(info.major, iOSDevice, deviceTypesOutput)
+            }
+        } catch (e: Exception) {
+            installError = e
         }
     }.apply {
         name = "runtime-install-sequential"
         isDaemon = true
         start()
     }
+}
+
+/**
+ * Creates and boots a simulator for the given major iOS version in the background thread.
+ * The resulting [SimulatorInfo] is added to [preCreatedSimulators].
+ */
+private fun createAndBootSimInBackground(major: String, iOSDevice: String, deviceTypesOutput: String) {
+    val runtimesNow = fetchSimctlRuntimes()
+    val resolved = resolveIosRuntimeByMajor(major, runtimesNow) ?: return
+    val device = resolveCompatibleDevice(iOSDevice, resolved.version, deviceTypesOutput)
+    val simName = "${TestOrchestrator.SIM_NAME}_$major"
+
+    verbosePrinter?.invoke("Creating Simulator for iOS ${resolved.version}")
+    val createProcess = ProcessBuilder(
+        "xcrun", "simctl", "create", simName,
+        "com.apple.CoreSimulator.SimDeviceType.$device",
+        resolved.identifier
+    ).redirectErrorStream(true).start()
+    val simId = createProcess.inputStream.bufferedReader().readText().trim()
+    val createExitCode = createProcess.waitFor()
+    if (createExitCode != 0) {
+        verbosePrinter?.invoke("Failed to pre-create simulator for iOS ${resolved.version}: $simId")
+        return
+    }
+
+    verbosePrinter?.invoke("Booting Simulator for iOS ${resolved.version}")
+    val bootProcess = ProcessBuilder("xcrun", "simctl", "boot", simId)
+        .redirectErrorStream(true).start()
+    bootProcess.inputStream.bufferedReader().readText()
+    val bootExitCode = bootProcess.waitFor()
+    if (bootExitCode != 0) {
+        verbosePrinter?.invoke("Failed to boot pre-created simulator for iOS ${resolved.version}")
+        return
+    }
+
+    preCreatedSimulators.add(SimulatorInfo(simId, resolved.version))
+    verbosePrinter?.invoke("Background: iOS ${resolved.version} simulator $simId created and booting")
+}
+
+/**
+ * Resolves the highest minor version runtime for the given major version.
+ */
+private fun resolveIosRuntimeByMajor(major: String, runtimesOutput: String): ResolvedRuntime? {
+    val allIdentifiers = Regex("""com\.apple\.CoreSimulator\.SimRuntime\.iOS-[\d-]+""")
+        .findAll(runtimesOutput).map { it.value }.distinct().toList()
+    fun runtimeSortKey(id: String): List<Int> =
+        id.substringAfter("iOS-").split("-").mapNotNull { it.toIntOrNull() }
+    fun runtimeToVersion(id: String): String =
+        id.substringAfter("iOS-").replace("-", ".")
+    val match = allIdentifiers
+        .filter { it.startsWith("com.apple.CoreSimulator.SimRuntime.iOS-$major-") }
+        .maxByOrNull { runtimeSortKey(it).drop(1).firstOrNull() ?: 0 }
+    return match?.let { ResolvedRuntime(it, runtimeToVersion(it)) }
+}
+
+/**
+ * Cleans up test simulators from previous runs (background-safe version).
+ */
+private fun cleanupTestSimulatorsBg() {
+    val process = ProcessBuilder("xcrun", "simctl", "list", "devices", "-j")
+        .redirectErrorStream(true).start()
+    val output = process.inputStream.bufferedReader().readText()
+    process.waitFor()
+    try {
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(output).jsonObject
+        val devices = json["devices"]?.jsonObject ?: return
+        for ((_, deviceList) in devices) {
+            for (device in deviceList.jsonArray) {
+                val obj = device.jsonObject
+                val name = obj["name"]?.jsonPrimitive?.content ?: continue
+                val udid = obj["udid"]?.jsonPrimitive?.content ?: continue
+                if (name.startsWith(TestOrchestrator.SIM_NAME)) {
+                    ProcessBuilder("xcrun", "simctl", "delete", udid)
+                        .redirectErrorStream(true).start().waitFor()
+                }
+            }
+        }
+    } catch (_: Exception) { }
 }
 
 /**

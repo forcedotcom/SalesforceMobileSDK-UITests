@@ -198,6 +198,12 @@ class TestOrchestrator : CliktCommand() {
             }
 
             try {
+                // Start runtime downloads as early as possible so cheap runtimes
+                // (e.g. iOS 17) are ready before the build even finishes.
+                if (os == OS.IOS && IS_CI) {
+                    startBackgroundRuntimeInstalls(effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE)
+                }
+
                 val appInfo = if (!reRunTest) {
                     generateApp(appSource, useSF)
                 } else {
@@ -205,16 +211,8 @@ class TestOrchestrator : CliktCommand() {
                     getAppInfo(appSource)
                 }
 
-                if (os == OS.IOS && IS_CI) {
-                    startBackgroundRuntimeInstalls(effectiveVersions)
-                }
-
                 if (!reRunTest) {
                     compileApp(appInfo, debug)
-                }
-
-                if (os == OS.IOS && IS_CI) {
-                    awaitBackgroundRuntimeInstalls(effectiveVersions)
                 }
 
                 runTests(appInfo, effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
