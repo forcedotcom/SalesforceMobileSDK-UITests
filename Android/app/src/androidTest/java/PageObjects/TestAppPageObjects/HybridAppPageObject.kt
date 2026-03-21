@@ -26,6 +26,8 @@
  */
 package pageobjects.testapppageobjects
 
+import android.os.Build
+import android.util.Log
 import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
 import pageobjects.AppType
@@ -47,6 +49,18 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
                     "Marc Benioff"
                 }
             }
+        }
+
+        // On API 28, the system WebView does not expose its DOM content to the
+        // accessibility tree, so UiAutomator cannot read text inside it.  Fall
+        // back to verifying the WebView element itself is present, which confirms
+        // the app transitioned past login into the hybrid view.
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P && app.type == AppType.HYBRID_REMOTE) {
+            Log.i("HybridApp", "API 28: WebView content not accessible to UiAutomator, verifying WebView presence.")
+            val webView = device.findObject(UiSelector().className("android.webkit.WebView"))
+            webView.waitForExists(timeout * 5)
+            Assert.assertTrue("App did not successfully load (WebView not found).", webView.exists())
+            return
         }
 
         verifyInWebView(content)

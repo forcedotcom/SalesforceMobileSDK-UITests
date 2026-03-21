@@ -156,10 +156,10 @@ class TestOrchestrator : CliktCommand() {
                     OS.ANDROID -> "Testing ${appSource.appName}"
                 }
                 var totalSteps: Long = when(os) {
-                    OS.ANDROID -> 7
-                    OS.IOS -> 5L + 3L * effectiveVersions.size
+                    OS.ANDROID -> if (reRunTest) 3 else 7
+                    OS.IOS -> (if (reRunTest) 2L else 5L) + 3L * effectiveVersions.size
                 }
-                if (appSource.isComplexHybrid) {
+                if (appSource.isComplexHybrid && !reRunTest) {
                     totalSteps++
                 }
 

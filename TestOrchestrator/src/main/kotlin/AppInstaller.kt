@@ -4,21 +4,28 @@ import com.salesforce.TestOrchestrator.Companion.ADB
 import com.salesforce.TestOrchestrator.Companion.SIM_NAME
 import com.salesforce.util.progressBanner
 import com.salesforce.util.runCommand
+import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
 import kotlinx.serialization.json.*
 import java.io.File
 
 fun installAndroidApp(appInfo: AppInfo) {
     // Push config to device so androidTestConfig can load it
-    "$ADB push shared/test/android/ui_test_config.json /data/local/tmp/ui_test_config.json".runCommand()
-    "$ADB uninstall ${appInfo.packageName}".runCommand()
+    val pushResult = "$ADB push shared/test/android/ui_test_config.json /data/local/tmp/ui_test_config.json".runCommand()
+    if (pushResult != 0) {
+        throw Exception("Failed to push test config to device (exit $pushResult).")
+    }
+    "$ADB uninstall ${appInfo.packageName}".runCommand(suppressErrors = true)
 
     progressBanner?.update {
         context = context.advance("Install App")
         completed += 1
     }
     verbosePrinter?.invoke("Installing App")
-    "$ADB install -r ${appInfo.apkPath}".runCommand()
+    val installResult = "$ADB install -r ${appInfo.apkPath}".split(" ").runCommandCapture()
+    if (installResult.exitCode != 0) {
+        throw Exception("APK install failed.\n${installResult.output?.trim()}")
+    }
 }
 
 data class ResolvedRuntime(val identifier: String, val version: String)
@@ -69,7 +76,10 @@ fun createAndInstallIosSimulators(
             completed += 1
         }
         verbosePrinter?.invoke("Booting Simulator for iOS ${resolved.version}")
-        "xcrun simctl boot $simId".runCommand()
+        val bootResult = "xcrun simctl boot $simId".runCommand()
+        if (bootResult != 0) {
+            throw Exception("Failed to boot simulator for iOS ${resolved.version} (exit $bootResult).")
+        }
 
         simulators.add(SimulatorInfo(simId, resolved.version))
     }
@@ -77,7 +87,10 @@ fun createAndInstallIosSimulators(
     // Wait for all simulators to finish booting
     for (sim in simulators) {
         verbosePrinter?.invoke("Waiting for iOS ${sim.iOSVersion} simulator to boot...")
-        "xcrun simctl bootstatus ${sim.simId} -b".runCommand()
+        val bootStatusResult = "xcrun simctl bootstatus ${sim.simId} -b".runCommand()
+        if (bootStatusResult != 0) {
+            throw Exception("Simulator for iOS ${sim.iOSVersion} failed to finish booting (exit $bootStatusResult).")
+        }
     }
 
     // Install app on all simulators
@@ -94,7 +107,10 @@ fun createAndInstallIosSimulators(
             completed += 1
         }
         verbosePrinter?.invoke("Installing App on iOS ${sim.iOSVersion}")
-        "xcrun simctl install ${sim.simId} $buildPath/Products/$configuration-iphonesimulator/${appInfo.appName}.app".runCommand()
+        val simInstallResult = "xcrun simctl install ${sim.simId} $buildPath/Products/$configuration-iphonesimulator/${appInfo.appName}.app".runCommand()
+        if (simInstallResult != 0) {
+            throw Exception("Failed to install ${appInfo.appName} on iOS ${sim.iOSVersion} simulator (exit $simInstallResult).")
+        }
     }
 
     return simulators

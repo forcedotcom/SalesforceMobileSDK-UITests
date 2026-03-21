@@ -107,7 +107,9 @@ private fun setupReactNative(appInfo: AppInfo) {
         val bundleResult = listOf("bundle", "install")
             .runCommandCapture(workingDir = appInfo.appPath)
         if (bundleResult.exitCode != 0) {
-            throw Exception("Bundle install failed.\n${bundleResult.parseBuildFailure()}")
+            val logPath = bundleResult.saveFullOutput(appInfo.appPath, "bundle_install")
+            val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+            throw Exception("Bundle install failed.\n${bundleResult.parseBuildFailure()}$logMsg")
         }
     }
 
@@ -135,7 +137,9 @@ private fun setupReactNative(appInfo: AppInfo) {
             "--bundle-output", "android/app/src/main/assets/index.android.bundle"
         ).runCommandCapture(workingDir = appInfo.appPath)
         if (bundleResult.exitCode != 0) {
-            throw Exception("React Native bundle failed.\n${bundleResult.parseBuildFailure()}")
+            val logPath = bundleResult.saveFullOutput(appInfo.appPath, "react_native_bundle")
+            val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+            throw Exception("React Native bundle failed.\n${bundleResult.parseBuildFailure()}$logMsg")
         }
     }
 }

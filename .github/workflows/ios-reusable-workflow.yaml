@@ -108,5 +108,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-${{ inputs.app_type }}-ios-${{ inputs.ios }}-sfdx:${{ inputs.sfdx }}
+          name: test-results-${{ inputs.app_type }}-ios-${{ inputs.ios }}-sfdx-${{ inputs.sfdx }}
           path: ios_results/**.xml

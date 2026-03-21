@@ -6,6 +6,14 @@ import java.lang.ProcessBuilder.Redirect.INHERIT
 var verboseCommandOutput = false
 
 data class CommandResult(val exitCode: Int, val output: String?) {
+    fun saveFullOutput(appPath: String, label: String): String? {
+        if (verboseCommandOutput || output.isNullOrBlank()) return null
+        val sanitizedLabel = label.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        val logFile = File(appPath, "${sanitizedLabel}_output.log")
+        logFile.writeText(output)
+        return logFile.absolutePath
+    }
+
     fun parseBuildFailure(): String {
         if (output.isNullOrBlank()) return "Build failed with no output."
 

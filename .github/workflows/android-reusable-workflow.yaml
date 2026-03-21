@@ -16,7 +16,7 @@ jobs:
     name: ${{ inputs.app_type }}
     runs-on: ubuntu-latest
     env:
-      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx:${{ inputs.sfdx }}-build:${{ github.run_number }}"
+      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx-${{ inputs.sfdx }}-build-${{ github.run_number }}"
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -132,5 +132,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-${{ inputs.app_type }}-android-sfdx:${{ inputs.sfdx }}
+          name: test-results-${{ inputs.app_type }}-android-sfdx-${{ inputs.sfdx }}
           path: firebase_results/**.xml

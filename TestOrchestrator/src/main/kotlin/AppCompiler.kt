@@ -2,7 +2,6 @@ package com.salesforce
 
 import com.salesforce.TestOrchestrator.Companion.ANDROID_BUILD_DIR
 import com.salesforce.util.progressBanner
-import com.salesforce.util.runCommand
 import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
 import java.io.File
@@ -66,7 +65,9 @@ fun compileApp(
                 }
                 val buildResult = buildCommand.runCommandCapture(androidRoot)
                 if (buildResult.exitCode != 0) {
-                    throw Exception("Android build failed.\n${buildResult.parseBuildFailure()}")
+                    val logPath = buildResult.saveFullOutput(appPath, "android_build")
+                    val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+                    throw Exception("Android build failed.\n${buildResult.parseBuildFailure()}$logMsg")
                 }
 
                 if (!debug) {
@@ -87,9 +88,12 @@ fun compileApp(
                     "-derivedDataPath", "./DerivedData",
                     "GENERATE_ASSET_SYMBOLS=NO",
                     "ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS=NO",
+                    "CODE_SIGNING_ALLOWED=NO",
                 )).runCommandCapture(iosRoot)
                 if (buildResult.exitCode != 0) {
-                    throw Exception("iOS build failed.\n${buildResult.parseBuildFailure()}")
+                    val logPath = buildResult.saveFullOutput(appPath, "ios_build")
+                    val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+                    throw Exception("iOS build failed.\n${buildResult.parseBuildFailure()}$logMsg")
                 }
             }
         }
@@ -203,14 +207,20 @@ private fun signReleaseApk(apkPath: String) {
             "-storepass", keystorePass,
             "-keypass", keystorePass,
             "-dname", "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown"
-        ).runCommand()
+        ).runCommandCapture()
+        if (keystoreResult.exitCode != 0) {
+            throw Exception("Keystore creation failed.\n${keystoreResult.output?.trim()}")
+        }
     }
 
     // Sign
-    val signApk = listOf(
+    val signResult = listOf(
         "$ANDROID_BUILD_DIR/apksigner", "sign",
         "--ks", "uitest.keystore",
         "--ks-pass", "pass:$keystorePass",
         apkPath
-    ).runCommand()
+    ).runCommandCapture()
+    if (signResult.exitCode != 0) {
+        throw Exception("APK signing failed.\n${signResult.output?.trim()}")
+    }
 }

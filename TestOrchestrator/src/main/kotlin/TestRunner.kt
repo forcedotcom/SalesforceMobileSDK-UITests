@@ -46,7 +46,7 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
     installAndroidApp(appInfo)
 
     // Grant Push
-    "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS".runCommand()
+    "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS".runCommand(suppressErrors = true)
 
     // TestOrchestrator params
     val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
@@ -66,7 +66,9 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
         .split(" ").filter { it.isNotEmpty() }.runCommandCapture(workingDir = ANDROID_TEST_DIR)
 
     if (result.exitCode != 0) {
-        throw Exception(parseTestFailure(result.output))
+        val logPath = result.saveFullOutput(appInfo.appPath, "android_test")
+        val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+        throw Exception(parseTestFailure(result.output) + logMsg)
     }
 }
 
@@ -80,7 +82,9 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     val buildResult = "./gradlew app:assembleAndroidTest"
         .split(" ").runCommandCapture(workingDir = ANDROID_TEST_DIR)
     if (buildResult.exitCode != 0) {
-        throw Exception("TestOrchestrator APK failed to build.\n${buildResult.parseBuildFailure()}")
+        val logPath = buildResult.saveFullOutput(appInfo.appPath, "test_apk_build")
+        val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+        throw Exception("TestOrchestrator APK failed to build.\n${buildResult.parseBuildFailure()}$logMsg")
     }
 
     progressBanner?.update {
@@ -112,7 +116,9 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     """.trimIndent().split("\\s+".toRegex()).filter { it.isNotEmpty() }
         .runCommandCapture(workingDir = ANDROID_TEST_DIR).let { result ->
             if (result.exitCode != 0) {
-                throw Exception(parseTestFailure(result.output))
+                val logPath = result.saveFullOutput(appInfo.appPath, "firebase_test")
+                val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+                throw Exception(parseTestFailure(result.output) + logMsg)
             }
         }
 }
@@ -162,9 +168,11 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
             if (retryResult.exitCode != 0) {
                 val retryBundleAbsPath = File(IOS_TEST_DIR, retryBundlePath).absolutePath
                 val retryDeviceResults = parsePerDeviceResults(retryBundleAbsPath)
-                throw Exception(retryDeviceResults?.formatSummary()
+                val logPath = retryResult.saveFullOutput(appInfo.appPath, "ios_test_retry")
+                val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+                throw Exception((retryDeviceResults?.formatSummary()
                     ?: parseXCResultFailures(retryBundleAbsPath)
-                    ?: parseTestFailure(retryResult.output))
+                    ?: parseTestFailure(retryResult.output)) + logMsg)
             }
             return
         }
@@ -177,7 +185,9 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
 
     if (result.exitCode != 0) {
         val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
-        throw Exception(parseXCResultFailures(resultBundleAbsPath) ?: parseTestFailure(result.output))
+        val logPath = result.saveFullOutput(appInfo.appPath, "ios_test")
+        val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+        throw Exception((parseXCResultFailures(resultBundleAbsPath) ?: parseTestFailure(result.output)) + logMsg)
     }
 }
 
