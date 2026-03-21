@@ -88,7 +88,6 @@ fun compileApp(
                     "-derivedDataPath", "./DerivedData",
                     "GENERATE_ASSET_SYMBOLS=NO",
                     "ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS=NO",
-                    "CODE_SIGNING_ALLOWED=NO",
                 )).runCommandCapture(iosRoot)
                 if (buildResult.exitCode != 0) {
                     val logPath = buildResult.saveFullOutput(appPath, "ios_build")

@@ -297,14 +297,15 @@ private data class DeviceTestResults(
     val passedVersions: Set<String>,
     val failureMessages: Map<String, List<String>>, // osVersion -> failure details
 ) {
-    fun formatSummary(): String {
+    fun formatSummary(): String? {
+        if (failureMessages.isEmpty()) return null
         val allVersions = (failureMessages.keys + passedVersions).toSortedSet()
         return allVersions.joinToString("\n") { version ->
             val failures = failureMessages[version]
-            if (failures != null) {
-                "iOS $version: FAILED - ${failures.joinToString("; ")}"
-            } else {
-                "iOS $version: Passed"
+            when {
+                failures != null -> "iOS $version: FAILED - ${failures.joinToString("; ")}"
+                version in passedVersions -> "iOS $version: Passed"
+                else -> "iOS $version: FAILED (no details captured)"
             }
         }
     }
@@ -403,7 +404,7 @@ private fun parsePerDeviceResults(resultBundlePath: String): DeviceTestResults? 
  * Returns a formatted string like:
  *   iOS 17.5: FAILED - testLogin: App did not load.
  *   iOS 26.2: Passed
- * Returns null if the result bundle can't be parsed.
+ * Returns null if the result bundle can't be parsed or no failures were found.
  */
 private fun parseXCResultFailures(resultBundlePath: String): String? {
     if (!File(resultBundlePath).exists()) {
@@ -481,6 +482,11 @@ private fun parseXCResultFailures(resultBundlePath: String): String? {
 
         walkNodes(testNodes, null)
 
+        if (deviceResults.isEmpty()) {
+            verbosePrinter?.invoke("xcresult: no failure details found despite test failure")
+            return null
+        }
+
         val allVersions = (deviceVersions.values + devicesPassed + deviceResults.keys).toSortedSet()
         if (allVersions.isEmpty()) {
             verbosePrinter?.invoke("xcresult: no device versions found in test nodes")
@@ -489,10 +495,10 @@ private fun parseXCResultFailures(resultBundlePath: String): String? {
 
         allVersions.joinToString("\n") { version ->
             val failures = deviceResults[version]
-            if (failures != null) {
-                "iOS $version: FAILED - ${failures.joinToString("; ")}"
-            } else {
-                "iOS $version: Passed"
+            when {
+                failures != null -> "iOS $version: FAILED - ${failures.joinToString("; ")}"
+                version in devicesPassed -> "iOS $version: Passed"
+                else -> "iOS $version: FAILED (no details captured)"
             }
         }
     } catch (e: Exception) {
