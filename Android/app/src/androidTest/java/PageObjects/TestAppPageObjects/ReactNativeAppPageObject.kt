@@ -40,7 +40,7 @@ class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObjec
 
     fun assertAppLoads() {
         val alertWindow = device.findObject(UiSelector().resourceId("android:id/alertTitle"))
-        if (alertWindow.exists()) {
+        if (alertWindow.waitForExists(timeout)) {
             Log.i("uia", "React Native requesting overlay permission.")
             // Tap Continue Button
             device.findObject(UiSelector().resourceId("android:id/button1")).click()

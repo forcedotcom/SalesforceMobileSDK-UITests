@@ -59,7 +59,10 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
             webElement = device.findObject(UiSelector().className(textViewClass).text(text))
             if (!webElement.waitForExists(timeout * 5)) {
                 webElement = device.findObject(UiSelector().descriptionContains(text))
-                webElement.waitForExists(timeout * 5)
+                if (!webElement.waitForExists(timeout * 5)) {
+                    webElement = device.findObject(UiSelector().textContains(text))
+                    webElement.waitForExists(timeout * 5)
+                }
             }
         }
 

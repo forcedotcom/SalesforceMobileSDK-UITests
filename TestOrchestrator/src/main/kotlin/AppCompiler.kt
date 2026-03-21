@@ -82,6 +82,7 @@ fun compileApp(
                 val buildResult = (listOf("xcodebuild", "build") + workspaceOrProject + listOf(
                     "-scheme", appName,
                     "-sdk", "iphonesimulator",
+                    "-destination", "generic/platform=iOS Simulator",
                     "-configuration", configuration,
                     "-derivedDataPath", "./DerivedData",
                     "GENERATE_ASSET_SYMBOLS=NO",

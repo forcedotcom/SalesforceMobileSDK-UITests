@@ -52,6 +52,42 @@ jobs:
             name=$(basename "$xcresult" .xcresult)
             xcresultparser -o junit "$xcresult" > "ios_results/${name}_test_result.xml"
           done
+      - name: iOS Version Summary
+        if: success() || failure()
+        run: |
+          for xcresult in iOS/test_output/*.xcresult; do
+            [ -e "$xcresult" ] || continue
+            name=$(basename "$xcresult" .xcresult)
+            python3 - "$xcresult" "$name" << 'PYEOF'
+          import json, subprocess, sys
+          xcresult, name = sys.argv[1], sys.argv[2]
+          proc = subprocess.run(
+              ["xcrun", "xcresulttool", "get", "test-results", "tests",
+               "--path", xcresult, "--compact"],
+              capture_output=True, text=True)
+          if proc.returncode != 0:
+              sys.exit(0)
+          data = json.loads(proc.stdout)
+          device_versions = {d["deviceId"]: d["osVersion"] for d in data.get("devices", [])}
+          def walk(nodes, case, results):
+              for n in nodes:
+                  t, children = n.get("nodeType", ""), n.get("children") or []
+                  if t == "Test Case": walk(children, n.get("name", ""), results)
+                  elif t == "Device":
+                      v = device_versions.get(n.get("nodeIdentifier", ""), "unknown")
+                      results.setdefault(v, {"passed": 0, "failed": 0})
+                      if n.get("result") == "Passed": results[v]["passed"] += 1
+                      else: results[v]["failed"] += 1
+                  else: walk(children, case, results)
+          results = {}
+          walk(data.get("testNodes", []), None, results)
+          lines = [f"### {name}", "| iOS Version | Passed | Failed |", "|-------------|--------|--------|"]
+          for v, r in sorted(results.items()):
+              icon = "✅" if r["failed"] == 0 else "❌"
+              lines.append(f"| {icon} iOS {v} | {r['passed']} | {r['failed']} |")
+          print("\n".join(lines))
+          PYEOF
+          done >> $GITHUB_STEP_SUMMARY
       - name: Test Report
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
@@ -64,7 +100,13 @@ jobs:
           group_reports: false
           include_passed: true
           skip_annotations: true
-          skip_success_summary: true
+          skip_success_summary: false
           include_empty_in_summary: false
           simplified_summary: true
           report_paths: 'ios_results/**.xml'
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-${{ inputs.app_type }}-ios-${{ inputs.ios }}-sfdx:${{ inputs.sfdx }}
+          path: ios_results/**.xml

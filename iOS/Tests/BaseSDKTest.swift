@@ -74,7 +74,7 @@ class BaseSDKTest: XCTestCase {
             contacts.element(boundBy: 0).tap()
             XCTAssertGreaterThan(contacts.count, 0, mobileSyncError)
         case .hybridRemote:
-            verifyInWebView(app: app, text: "Salesforce Mobile SfDK Test")
+            verifyInWebView(app: app, text: "Salesforce Mobile SDK Test")
         case .hybridLocal:
             if app.complexHybrid == "accounteditor" {
                 verifyInWebView(app: app, text: "Accounts")
