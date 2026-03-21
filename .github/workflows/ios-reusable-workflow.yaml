@@ -45,16 +45,12 @@ jobs:
       - name: Convert Test Results to JUnit XML
         if: success() || failure()
         run: |
+          brew install xcresultparser
           mkdir -p ios_results
           for xcresult in iOS/test_output/*.xcresult; do
             [ -e "$xcresult" ] || continue
             name=$(basename "$xcresult" .xcresult)
-            xml=$(xcrun xcresulttool get test-results junit --path "$xcresult" 2>&1)
-            if [ -n "$xml" ]; then
-              echo "$xml" > "ios_results/${name}_test_result.xml"
-            else
-              echo "Warning: xcresulttool produced no output for $xcresult" >&2
-            fi
+            xcresultparser -o junit "$xcresult" > "ios_results/${name}_test_result.xml"
           done
       - name: Test Report
         uses: mikepenz/action-junit-report@v6

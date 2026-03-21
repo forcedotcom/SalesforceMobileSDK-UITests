@@ -198,15 +198,15 @@ class TestOrchestrator : CliktCommand() {
             }
 
             try {
-                if (os == OS.IOS && IS_CI) {
-                    startBackgroundRuntimeInstalls(effectiveVersions)
-                }
-
                 val appInfo = if (!reRunTest) {
                     generateApp(appSource, useSF)
                 } else {
                     verbosePrinter?.invoke("Skipping App Generation")
                     getAppInfo(appSource)
+                }
+
+                if (os == OS.IOS && IS_CI) {
+                    startBackgroundRuntimeInstalls(effectiveVersions)
                 }
 
                 if (!reRunTest) {
