@@ -198,17 +198,17 @@ class TestOrchestrator : CliktCommand() {
             }
 
             try {
-                // Start runtime downloads as early as possible so cheap runtimes
-                // (e.g. iOS 17) are ready before the build even finishes.
-                if (os == OS.IOS && IS_CI) {
-                    startBackgroundRuntimeInstalls(effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE)
-                }
-
                 val appInfo = if (!reRunTest) {
                     generateApp(appSource, useSF)
                 } else {
                     verbosePrinter?.invoke("Skipping App Generation")
                     getAppInfo(appSource)
+                }
+
+                // Start runtime downloads after app generation to avoid rsync
+                // conflicts with CocoaPods. Downloads still overlap with xcodebuild.
+                if (os == OS.IOS && IS_CI) {
+                    startBackgroundRuntimeInstalls(effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE)
                 }
 
                 if (!reRunTest) {
