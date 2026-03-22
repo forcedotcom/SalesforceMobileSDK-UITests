@@ -145,7 +145,22 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
 
         if (result.exitCode != 0) {
             verbosePrinter?.invoke("Retrying failed simulator: iOS ${sim.iOSVersion}")
-            "xcrun simctl uninstall ${sim.simId} ${appInfo.packageName}".runCommand(suppressErrors = true)
+
+            // Reset simulator to clear stale state that causes "Application info provider returned nil"
+            "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
+            "xcrun simctl erase ${sim.simId}".runCommand(suppressErrors = true)
+            "xcrun simctl boot ${sim.simId}".runCommand(suppressErrors = true)
+            val bootStatus = "xcrun simctl bootstatus ${sim.simId} -b".runCommand(suppressErrors = true)
+            if (bootStatus != 0) {
+                verbosePrinter?.invoke("Warning: Simulator boot status check failed for iOS ${sim.iOSVersion}")
+            }
+
+            // Reinstall the app since erase removed it
+            try {
+                installIosApp(appInfo, sim)
+            } catch (e: Exception) {
+                verbosePrinter?.invoke("Warning: Failed to reinstall app for retry: ${e.message}")
+            }
 
             val retryBundlePath = "test_output/${appInfo.appName}_iOS${sim.iOSVersion}_retry"
             File(IOS_TEST_DIR, retryBundlePath).deleteRecursively()

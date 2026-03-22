@@ -123,6 +123,22 @@ fun createAndInstallIosSimulators(
     }
 
     // Install app on all simulators
+    for (sim in simulators) {
+        progressBanner?.update {
+            context = context.advance("Install App (iOS ${sim.iOSVersion})")
+            completed += 1
+        }
+        installIosApp(appInfo, sim)
+    }
+
+    return simulators
+}
+
+/**
+ * Installs the app on a single iOS simulator.
+ * Reusable for both initial install and retry reinstall.
+ */
+fun installIosApp(appInfo: AppInfo, sim: SimulatorInfo) {
     val buildPath = when {
         File("${appInfo.iosRoot}/DerivedData/Build/").exists() -> "${appInfo.iosRoot}/DerivedData/Build"
         File("${appInfo.iosRoot}/Build/").exists() -> "${appInfo.iosRoot}/Build"
@@ -130,19 +146,11 @@ fun createAndInstallIosSimulators(
     }
     val configuration = if (appInfo.debugBuild) "Debug" else "Release"
 
-    for (sim in simulators) {
-        progressBanner?.update {
-            context = context.advance("Install App (iOS ${sim.iOSVersion})")
-            completed += 1
-        }
-        verbosePrinter?.invoke("Installing App on iOS ${sim.iOSVersion}")
-        val simInstallResult = "xcrun simctl install ${sim.simId} $buildPath/Products/$configuration-iphonesimulator/${appInfo.appName}.app".runCommand()
-        if (simInstallResult != 0) {
-            throw Exception("Failed to install ${appInfo.appName} on iOS ${sim.iOSVersion} simulator (exit $simInstallResult).")
-        }
+    verbosePrinter?.invoke("Installing App on iOS ${sim.iOSVersion}")
+    val simInstallResult = "xcrun simctl install ${sim.simId} $buildPath/Products/$configuration-iphonesimulator/${appInfo.appName}.app".runCommand()
+    if (simInstallResult != 0) {
+        throw Exception("Failed to install ${appInfo.appName} on iOS ${sim.iOSVersion} simulator (exit $simInstallResult).")
     }
-
-    return simulators
 }
 
 /**
