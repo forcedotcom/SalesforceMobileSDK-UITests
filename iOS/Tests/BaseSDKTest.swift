@@ -106,7 +106,7 @@ class BaseSDKTest: XCTestCase {
         let exists = NSPredicate(format: "exists == 1")
         
         expectation(for: exists, evaluatedWith: webElement, handler: nil)
-        waitForExpectations(timeout: timeout, handler: nil)
+        waitForExpectations(timeout: timeout * 2, handler: nil)
         XCTAssert(webElement.exists, appLoadError)
     }
 }

@@ -29,6 +29,9 @@ package pageobjects.testapppageobjects
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import android.content.Intent
 import pageobjects.AppType
 
@@ -50,11 +53,18 @@ class TestApplication {
         else -> AppType.UNKNOWN
     }
 
+    private val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    private val launchTimeout: Long = 15_000
+
     fun launch() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val intent = context.packageManager.getLaunchIntentForPackage(packageName)
 
         intent!!.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         context.startActivity(intent)
+
+        // Wait for the app package to be in the foreground before proceeding.
+        // Without this, UIAutomator may search the wrong window on slow FTL devices.
+        device.wait(Until.hasObject(By.pkg(packageName).depth(0)), launchTimeout)
     }
 }

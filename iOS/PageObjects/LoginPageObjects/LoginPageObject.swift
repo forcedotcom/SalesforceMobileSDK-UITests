@@ -36,7 +36,7 @@ import XCTest
 
 class LoginPageObject {
     let app:XCUIApplication
-    let timeout:double_t = 5
+    let timeout:double_t = 10
     
     init(testApp: XCUIApplication) {
         app = testApp
