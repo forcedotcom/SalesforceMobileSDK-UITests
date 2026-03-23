@@ -20,8 +20,6 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.windowed
 
-const val MAX_OUTPUT_WIDTH = 240
-
 var progressBanner: ThreadProgressTaskAnimator<ProgressState>? = null
 
 var verbosePrinter: Printer? = null
@@ -125,9 +123,7 @@ fun detectTerminalWidth(): Int? {
         .start()
         val output = process.inputStream.bufferedReader().readText().trim()
         process.waitFor()
-        output.split(" ").lastOrNull()?.toIntOrNull()?.let {
-            minOf(it, MAX_OUTPUT_WIDTH)
-        }
+        output.split(" ").lastOrNull()?.toIntOrNull()
     } catch (_: Exception) {
         null
     }

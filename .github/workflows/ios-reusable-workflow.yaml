@@ -29,6 +29,18 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/checkout@v4
         if: ${{ ! inputs.is_pr }}
+      - name: Free Disk Space
+        run: |
+          xcrun simctl delete unavailable 2>/dev/null || true
+          sudo rm -rf ~/Library/Developer/CoreSimulator/Caches/ 2>/dev/null || true
+          xcrun simctl runtime list -j 2>/dev/null | python3 -c "
+          import json, subprocess, sys
+          for r in json.load(sys.stdin).get('runtimes', []):
+              if not r.get('name', '').startswith('iOS'):
+                  bid = r.get('bundleID') or r.get('identifier') or r.get('runtimeIdentifier', '')
+                  if bid:
+                      subprocess.run(['xcrun', 'simctl', 'runtime', 'delete', bid], capture_output=True)
+          " 2>/dev/null || true
       - name: Install Dependencies
         env:
           IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}

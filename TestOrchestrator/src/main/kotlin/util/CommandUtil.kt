@@ -5,13 +5,22 @@ import java.lang.ProcessBuilder.Redirect.INHERIT
 
 var verboseCommandOutput = false
 
+class CommandException(message: String) : Exception(message)
+
 data class CommandResult(val exitCode: Int, val output: String?) {
     fun saveFullOutput(appPath: String, label: String): String? {
         if (verboseCommandOutput || output.isNullOrBlank()) return null
         val sanitizedLabel = label.replace(Regex("[^a-zA-Z0-9_-]"), "_")
-        val logFile = File(appPath, "${sanitizedLabel}_output.log")
+        val logFile = File(appPath, "${sanitizedLabel}_output.log").canonicalFile
         logFile.writeText(output)
         return logFile.absolutePath
+    }
+
+    fun throwIfFailed(appPath: String, label: String, message: String) {
+        if (exitCode == 0) return
+        val logPath = saveFullOutput(appPath, label)
+        val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
+        throw CommandException("$message$logMsg")
     }
 
     fun parseBuildFailure(): String {

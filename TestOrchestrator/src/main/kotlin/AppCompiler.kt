@@ -42,7 +42,9 @@ fun compileApp(
             }
 
             else -> {
-                val bootConfig = File(iosRoot, "$appName/bootconfig.plist")
+                val resourcesBootConfig = File(iosRoot, "$appName/Resources/bootconfig.plist")
+                val bootConfig = if (resourcesBootConfig.exists()) resourcesBootConfig
+                                 else File(iosRoot, "$appName/bootconfig.plist")
                 updatePlistBootConfig(bootConfig, appConfig)
             }
         }
@@ -64,11 +66,7 @@ fun compileApp(
                     }
                 }
                 val buildResult = buildCommand.runCommandCapture(androidRoot)
-                if (buildResult.exitCode != 0) {
-                    val logPath = buildResult.saveFullOutput(appPath, "android_build")
-                    val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-                    throw Exception("Android build failed.\n${buildResult.parseBuildFailure()}$logMsg")
-                }
+                buildResult.throwIfFailed(appPath, "android_build", "Android build failed.\n${buildResult.parseBuildFailure()}")
 
                 if (!debug) {
                     signReleaseApk(apkPath)
@@ -89,11 +87,7 @@ fun compileApp(
                     "GENERATE_ASSET_SYMBOLS=NO",
                     "ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS=NO",
                 )).runCommandCapture(iosRoot)
-                if (buildResult.exitCode != 0) {
-                    val logPath = buildResult.saveFullOutput(appPath, "ios_build")
-                    val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-                    throw Exception("iOS build failed.\n${buildResult.parseBuildFailure()}$logMsg")
-                }
+                buildResult.throwIfFailed(appPath, "ios_build", "iOS build failed.\n${buildResult.parseBuildFailure()}")
             }
         }
     }

@@ -106,11 +106,7 @@ private fun setupReactNative(appInfo: AppInfo) {
         File(appInfo.appPath, "Gemfile.lock").delete()
         val bundleResult = listOf("bundle", "install")
             .runCommandCapture(workingDir = appInfo.appPath)
-        if (bundleResult.exitCode != 0) {
-            val logPath = bundleResult.saveFullOutput(appInfo.appPath, "bundle_install")
-            val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-            throw Exception("Bundle install failed.\n${bundleResult.parseBuildFailure()}$logMsg")
-        }
+        bundleResult.throwIfFailed(appInfo.appPath, "bundle_install", "Bundle install failed.\n${bundleResult.parseBuildFailure()}")
     }
 
     // Run install script (handles pod install/update for iOS, npm setup for both)
@@ -136,11 +132,7 @@ private fun setupReactNative(appInfo: AppInfo) {
             "--entry-file", "index.js",
             "--bundle-output", "android/app/src/main/assets/index.android.bundle"
         ).runCommandCapture(workingDir = appInfo.appPath)
-        if (bundleResult.exitCode != 0) {
-            val logPath = bundleResult.saveFullOutput(appInfo.appPath, "react_native_bundle")
-            val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-            throw Exception("React Native bundle failed.\n${bundleResult.parseBuildFailure()}$logMsg")
-        }
+        bundleResult.throwIfFailed(appInfo.appPath, "react_native_bundle", "React Native bundle failed.\n${bundleResult.parseBuildFailure()}")
     }
 }
 

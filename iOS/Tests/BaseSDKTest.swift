@@ -91,18 +91,23 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
-            let contact = app.collectionViews.staticTexts["VP, Facilities"]
+            let contact = app.collectionViews.staticTexts["Executive Officer"]
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
             contact.tap()
-            XCTAssert(app.navigationBars["John Bond"].waitForExistence(timeout: timeout), mobileSyncError)
+            XCTAssert(app.navigationBars["Marc Benioff"].waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
-            let title = app.otherElements["Contacts"].firstMatch
-            XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
+            let title = app.staticTexts["Contacts"].firstMatch
+            XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
+
+            // Check MobileSync Works
+            let contact = app.staticTexts["Marc Benioff"].firstMatch
+            XCTAssert(contact.waitForExistence(timeout: timeout), appLoadError)
         }
     }
     
     private func verifyInWebView(app: TestApplication, text: String) {
-        let webElement = app.staticTexts[text]
+        let containsPredicate = NSPredicate(format: "label CONTAINS[c] %@", text)
+        let webElement = app.staticTexts.matching(containsPredicate).firstMatch
         let exists = NSPredicate(format: "exists == 1")
         
         expectation(for: exists, evaluatedWith: webElement, handler: nil)

@@ -68,9 +68,9 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
 
 
     private fun verifyInWebView(text: String) {
-        var webElement = device.findObject(UiSelector().className(viewClass).text(text))
+        var webElement = device.findObject(UiSelector().className(viewClass).textContains(text))
         if (!webElement.waitForExists(timeout * 5)) {
-            webElement = device.findObject(UiSelector().className(textViewClass).text(text))
+            webElement = device.findObject(UiSelector().className(textViewClass).textContains(text))
             if (!webElement.waitForExists(timeout * 5)) {
                 webElement = device.findObject(UiSelector().descriptionContains(text))
                 if (!webElement.waitForExists(timeout * 5)) {

@@ -65,11 +65,7 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
     val result = "./gradlew $classParam $packageParam $complexHybridParam connectedAndroidTest"
         .split(" ").filter { it.isNotEmpty() }.runCommandCapture(workingDir = ANDROID_TEST_DIR)
 
-    if (result.exitCode != 0) {
-        val logPath = result.saveFullOutput(appInfo.appPath, "android_test")
-        val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-        throw Exception(parseTestFailure(result.output) + logMsg)
-    }
+    result.throwIfFailed(appInfo.appPath, "android_test", parseTestFailure(result.output))
 }
 
 private fun runAndroidTestsFirebase(appInfo: AppInfo) {
@@ -81,11 +77,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
 
     val buildResult = "./gradlew app:assembleAndroidTest"
         .split(" ").runCommandCapture(workingDir = ANDROID_TEST_DIR)
-    if (buildResult.exitCode != 0) {
-        val logPath = buildResult.saveFullOutput(appInfo.appPath, "test_apk_build")
-        val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-        throw Exception("TestOrchestrator APK failed to build.\n${buildResult.parseBuildFailure()}$logMsg")
-    }
+    buildResult.throwIfFailed(appInfo.appPath, "test_apk_build", "TestOrchestrator APK failed to build.\n${buildResult.parseBuildFailure()}")
 
     progressBanner?.update {
         context = context.advance("Run Login TestOrchestrator")
@@ -115,11 +107,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
             --num-flaky-test-attempts=2
     """.trimIndent().split("\\s+".toRegex()).filter { it.isNotEmpty() }
         .runCommandCapture(workingDir = ANDROID_TEST_DIR).let { result ->
-            if (result.exitCode != 0) {
-                val logPath = result.saveFullOutput(appInfo.appPath, "firebase_test")
-                val logMsg = logPath?.let { "\n\nFull command output saved to: $it" } ?: ""
-                throw Exception(parseTestFailure(result.output) + logMsg)
-            }
+            result.throwIfFailed(appInfo.appPath, "firebase_test", parseTestFailure(result.output))
         }
 }
 
@@ -132,20 +120,36 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
         completed += 1
     }
 
-    val failures = mutableListOf<String>()
+    verbosePrinter?.invoke("Running Login Tests on iOS $versionsLabel")
 
-    // Run tests on each simulator sequentially to avoid resource contention
-    for (sim in simulators) {
-        verbosePrinter?.invoke("Running Login Tests on iOS ${sim.iOSVersion}")
+    val resultBundlePath = "test_output/${appInfo.appName}"
+    File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
 
-        val resultBundlePath = "test_output/${appInfo.appName}_iOS${sim.iOSVersion}"
-        File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
+    val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo)
 
-        val result = runXcodebuildTest(testScheme, listOf(sim), resultBundlePath, appInfo)
+    if (result.exitCode != 0) {
+        val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
 
-        if (result.exitCode != 0) {
-            verbosePrinter?.invoke("Retrying failed simulator: iOS ${sim.iOSVersion}")
+        if (!TestOrchestrator.IS_CI) {
+            val logPath = result.saveFullOutput(appInfo.appPath, "ios_test")
+            val logMsg = logPath?.let { "\nFull output: $it" } ?: ""
+            val failureMsg = parseXCResultFailures(resultBundleAbsPath)
+                ?: parseTestFailure(result.output)
+            throw Exception("$failureMsg$logMsg")
+        }
 
+        // Determine which simulators failed so we only reset/retry those
+        val deviceResults = parsePerDeviceResults(resultBundleAbsPath)
+        val failedSims = if (deviceResults != null && deviceResults.failedDeviceIds.isNotEmpty()) {
+            simulators.filter { it.simId in deviceResults.failedDeviceIds }
+        } else {
+            simulators
+        }
+
+        val retryVersionsLabel = failedSims.joinToString(", ") { it.iOSVersion }
+        verbosePrinter?.invoke("Retrying failed simulators: iOS $retryVersionsLabel")
+
+        for (sim in failedSims) {
             // Reset simulator to clear stale state that causes "Application info provider returned nil"
             "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
             "xcrun simctl erase ${sim.simId}".runCommand(suppressErrors = true)
@@ -161,28 +165,21 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
             } catch (e: Exception) {
                 verbosePrinter?.invoke("Warning: Failed to reinstall app for retry: ${e.message}")
             }
-
-            val retryBundlePath = "test_output/${appInfo.appName}_iOS${sim.iOSVersion}_retry"
-            File(IOS_TEST_DIR, retryBundlePath).deleteRecursively()
-
-            val retryResult = runXcodebuildTest(testScheme, listOf(sim), retryBundlePath, appInfo)
-
-            if (retryResult.exitCode != 0) {
-                val retryBundleAbsPath = File(IOS_TEST_DIR, retryBundlePath).absolutePath
-                val logPath = retryResult.saveFullOutput(appInfo.appPath, "ios_test_${sim.iOSVersion}")
-                val logMsg = logPath?.let { "\nFull output: $it" } ?: ""
-                val failureMsg = parseXCResultFailures(retryBundleAbsPath)
-                    ?: parseTestFailure(retryResult.output)
-                failures.add("iOS ${sim.iOSVersion}: FAILED - $failureMsg$logMsg")
-            }
         }
 
-        // Shut down this simulator to free resources for the next one
-        "xcrun simctl shutdown ${sim.simId}".runCommand(suppressErrors = true)
-    }
+        val retryBundlePath = "test_output/${appInfo.appName}_retry"
+        File(IOS_TEST_DIR, retryBundlePath).deleteRecursively()
 
-    if (failures.isNotEmpty()) {
-        throw Exception(failures.joinToString("\n"))
+        val retryResult = runXcodebuildTest(testScheme, failedSims, retryBundlePath, appInfo)
+
+        if (retryResult.exitCode != 0) {
+            val retryBundleAbsPath = File(IOS_TEST_DIR, retryBundlePath).absolutePath
+            val logPath = retryResult.saveFullOutput(appInfo.appPath, "ios_test_retry")
+            val logMsg = logPath?.let { "\nFull output: $it" } ?: ""
+            val failureMsg = parseXCResultFailures(retryBundleAbsPath)
+                ?: parseTestFailure(retryResult.output)
+            throw Exception("$failureMsg$logMsg")
+        }
     }
 }
 
@@ -201,12 +198,8 @@ private fun runXcodebuildTest(
         for (sim in simulators) {
             addAll(listOf("-destination", "platform=iOS Simulator,id=${sim.simId}"))
         }
-        addAll(listOf(
-            "-resultBundlePath", resultBundlePath,
-            "-retry-tests-on-failure",
-            "-test-iterations", "2",
-            "TEST_APP_BUNDLE=${appInfo.packageName}",
-        ))
+        addAll(listOf("-resultBundlePath", resultBundlePath))
+        add("TEST_APP_BUNDLE=${appInfo.packageName}")
         appInfo.complexHybridType?.let { add("COMPLEX_HYBRID=$it") }
     }
     return testCommand.runCommandCapture(workingDir = IOS_TEST_DIR)

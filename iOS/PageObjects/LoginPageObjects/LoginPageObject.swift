@@ -82,7 +82,7 @@ class LoginPageObject {
         
         let doneButton = app.toolbars.matching(identifier: "Toolbar").buttons["Done"]
         if doneButton.exists {
-            doneButton.tap()
+            doneButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
     }
 }
