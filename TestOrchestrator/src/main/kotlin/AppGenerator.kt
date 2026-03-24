@@ -53,10 +53,10 @@ fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
         }
         is AppSource.ByTemplate -> {
             val templateUrl: String = if (appSource.template.startsWith("https")) {
-                print("Generating Template App")
+                verbosePrinter?.invoke("Generating Template App")
                 appSource.template
             } else {
-                print("Generating ${appSource.template} Template App")
+                verbosePrinter?.invoke("Generating ${appSource.template} Template App")
                 "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}#\\dev"
             }
 

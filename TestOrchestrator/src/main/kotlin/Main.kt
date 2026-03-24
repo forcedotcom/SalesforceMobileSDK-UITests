@@ -199,7 +199,11 @@ class TestOrchestrator : CliktCommand() {
                 }
                 var totalSteps: Long = when(os) {
                     OS.ANDROID -> if (reRunTest) 3 else 7
-                    OS.IOS -> (if (reRunTest) 2L else 7L) + 3L * effectiveVersions.size
+                    OS.IOS -> {
+                        val base = if (reRunTest) 2L
+                            else 5L + if (appSource.isReact) 1L else 0L
+                        base + 3L * effectiveVersions.size
+                    }
                 }
                 if (appSource.isComplexHybrid && !reRunTest) {
                     totalSteps++

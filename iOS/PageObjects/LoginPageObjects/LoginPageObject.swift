@@ -56,6 +56,8 @@ class LoginPageObject {
         hideKeyboard()
         let passwordField = app.descendants(matching: .secureTextField).element
         _ = passwordField.waitForExistence(timeout: timeout)
+        passwordField.tap()
+        sleep(1)
         passwordField.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         sleep(1)
         passwordField.typeText(password)
