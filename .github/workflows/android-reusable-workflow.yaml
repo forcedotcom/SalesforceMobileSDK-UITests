@@ -28,12 +28,6 @@ jobs:
         if: ${{ ! inputs.is_pr }}
         with:
           ref: ${{ github.head_ref }}
-      - name: Install Dependencies
-        env:
-          ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
-        run: |
-          ./install.sh
-          echo $ANDROID_UI_TEST_CONFIG > ./shared/test/android/ui_test_config.json
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -45,6 +39,12 @@ jobs:
           gradle-version: "8.14.3"
           add-job-summary: on-failure
           add-job-summary-as-pr-comment: on-failure
+      - name: Install Dependencies
+        env:
+          ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+        run: |
+          ./install.sh
+          echo $ANDROID_UI_TEST_CONFIG > ./shared/test/android/ui_test_config.json
       - uses: 'google-github-actions/auth@v2'
         if: success() || failure()
         with:

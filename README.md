@@ -22,7 +22,7 @@ Options:
                                 Multiple allowed with repeated flag or single quoted space separated list.
                                 (ex: --iOS=18.5 --iOS=18.6 or --iOS "17 18 26")
   --device, --iOSDevice=<text>  iOS Simulator device type. Uses SimDeviceType identifier format. (ex: iPhone-SE-3rd-generation)
-  -r, --reRun                   Run the validation test again without re-generating the app.
+  -r, --reRun                   Run the validation test again without re-generating or re-compiling the app.
   -f, --firebase=true|false     Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise. (default: false)
   --sf, --sfdx                  Use SF (formerly SFDX) to generate the app.
   -p, --preserverGeneratedApps  Do not cleanup generated apps from previous runs.
@@ -34,14 +34,19 @@ Options:
 
 ##### Local Testing
 
-iOS runs create (and later destroy) a simulator to test against.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against which ever emulators are currently open.  If the `--firebase` option is provided the test will execute against all supported API levels simultaniously in Test Lab.
+iOS runs create (and later destroy) a simulator to test against.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against whichever emulators are currently open.  If the `--firebase` option is provided the test will execute against all supported API levels simultaniously in Test Lab.
 
-To compile the `test` executable after making changes to the `TestOrchestrator` project simply run: 
-```bash
-./gradlew :TestOrchestrator:installDist
-```
+To compile the `test` executable after making changes to the `TestOrchestrator` project simply run `./compile.sh`.
 
-However, for local development of the cli it the code can be executed directly with gradle:
+However, for local development of the cli it may be more convenient execute the code directly with Gradle:
 ```bash
 ./gradlew :TestOrchestrator:run --args="android native" 
 ```
+
+##### App Regeneration Behavior
+
+| `--reRun` | `--preserverGeneratedApps` | Behavior                                                              |
+|-----------|----------------------------|-----------------------------------------------------------------------|
+| set       | either                     | Skip deletion entirely — re-use existing app(s)                       |
+| not set   | not set                    | Delete all `tmp*` dirs and regenerate everything                      |
+| not set   | set                        | Delete only the specified app(s) and regenerate them; preserve others |

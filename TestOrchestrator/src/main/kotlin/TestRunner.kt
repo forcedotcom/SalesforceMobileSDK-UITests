@@ -1,5 +1,32 @@
+/*
+ * Copyright (c) 2026-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce
 
+import com.salesforce.TestOrchestrator.Companion.ANDROID_TEST_CLASS_DIR
 import com.salesforce.TestOrchestrator.Companion.ANDROID_TEST_DIR
 import com.salesforce.TestOrchestrator.Companion.GCLOUD_RESULTS_DIR
 import com.salesforce.TestOrchestrator.Companion.IOS_TEST_DIR
@@ -11,10 +38,6 @@ import com.salesforce.util.runCommandCapture
 import com.salesforce.util.verbosePrinter
 import kotlinx.serialization.json.*
 import java.io.File
-
-const val MIN_API_LEVEL = 28
-const val MAX_API_LEVEL = 36
-const val ANDROID_TEST_CLASS_DIR = "com.salesforce.mobilesdk.mobilesdkuitest.login"
 
 fun runTests(appInfo: AppInfo, iOSVersions: List<String>, iOSDevice: String, useFirebase: Boolean) {
     when (appInfo.os) {
@@ -46,10 +69,15 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
     installAndroidApp(appInfo)
 
     // Grant Push
-    "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS".runCommand(suppressErrors = true)
+    "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS"
+        .runCommand(suppressErrors = true)
 
     // TestOrchestrator params
-    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
+    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
+        "NativeLoginTest"
+    } else {
+        "LoginTest"
+    }
     val classParam =  "-Pandroid.testInstrumentationRunnerArguments.class=${ANDROID_TEST_CLASS_DIR}.$testClass"
     val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
     val complexHybridParam = appInfo.complexHybridType?.let {
@@ -62,8 +90,10 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
     }
     verbosePrinter?.invoke("Running Login TestOrchestrator")
 
+    // Run Test
     val result = "./gradlew $classParam $packageParam $complexHybridParam connectedAndroidTest"
-        .split(" ").filter { it.isNotEmpty() }.runCommandCapture(workingDir = ANDROID_TEST_DIR)
+        .split(" ").filter { it.isNotEmpty() }
+        .runCommandCapture(workingDir = ANDROID_TEST_DIR)
 
     result.throwIfFailed(appInfo.appPath, "android_test", parseTestFailure(result.output))
 }
@@ -77,7 +107,11 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
 
     val buildResult = "./gradlew app:assembleAndroidTest"
         .split(" ").runCommandCapture(workingDir = ANDROID_TEST_DIR)
-    buildResult.throwIfFailed(appInfo.appPath, "test_apk_build", "TestOrchestrator APK failed to build.\n${buildResult.parseBuildFailure()}")
+    buildResult.throwIfFailed(
+        appInfo.appPath,
+        label = "test_apk_build",
+        message = "TestOrchestrator APK failed to build.\n${buildResult.parseBuildFailure()}",
+    )
 
     progressBanner?.update {
         context = context.advance("Run Login TestOrchestrator")
@@ -85,11 +119,18 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     }
     verbosePrinter?.invoke("Testing App with Firebase")
 
-    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
+    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
+        "NativeLoginTest"
+    } else {
+        "LoginTest"
+    }
     var devices = ""
-    for (level in MIN_API_LEVEL..MAX_API_LEVEL) {
+    for (level in ANDROID_MIN_API_LEVEL..ANDROID_MAX_API_LEVEL) {
         devices += "--device model=MediumPhone.arm,version=$level,locale=en,orientation=portrait "
     }
+    val envVars = "class=${ANDROID_TEST_CLASS_DIR}.$testClass" +
+        ",packageName=${appInfo.packageName}" +
+        (appInfo.complexHybridType?.let { ",complexHybrid=$it" } ?: "")
 
     """
         gcloud firebase test android run
@@ -101,32 +142,41 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
             $devices
             --results-history-name=UITest-${appInfo.appName}
             --results-dir=$GCLOUD_RESULTS_DIR
-            --environment-variables class=${ANDROID_TEST_CLASS_DIR}.$testClass,packageName=${appInfo.packageName}${appInfo.complexHybridType?.let { ",complexHybrid=$it" } ?: ""}
+            --environment-variables $envVars
             --no-performance-metrics 
             --no-auto-google-login 
             --num-flaky-test-attempts=2
     """.trimIndent().split("\\s+".toRegex()).filter { it.isNotEmpty() }
         .runCommandCapture(workingDir = ANDROID_TEST_DIR).let { result ->
-            result.throwIfFailed(appInfo.appPath, "firebase_test", parseTestFailure(result.output))
+            result.throwIfFailed(
+                appInfo.appPath,
+                label = "firebase_test",
+                message =  parseTestFailure(result.output),
+            )
         }
 }
 
 private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
-    val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) "NativeLoginTest" else "LoginTest"
+    val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
+        "NativeLoginTest"
+    } else {
+        "LoginTest"
+    }
     val versionsLabel = simulators.joinToString(", ") { it.iOSVersion }
 
     progressBanner?.update {
         context = context.advance("Run Login Tests (iOS $versionsLabel)")
         completed += 1
     }
-
     verbosePrinter?.invoke("Running Login Tests on iOS $versionsLabel")
 
     val resultBundlePath = "test_output/${appInfo.appName}"
     File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
 
+    // Run Test
     val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo)
 
+    // Retry on Failure if running in CI
     if (result.exitCode != 0) {
         val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
 
@@ -292,20 +342,7 @@ private data class DeviceTestResults(
     val failedDeviceIds: Set<String>,
     val passedVersions: Set<String>,
     val failureMessages: Map<String, List<String>>, // osVersion -> failure details
-) {
-    fun formatSummary(): String? {
-        if (failureMessages.isEmpty()) return null
-        val allVersions = (failureMessages.keys + passedVersions).toSortedSet()
-        return allVersions.joinToString("\n") { version ->
-            val failures = failureMessages[version]
-            when {
-                failures != null -> "iOS $version: FAILED - ${failures.joinToString("; ")}"
-                version in passedVersions -> "iOS $version: Passed"
-                else -> "iOS $version: FAILED (no details captured)"
-            }
-        }
-    }
-}
+)
 
 /**
  * Parses the xcresult bundle and returns structured per-device results.

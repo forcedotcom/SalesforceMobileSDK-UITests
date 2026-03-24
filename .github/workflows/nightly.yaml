@@ -30,18 +30,18 @@ jobs:
       sfdx: true
     secrets: inherit
     
-  ios-base-legacy:
-    name: ${{ matrix.app_type }} iOS 17+18
-    strategy:
-      fail-fast: false
-      matrix:
-        app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
-    uses: ./.github/workflows/ios-reusable-workflow.yaml
-    with:
-      app_type: ${{ matrix.app_type }}
-      ios: "17 18"
-      runner: macos-15
-    secrets: inherit
+#  ios-base-legacy:
+#    name: ${{ matrix.app_type }} iOS 17+18
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        app_type:  [native, native_swift, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerSwift, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+#    uses: ./.github/workflows/ios-reusable-workflow.yaml
+#    with:
+#      app_type: ${{ matrix.app_type }}
+#      ios: "17 18"
+#      runner: macos-15
+#    secrets: inherit
 
   ios-base:
     name: ${{ matrix.app_type }} iOS 26
@@ -52,7 +52,7 @@ jobs:
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app_type: ${{ matrix.app_type }}
-      ios: "26"
+      ios: "17 18 26"
     secrets: inherit
 
   ios-sfdx:

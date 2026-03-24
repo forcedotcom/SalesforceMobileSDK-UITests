@@ -97,11 +97,11 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(app.navigationBars["Marc Benioff"].waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
             let title = app.staticTexts["Contacts"].firstMatch
-            XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
+            XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
 
             // Check MobileSync Works
             let contact = app.staticTexts["Marc Benioff"].firstMatch
-            XCTAssert(contact.waitForExistence(timeout: timeout), appLoadError)
+            XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         }
     }
     

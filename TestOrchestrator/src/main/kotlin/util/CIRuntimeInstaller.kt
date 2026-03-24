@@ -1,21 +1,53 @@
-package com.salesforce
+/*
+ * Copyright (c) 2026-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.salesforce.util
 
-import com.salesforce.util.verbosePrinter
+import com.salesforce.DEFAULT_IOS_DEVICE
+import com.salesforce.ResolvedRuntime
+import com.salesforce.SimulatorInfo
+import com.salesforce.TestOrchestrator.Companion.SIM_NAME
+import com.salesforce.fetchSimctlDeviceTypes
+import com.salesforce.resolveCompatibleDevice
 import kotlinx.serialization.json.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.collections.iterator
 
 private var installThread: Thread? = null
 private var installError: Exception? = null
 
-/** Simulators created in the background, ready for reuse by [createAndInstallIosSimulators]. */
-val preCreatedSimulators = ConcurrentLinkedQueue<SimulatorInfo>()
+/** Simulators created in the background, ready for reuse by [com.salesforce.createAndInstallIosSimulators]. */
+val createdSimulators = ConcurrentLinkedQueue<SimulatorInfo>()
 
 /**
  * Starts a single background thread to download/install iOS simulator runtimes that aren't
  * already present, installing them sequentially to avoid concurrent rsync failures.
  * After each runtime is ready, a simulator is immediately created and booted so it is
  * warm by the time the build finishes.
- * Call early (before app generation) so downloads happen in parallel with other work.
+ * Call early so downloads happen in parallel with other work.
  */
 fun startBackgroundRuntimeInstalls(versions: List<String>, iOSDevice: String = DEFAULT_IOS_DEVICE) {
     // Fetch installed runtimes and available versions once (fast before any sims are booted)
@@ -74,13 +106,13 @@ fun startBackgroundRuntimeInstalls(versions: List<String>, iOSDevice: String = D
 
 /**
  * Creates and boots a simulator for the given major iOS version in the background thread.
- * The resulting [SimulatorInfo] is added to [preCreatedSimulators].
+ * The resulting [SimulatorInfo] is added to [createdSimulators].
  */
 private fun createAndBootSimInBackground(major: String, iOSDevice: String, deviceTypesOutput: String) {
     val runtimesNow = fetchSimctlRuntimes()
     val resolved = resolveIosRuntimeByMajor(major, runtimesNow) ?: return
     val device = resolveCompatibleDevice(iOSDevice, resolved.version, deviceTypesOutput)
-    val simName = "${TestOrchestrator.SIM_NAME}_$major"
+    val simName = "${SIM_NAME}_$major"
 
     verbosePrinter?.invoke("Creating Simulator for iOS ${resolved.version}")
     val createProcess = ProcessBuilder(
@@ -105,7 +137,7 @@ private fun createAndBootSimInBackground(major: String, iOSDevice: String, devic
         return
     }
 
-    preCreatedSimulators.add(SimulatorInfo(simId, resolved.version))
+    createdSimulators.add(SimulatorInfo(simId, resolved.version))
     verbosePrinter?.invoke("Background: iOS ${resolved.version} simulator $simId created and booting")
 }
 
@@ -134,14 +166,14 @@ private fun cleanupTestSimulatorsBg() {
     val output = process.inputStream.bufferedReader().readText()
     process.waitFor()
     try {
-        val json = kotlinx.serialization.json.Json.parseToJsonElement(output).jsonObject
+        val json = Json.parseToJsonElement(output).jsonObject
         val devices = json["devices"]?.jsonObject ?: return
         for ((_, deviceList) in devices) {
             for (device in deviceList.jsonArray) {
                 val obj = device.jsonObject
                 val name = obj["name"]?.jsonPrimitive?.content ?: continue
                 val udid = obj["udid"]?.jsonPrimitive?.content ?: continue
-                if (name.startsWith(TestOrchestrator.SIM_NAME)) {
+                if (name.startsWith(SIM_NAME)) {
                     ProcessBuilder("xcrun", "simctl", "delete", udid)
                         .redirectErrorStream(true).start().waitFor()
                 }

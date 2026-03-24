@@ -1,3 +1,29 @@
+/*
+ * Copyright (c) 2026-present, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.util
 
 import java.io.File
@@ -67,6 +93,23 @@ fun String.runCommand(workingDir: String = ".", suppressErrors: Boolean = false)
     split(" ").runCommand(workingDir, suppressErrors)
 
 fun List<String>.runCommandCapture(workingDir: String = "."): CommandResult {
+    if (this.first().contains("adb")) {
+        val devices = getAdbDevices()
+        if (devices.size > 1) {
+            var lastResult = CommandResult(0, null)
+            for (device in devices) {
+                val adbArgs = listOf(this.first(), "-s", device) + this.drop(1)
+                lastResult = adbArgs.runSingleCapture(workingDir)
+                if (lastResult.exitCode != 0) return lastResult
+            }
+            return lastResult
+        }
+    }
+
+    return runSingleCapture(workingDir)
+}
+
+private fun List<String>.runSingleCapture(workingDir: String = "."): CommandResult {
     val command = if (this.first().contains("xcodebuild")) {
         listOf("/bin/bash", "-c", "set -o pipefail && ${joinToString(" ") { if (' ' in it) "'$it'" else it }} | xcbeautify")
     } else {
@@ -95,10 +138,10 @@ fun List<String>.runCommand(workingDir: String = ".", suppressErrors: Boolean = 
     if (isAdb) {
         val devices = getAdbDevices()
         if (devices.size > 1) {
-            return devices.map { device ->
+            return devices.maxOfOrNull { device ->
                 val adbArgs = listOf(this.first(), "-s", device) + this.drop(1)
                 adbArgs.runSingleCommand(workingDir, suppressErrors)
-            }.maxOrNull() ?: 0
+            } ?: 0
         }
     }
 
