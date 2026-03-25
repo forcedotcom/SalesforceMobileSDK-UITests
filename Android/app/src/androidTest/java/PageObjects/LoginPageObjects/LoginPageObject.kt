@@ -42,30 +42,39 @@ const val LOGIN_RESOURCE_ID = "Login"
 class LoginPageObject : BasePageObject() {
 
     fun setUsername(name: String) {
-        val usernameField = getObject(USERNAME_RESOURCE_ID)
-
         Log.i("uia", "Waiting for username filed to be present.")
-        assert(usernameField.waitForExists(timeout * 10))
-        usernameField.setText(name)
+        getObject(
+            resourceId = USERNAME_RESOURCE_ID,
+            backup = UiSelector().className(editTextClass).instance(0),
+        ).setText(name)
     }
 
     fun setPassword(password: String) {
         Log.i("uia", "Waiting for password filed to be present.")
-        val passwordField = getObject(PASSWORD_RESOURCE_ID)
-
-        assert(passwordField.waitForExists(timeout * 5))
-        passwordField.setText(password)
+        getObject(
+            resourceId = PASSWORD_RESOURCE_ID,
+            backup = UiSelector().className(editTextClass).instance(1),
+        ).setText(password)
     }
 
     fun tapLogin() {
         Thread.sleep(timeout / 2)
-        val loginButton = getObject(LOGIN_RESOURCE_ID)
-
-        assert(loginButton.waitForExists(timeout * 5))
-        loginButton.click()
+        getObject(
+            resourceId = LOGIN_RESOURCE_ID,
+            backup = UiSelector().textMatches("Log In"),
+        ).click()
     }
 
-    private fun getObject(resourceId: String): UiObject {
-        return device.findObject(UiSelector().resourceId(resourceId))
+    private fun getObject(resourceId: String, backup: UiSelector): UiObject {
+        val byResource = device.findObject(UiSelector().resourceId(resourceId))
+        val backup = device.findObject(backup)
+
+        return if (byResource.waitForExists(timeout * 5)) {
+            byResource
+        } else if (backup.waitForExists(timeout * 5)) {
+            backup
+        } else {
+            throw Exception("ResourceId: $resourceId not found.")
+        }
     }
 }

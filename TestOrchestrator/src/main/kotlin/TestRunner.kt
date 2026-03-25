@@ -310,6 +310,7 @@ private fun parseTestFailure(output: String?): String {
             }
             // FAILED/error lines and their indented continuation
             trimmed.contains("FAILED") || trimmed.contains("failed:") || trimmed.startsWith("ERROR:") -> {
+                if (failureLines.isNotEmpty() && failureLines.last().contains("failed:")) failureLines.add("")
                 capturing = true
                 failureLines.add(trimmed)
             }
