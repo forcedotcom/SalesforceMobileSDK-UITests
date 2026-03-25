@@ -42,10 +42,7 @@ const val LOGIN_RESOURCE_ID = "Login"
 class LoginPageObject : BasePageObject() {
 
     fun setUsername(name: String) {
-        val usernameField = getObject(
-            resourceId = USERNAME_RESOURCE_ID,
-            backup = UiSelector().className(editTextClass).index(0),
-        )
+        val usernameField = getObject(USERNAME_RESOURCE_ID)
 
         Log.i("uia", "Waiting for username filed to be present.")
         assert(usernameField.waitForExists(timeout * 10))
@@ -54,10 +51,7 @@ class LoginPageObject : BasePageObject() {
 
     fun setPassword(password: String) {
         Log.i("uia", "Waiting for password filed to be present.")
-        val passwordField = getObject(
-            resourceId = PASSWORD_RESOURCE_ID,
-            backup = UiSelector().className(editTextClass).index(2),
-        )
+        val passwordField = getObject(PASSWORD_RESOURCE_ID)
 
         assert(passwordField.waitForExists(timeout * 5))
         passwordField.setText(password)
@@ -65,24 +59,13 @@ class LoginPageObject : BasePageObject() {
 
     fun tapLogin() {
         Thread.sleep(timeout / 2)
-        val loginButton = getObject(
-            resourceId = LOGIN_RESOURCE_ID,
-            backup = UiSelector().textMatches("Log In"),
-        )
+        val loginButton = getObject(LOGIN_RESOURCE_ID)
 
         assert(loginButton.waitForExists(timeout * 5))
         loginButton.click()
     }
 
-
-    // TODO: Remove this when the Android 15 resource-id issue is resolved.
-    private fun getObject(resourceId: String, backup: UiSelector): UiObject {
-        return device.findObject(
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                UiSelector().resourceId(resourceId)
-            } else {
-                backup
-            }
-        )
+    private fun getObject(resourceId: String): UiObject {
+        return device.findObject(UiSelector().resourceId(resourceId))
     }
 }
