@@ -1,7 +1,7 @@
 on:
   workflow_call:
     inputs:
-      app_type:
+      app:
         type: string
         default: native
       sfdx:
@@ -13,10 +13,10 @@ on:
 
 jobs:
   test-android:
-    name: ${{ inputs.app_type }}
+    name: ${{ inputs.app }}
     runs-on: ubuntu-latest
     env:
-      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app_type }}-sfdx-${{ inputs.sfdx }}-build-${{ github.run_number }}"
+      GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app }}-sfdx-${{ inputs.sfdx }}-build-${{ github.run_number }}"
     steps:
       - uses: actions/checkout@v4
         if: ${{ inputs.is_pr }}
@@ -51,7 +51,7 @@ jobs:
           credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
       - uses: 'google-github-actions/setup-gcloud@v2'
         if: success() || failure()
-      - name: Build ${{ inputs.app_type }} and Test Login
+      - name: Build ${{ inputs.app }} and Test Login
         run: |
           SFDX=""
 
@@ -59,7 +59,7 @@ jobs:
             TYPE="--sf"
           fi
 
-          ./test android ${{ inputs.app_type }} ${SFDX}
+          ./test android ${{ inputs.app }} ${SFDX}
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()
@@ -110,14 +110,14 @@ jobs:
           }
 
           if gsutil ls "${BUCKET_PATH}" > /dev/null 2>&1; then
-            copy_results_by_api_level "${BUCKET_PATH}" "${{ inputs.app_type }}"
+            copy_results_by_api_level "${BUCKET_PATH}" "${{ inputs.app }}"
           fi
       - name: Test Report
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
-          check_name: ${{ inputs.app_type }} Test Results
-          job_name: ${{ inputs.app_type }} Test Results
+          check_name: ${{ inputs.app }} Test Results
+          job_name: ${{ inputs.app }} Test Results
           require_tests: true
           check_retries: true
           flaky_summary: true
@@ -132,5 +132,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-${{ inputs.app_type }}-android-sfdx-${{ inputs.sfdx }}
+          name: test-results-${{ inputs.app }}-android-sfdx-${{ inputs.sfdx }}
           path: firebase_results/**.xml
