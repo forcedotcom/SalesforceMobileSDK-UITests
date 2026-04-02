@@ -35,10 +35,16 @@ import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 
-fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
+fun generateApp(
+    appSource: AppSource,
+    useSF: Boolean,
+    packagerDir: String = "SalesforceMobileSDK-Package",
+    packagerVersion: String? = null,
+): AppInfo {
     val generationCommand = mutableListOf(
-        "./SalesforceMobileSDK-Package/test/test_force.js",
-        "--os=${appSource.osName}"
+        "./$packagerDir/test/test_force.js",
+        "--os=${appSource.osName}",
+        "--exit-on-failure"
     )
 
     when(appSource) {
@@ -55,6 +61,11 @@ fun generateApp(appSource: AppSource, useSF: Boolean): AppInfo {
             val templateUrl: String = if (appSource.template.startsWith("https")) {
                 verbosePrinter?.invoke("Generating Template App")
                 appSource.template
+            } else if (packagerVersion != null) {
+                // Old packager for upgrade testing: use the version tag so the
+                // old SDK templates are cloned (e.g. #v13.1.1).
+                verbosePrinter?.invoke("Generating ${appSource.template} Template App ($packagerVersion)")
+                "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}#$packagerVersion"
             } else {
                 verbosePrinter?.invoke("Generating ${appSource.template} Template App")
                 "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}#\\dev"
@@ -160,6 +171,16 @@ private fun setupReactNative(appInfo: AppInfo) {
         ).runCommandCapture(workingDir = appInfo.appPath)
         bundleResult.throwIfFailed(appInfo.appPath, "react_native_bundle", "React Native bundle failed.\n${bundleResult.parseBuildFailure()}")
     }
+}
+
+fun relocateApp(appInfo: AppInfo, version: String): AppInfo {
+    val versionDir = File(version)
+    versionDir.mkdirs()
+    val destination = File(versionDir, appInfo.appName)
+    if (destination.exists()) destination.deleteRecursively()
+    File(appInfo.appPath).renameTo(destination)
+    verbosePrinter?.invoke("Moved ${appInfo.appName} to $version/")
+    return appInfo.copy(appPath = destination.path)
 }
 
 fun getAppInfo(appSource: AppSource): AppInfo {

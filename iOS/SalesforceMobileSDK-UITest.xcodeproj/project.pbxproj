@@ -14,6 +14,7 @@
 		A39442FB2024D440006022F8 /* LoginTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39442FA2024D440006022F8 /* LoginTest.swift */; };
 		A396F6662BD4BEDD007BD55A /* NativeLoginPageObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A396F6652BD4BEDD007BD55A /* NativeLoginPageObject.swift */; };
 		A3DD05AE237E1F4D006C2125 /* BaseSDKTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3DD05AD237E1F4D006C2125 /* BaseSDKTest.swift */; };
+		C20002002D0000020000002A /* UpgradeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20002012D0000020000002B /* UpgradeTest.swift */; };
 		C10001012C0000010000001A /* UITestConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10001002C0000010000001A /* UITestConfig.swift */; };
 		C10001032C0000010000001C /* ui_test_config.json in Resources */ = {isa = PBXBuildFile; fileRef = C10001022C0000010000001B /* ui_test_config.json */; };
 /* End PBXBuildFile section */
@@ -28,6 +29,7 @@
 		A396F6652BD4BEDD007BD55A /* NativeLoginPageObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeLoginPageObject.swift; sourceTree = "<group>"; };
 		A39F9D4B2024CD5100251414 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A3DD05AD237E1F4D006C2125 /* BaseSDKTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseSDKTest.swift; sourceTree = "<group>"; };
+		C20002012D0000020000002B /* UpgradeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeTest.swift; sourceTree = "<group>"; };
 		C10001002C0000010000001A /* UITestConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestConfig.swift; sourceTree = "<group>"; };
 		C10001022C0000010000001B /* ui_test_config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ui_test_config.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -78,6 +80,7 @@
 				A39442FA2024D440006022F8 /* LoginTest.swift */,
 				A3DD05AD237E1F4D006C2125 /* BaseSDKTest.swift */,
 				A381912C2BD496B500A93F6A /* NativeLoginTest.swift */,
+				C20002012D0000020000002B /* UpgradeTest.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -177,6 +180,7 @@
 				A39442FB2024D440006022F8 /* LoginTest.swift in Sources */,
 				A3045A2A203E26AD0028F46F /* LoginPageObject.swift in Sources */,
 				C10001012C0000010000001A /* UITestConfig.swift in Sources */,
+				C20002002D0000020000002A /* UpgradeTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

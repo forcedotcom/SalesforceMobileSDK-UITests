@@ -70,13 +70,13 @@
                   Identifier = "BaseSDKTest">
                </Test>
                <Test
+                  Identifier = "LoginTest">
+               </Test>
+               <Test
                   Identifier = "NativeLoginTest">
                </Test>
                <Test
                   Identifier = "PasscodeTests">
-               </Test>
-               <Test
-                  Identifier = "UpgradeTest">
                </Test>
             </SkippedTests>
          </TestableReference>

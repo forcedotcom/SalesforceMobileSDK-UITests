@@ -75,6 +75,8 @@ class LoginTest {
                 HybridAppPageObject(app).assertAppLoads()
             AppType.REACT_NATIVE, AppType.MOBILE_SYNC_EXPLORER_REACT_NATIVE ->
                 ReactNativeAppPageObject(app).assertAppLoads()
+            AppType.MOBILE_SYNC_EXPLORER_KOTLIN ->
+                MobileSyncKotlinAppPageObject(app).assertAppLoads()
             else -> Assert.fail("Unknown App Type")
         }
     }

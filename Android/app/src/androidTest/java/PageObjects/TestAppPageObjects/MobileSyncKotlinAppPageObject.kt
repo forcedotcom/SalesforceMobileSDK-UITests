@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,18 +24,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects
+package pageobjects.testapppageobjects
 
-/**
- * Created by bpage on 2/25/18.
- */
-enum class AppType {
-    NATIVE,
-    NATIVE_KOTLIN,
-    HYBRID_LOCAL,
-    HYBRID_REMOTE,
-    REACT_NATIVE,
-    MOBILE_SYNC_EXPLORER_REACT_NATIVE,
-    MOBILE_SYNC_EXPLORER_KOTLIN,
-    UNKNOWN,
+import androidx.test.uiautomator.UiSelector
+import org.junit.Assert
+import pageobjects.BasePageObject
+
+class MobileSyncKotlinAppPageObject(private val app: TestApplication) : BasePageObject() {
+
+    fun assertAppLoads() {
+        val title = device.findObject(UiSelector().text("Contacts"))
+        title.waitForExists(timeout * 10)
+        Assert.assertEquals("App did not successfully login.", "Contacts", title.text)
+    }
 }

@@ -89,6 +89,12 @@ fun compileApp(
                     if (isReact) {
                         add("-PreactNativeDevServerPort=8081")
                         add("--no-daemon")
+                        if (!debug) {
+                            // Skip lint vital checks — older RN templates can have
+                            // Gradle task-dependency issues with newer AGP versions.
+                            add("-x")
+                            add("lintVitalRelease")
+                        }
                     }
                 }
                 val buildResult = buildCommand.runCommandCapture(androidRoot)
@@ -108,6 +114,11 @@ fun compileApp(
                 } else {
                     listOf("-project", "$appName.xcodeproj")
                 }
+                // Older RN templates bundle the fmt library (via Flipper)
+                // which fails to compile with newer Xcode/Clang due to
+                // consteval changes. Patch the header to force it off.
+                if (isReact) patchFmtConsteval(iosRoot)
+
                 val buildResult = (listOf("xcodebuild", "build") + workspaceOrProject + listOf(
                     "-scheme", appName,
                     "-sdk", "iphonesimulator",
@@ -250,4 +261,15 @@ private fun signReleaseApk(apkPath: String) {
     if (signResult.exitCode != 0) {
         throw Exception("APK signing failed.\n${signResult.output?.trim()}")
     }
+}
+
+private fun patchFmtConsteval(iosRoot: String) {
+    val fmtBase = File(iosRoot, "Pods/fmt/include/fmt/base.h")
+    if (!fmtBase.exists()) return
+    verbosePrinter?.invoke("Patching fmt base.h to disable consteval")
+    listOf(
+        "sed", "-i", "",
+        "s/#  define FMT_USE_CONSTEVAL 1/#  define FMT_USE_CONSTEVAL 0/g",
+        fmtBase.absolutePath
+    ).runCommandCapture()
 }

@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+        app:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerKotlinTemplate, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
@@ -65,4 +65,30 @@ jobs:
     with:
       app: ${{ matrix.app }}
       sfdx: true
+    secrets: inherit
+
+  android-upgrade:
+    name: ${{ matrix.app }} Android Upgrade from ${{ matrix.upgradeFrom }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [MobileSyncExplorerKotlin, hybrid_local, MobileSyncExplorerReactNative]
+        upgradeFrom: ["12.2.0"]
+    uses: ./.github/workflows/android-upgrade-reusable-workflow.yaml
+    with:
+      app: ${{ matrix.app }}
+      upgradeFrom: ${{ matrix.upgradeFrom }}
+    secrets: inherit
+
+  ios-upgrade:
+    name: ${{ matrix.app }} iOS Upgrade from ${{ matrix.upgradeFrom }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [MobileSyncExplorerSwift, hybrid_local, MobileSyncExplorerReactNative]
+        upgradeFrom: ["12.2.0"]
+    uses: ./.github/workflows/ios-upgrade-reusable-workflow.yaml
+    with:
+      app: ${{ matrix.app }}
+      upgradeFrom: ${{ matrix.upgradeFrom }}
     secrets: inherit

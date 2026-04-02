@@ -50,6 +50,7 @@ class TestApplication {
         "androidhybridremote" -> AppType.HYBRID_REMOTE
         "androidreactnative" -> AppType.REACT_NATIVE
         "androidmobilesyncexplorerreactnative" -> AppType.MOBILE_SYNC_EXPLORER_REACT_NATIVE
+        "androidmobilesyncexplorerkotlin" -> AppType.MOBILE_SYNC_EXPLORER_KOTLIN
         else -> AppType.UNKNOWN
     }
 

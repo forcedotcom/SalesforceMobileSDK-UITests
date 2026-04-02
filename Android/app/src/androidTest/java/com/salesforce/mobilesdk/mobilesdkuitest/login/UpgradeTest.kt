@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,18 +24,44 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects
+package com.salesforce.mobilesdk.mobilesdkuitest.login
+
+import pageobjects.*
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert
+import org.junit.runner.RunWith
+import org.junit.Before
+import org.junit.Test
+import pageobjects.testapppageobjects.*
 
 /**
- * Created by bpage on 2/25/18.
+ * Validates that a user remains logged in after an app upgrade.
+ * The app should have been installed with an older SDK version and logged in
+ * before being upgraded to the current SDK version.  This test launches the
+ * upgraded app and asserts that the main content loads without requiring login.
  */
-enum class AppType {
-    NATIVE,
-    NATIVE_KOTLIN,
-    HYBRID_LOCAL,
-    HYBRID_REMOTE,
-    REACT_NATIVE,
-    MOBILE_SYNC_EXPLORER_REACT_NATIVE,
-    MOBILE_SYNC_EXPLORER_KOTLIN,
-    UNKNOWN,
+@RunWith(AndroidJUnit4::class)
+class UpgradeTest {
+    val app = TestApplication()
+
+    @Before
+    fun setupTestApp() {
+        app.launch()
+    }
+
+    @Test
+    fun testUpgradePreservesLogin() {
+        // After upgrade the app should load directly without showing a login screen.
+        when (app.type) {
+            AppType.NATIVE, AppType.NATIVE_KOTLIN ->
+                NativeAppPageObject(app).assertAppLoads()
+            AppType.HYBRID_LOCAL, AppType.HYBRID_REMOTE ->
+                HybridAppPageObject(app).assertAppLoads()
+            AppType.REACT_NATIVE, AppType.MOBILE_SYNC_EXPLORER_REACT_NATIVE ->
+                ReactNativeAppPageObject(app).assertAppLoads()
+            AppType.MOBILE_SYNC_EXPLORER_KOTLIN ->
+                MobileSyncKotlinAppPageObject(app).assertAppLoads()
+            else -> Assert.fail("Unknown App Type")
+        }
+    }
 }

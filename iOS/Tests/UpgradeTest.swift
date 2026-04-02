@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,18 +24,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects
+//
+//  UpgradeTest.swift
+//  SalesforceMobileSDK-UITest
+//
+//  Validates that a user remains logged in after an app upgrade.
+//
 
-/**
- * Created by bpage on 2/25/18.
- */
-enum class AppType {
-    NATIVE,
-    NATIVE_KOTLIN,
-    HYBRID_LOCAL,
-    HYBRID_REMOTE,
-    REACT_NATIVE,
-    MOBILE_SYNC_EXPLORER_REACT_NATIVE,
-    MOBILE_SYNC_EXPLORER_KOTLIN,
-    UNKNOWN,
+import XCTest
+
+class UpgradeTest: BaseSDKTest {
+
+    /// Launches the upgraded app and asserts that the main content loads
+    /// without requiring login.  The orchestrator is responsible for
+    /// installing the old version, logging in, and then installing the
+    /// new version before this test runs.
+    func testUpgradePreservesLogin() {
+        let app = TestApplication()
+        app.launch()
+
+        // After upgrade the app should load directly — no login required.
+        assertAppLoads(app: app)
+    }
 }

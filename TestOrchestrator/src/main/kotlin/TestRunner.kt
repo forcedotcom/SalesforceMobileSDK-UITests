@@ -39,7 +39,13 @@ import com.salesforce.util.verbosePrinter
 import kotlinx.serialization.json.*
 import java.io.File
 
-fun runTests(appInfo: AppInfo, iOSVersions: List<String>, iOSDevice: String, useFirebase: Boolean) {
+fun runTests(
+    appInfo: AppInfo,
+    iOSVersions: List<String>,
+    iOSDevice: String,
+    useFirebase: Boolean,
+    finishProgress: Boolean = true,
+) {
     when (appInfo.os) {
         OS.ANDROID -> {
             if (useFirebase) {
@@ -58,11 +64,75 @@ fun runTests(appInfo: AppInfo, iOSVersions: List<String>, iOSDevice: String, use
         }
     }
 
+    if (finishProgress) {
+        progressBanner?.update {
+            context = context.pass()
+            completed += 1
+        }
+        progressBanner?.finish()
+    }
+}
+
+fun runUpgradeTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
+    when (appInfo.os) {
+        OS.ANDROID -> runAndroidUpgradeTest(appInfo)
+        OS.IOS -> runIosUpgradeTests(appInfo, simulators)
+    }
+
     progressBanner?.update {
         context = context.pass()
         completed += 1
     }
     progressBanner?.finish()
+}
+
+private fun runAndroidUpgradeTest(appInfo: AppInfo) {
+    upgradeAndroidApp(appInfo)
+
+    val classParam = "-Pandroid.testInstrumentationRunnerArguments.class=${ANDROID_TEST_CLASS_DIR}.UpgradeTest"
+    val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
+    val complexHybridParam = appInfo.complexHybridType?.let {
+        "-Pandroid.testInstrumentationRunnerArguments.complexHybrid=$it"
+    } ?: ""
+
+    progressBanner?.update {
+        context = context.advance("Run Upgrade Test")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Running Upgrade Test")
+
+    val result = "./gradlew $classParam $packageParam $complexHybridParam connectedAndroidTest"
+        .split(" ").filter { it.isNotEmpty() }
+        .runCommandCapture(workingDir = ANDROID_TEST_DIR)
+
+    result.throwIfFailed(appInfo.appPath, "android_upgrade_test", parseTestFailure(result.output))
+}
+
+private fun runIosUpgradeTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
+    copyIosTestConfig()
+    upgradeIosApp(appInfo, simulators)
+
+    val versionsLabel = simulators.joinToString(", ") { it.iOSVersion }
+
+    progressBanner?.update {
+        context = context.advance("Run Upgrade Test (iOS $versionsLabel)")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Running Upgrade Test on iOS $versionsLabel")
+
+    val resultBundlePath = "test_output/${appInfo.appName}_upgrade"
+    File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
+
+    val result = runXcodebuildTest("UpgradeTest", simulators, resultBundlePath, appInfo)
+
+    if (result.exitCode != 0) {
+        val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
+        val logPath = result.saveFullOutput(appInfo.appPath, "ios_upgrade_test")
+        val logMsg = logPath?.let { "\nFull output: $it" } ?: ""
+        val failureMsg = parseXCResultFailures(resultBundleAbsPath)
+            ?: parseTestFailure(result.output)
+        throw Exception("$failureMsg$logMsg")
+    }
 }
 
 private fun runAndroidTestsLocal(appInfo: AppInfo) {
