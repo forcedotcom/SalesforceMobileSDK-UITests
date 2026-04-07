@@ -5,7 +5,7 @@ if [ "$(uname)" == "Darwin" ]; then
     gem install cocoapods
     npm install plist
 
-    if [[ ! -z ${GITHUB_WORKFLOW} ]]; then
+    if [[ -n ${GITHUB_WORKFLOW} ]]; then
         brew install xcbeautify
     fi
 fi
@@ -13,13 +13,19 @@ fi
 # Hybrid
 npm install -g cordova
 cordova telemetry off
+
 # React Native
+corepack disable 2>/dev/null || true
+npm install -g yarn
 npm install -g typescript
+
 # SF CLI
 npm install -g @salesforce/cli
-# Fastlane for CLI, App Building, and test launching.
-gem install --no-document fastlane
 
 # Packager Repo used to build apps.
 git clone --branch dev --single-branch --depth 1 https://github.com/forcedotcom/SalesforceMobileSDK-Package.git
-cd SalesforceMobileSDK-Package && node ./install.js
+# shellcheck disable=SC2164
+(cd SalesforceMobileSDK-Package; npm install)
+
+# Build CLI
+./gradlew :TestOrchestrator:installDist

@@ -1,7 +1,7 @@
 name: Pull Request
 
 on:
-  # Dangerious without Member Check setup!
+  # Dangerous without Member Check setup!
   pull_request_target:
     branches: [master]
 
@@ -33,10 +33,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app_type: [native, hybrid_local, react_native] 
+        app: [native, hybrid_local, react_native] 
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
-      app_type: ${{ matrix.app_type }}
+      app: ${{ matrix.app }}
       is_pr: true
     secrets: inherit
 
@@ -45,9 +45,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app_type: [native, hybrid_local, react_native]
+        app: [native, hybrid_local, react_native]
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
-      app_type: ${{ matrix.app_type }}
+      app: ${{ matrix.app }}
       is_pr: true
     secrets: inherit

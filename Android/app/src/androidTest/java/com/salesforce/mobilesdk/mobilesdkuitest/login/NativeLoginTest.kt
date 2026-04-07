@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2024-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.loginpageobjects
+package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import androidx.test.uiautomator.*
-import android.util.Log
+import pageobjects.loginpageobjects.NativeLoginPageObject
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 import pageobjects.BasePageObject
+import pageobjects.testapppageobjects.NativeAppPageObject
+import pageobjects.testapppageobjects.TestApplication
 
-/**
- * Created by bpage on 2/23/18.
- */
+@RunWith(AndroidJUnit4::class)
+class NativeLoginTest {
+    private var app = TestApplication()
 
-class AuthorizationPageObject : BasePageObject() {
+    @Before
+    fun setupTestApp() {
+        app.launch()
+    }
 
-    fun tapAllowIfPresent() {
-        val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
-        Log.i("uia", "Waiting for allow button to be present.")
-        if (allowButton.waitForExists(timeout)) {
-            allowButton.click()
-            Thread.sleep(timeout)
-        }
+    @Test
+    fun testLogin() {
+        val loginPage = NativeLoginPageObject()
+//        loginPage.setUsername(UserUtility.nativeLoginUsername)
+//        loginPage.setPassword(UserUtility.password)
+        loginPage.tapLogin()
+
+        Thread.sleep(BasePageObject().timeout)
+        NativeAppPageObject(app).assertAppLoads()
     }
 }

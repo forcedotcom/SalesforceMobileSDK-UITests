@@ -35,9 +35,9 @@
 import XCTest
 
 class BaseSDKTest: XCTestCase {
-    var username = UserUtility().username
-    var nativeLoginUsername = UserUtility().nativeLoginUsername
-    var password = UserUtility().password
+    private lazy var testUser = UITestConfig.shared.user()
+    var username: String { testUser.username }
+    var password: String { testUser.password }
     var timeout:double_t = 60
     private var appLoadError = "App did not load."
     private var mobileSyncError = "MobileSync did not pull data."
@@ -55,7 +55,7 @@ class BaseSDKTest: XCTestCase {
     
     func assertAppLoads(app: TestApplication) {
         switch app.type {
-        case .nativeObjC, .carthage:
+        case .nativeObjC:
             XCTAssert(app.navigationBars[sampleAppTitle].waitForExistence(timeout: timeout), appLoadError)
         case .nativeSwift:
             let title = app.navigationBars["Accounts"].staticTexts["Accounts"]
@@ -78,37 +78,40 @@ class BaseSDKTest: XCTestCase {
         case .hybridLocal:
             if app.complexHybrid == "accounteditor" {
                 verifyInWebView(app: app, text: "Accounts")
-            } else if app.complexHybrid == "mobilesyncexplorer" {
-                verifyInWebView(app: app, text: "Contacts")
-                verifyInWebView(app: app, text: "Tim Barr")
             } else {
                 verifyInWebView(app: app, text: "Contacts")
-                verifyInWebView(app: app, text: "Sean Forbes")
+                verifyInWebView(app: app, text: "Marc Benioff")
             }
         case .reactNative:
-            let titleElement = app.otherElements[sampleAppTitle].firstMatch
-            XCTAssert(titleElement.waitForExistence(timeout: timeout * 3), appLoadError)
+            XCTAssert(app.descendants(matching: .textField).firstMatch.waitForNonExistence(timeout: timeout * 2), appLoadError)
+            let titlePredicate = NSPredicate(format: "label CONTAINS[c] %@", sampleAppTitle)
+            XCTAssert(app.descendants(matching: .any).matching(titlePredicate).firstMatch.waitForExistence(timeout: timeout * 2), appLoadError)
         case .mobileSyncSwift:
             let title = app.navigationBars["Contacts"].staticTexts["Contacts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
                 
             // Check MobileSync Works
-            let contact = app.collectionViews.staticTexts["VP, Facilities"]
+            let contact = app.collectionViews.staticTexts["Executive Officer"]
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
             contact.tap()
-            XCTAssert(app.navigationBars["John Bond"].waitForExistence(timeout: timeout), mobileSyncError)
+            XCTAssert(app.navigationBars["Marc Benioff"].waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncReact:
-            let title = app.otherElements["Contacts"].firstMatch
+            let title = app.staticTexts["Contacts"].firstMatch
             XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
+
+            // Check MobileSync Works
+            let contact = app.staticTexts["Marc Benioff"].firstMatch
+            XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         }
     }
     
     private func verifyInWebView(app: TestApplication, text: String) {
-        let webElement = app.staticTexts[text]
+        let containsPredicate = NSPredicate(format: "label CONTAINS[c] %@", text)
+        let webElement = app.staticTexts.matching(containsPredicate).firstMatch
         let exists = NSPredicate(format: "exists == 1")
         
         expectation(for: exists, evaluatedWith: webElement, handler: nil)
-        waitForExpectations(timeout: timeout, handler: nil)
+        waitForExpectations(timeout: timeout * 2, handler: nil)
         XCTAssert(webElement.exists, appLoadError)
     }
 }

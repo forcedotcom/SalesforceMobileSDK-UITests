@@ -2,32 +2,51 @@
 
 # Salesforce MobileSDK UI Tests
 
-This repo contains tests designed to validate the functionality of apps created using the MobileSDK CLI tools [forcedroid](https://www.npmjs.com/package/forcedroid), [forceios](https://www.npmjs.com/package/forceios), and [forcehybrid](https://www.npmjs.com/package/forcehybrid).  Android and iOS test frameworks exist in their own directories and use separate technologies (UIAutomator and XCUITest, respectively).  However, they share a common fastlane file for end-to-end execution:
+This repo contains tests designed to validate the functionality of apps created using the MobileSDK CLI tools [forcedroid](https://www.npmjs.com/package/forcedroid), [forceios](https://www.npmjs.com/package/forceios), [forcehybrid](https://www.npmjs.com/package/forcehybrid), and [forcereact](https://www.npmjs.com/package/forcereact). Android and iOS test frameworks exist in their own directories and use separate technologies (UIAutomator and XCUITest, respectively).  However, they share a common CLI for end-to-end execution:
 1.  `install.sh`
-2.  From the `.github` directory execute: `fastlane <os> (type:<AppType> || template:<TemplateName>) [options]` 
+2.  Run `./test` with your desired arguments:
 
-Additional options: `adv_auth:<true/false>`, `sfdx:<true/false>`, `rerun:<true/false>`.
+```terminaloutput
+Usage: test <os> [<app type or template>]... [<options>]
 
-examples: 
+Arguments:
+  <os>                    android or ios
+  <app type or template>  App type (native, native_kotlin, native_swift, hybrid_local, hybrid_remote, complex_hybrid_account_editor, complex_hybrid_mobile_sync, react_native)
+                          or a template URL/name (CamelCase or URL)
+                          or a complex hybrid sample name (e.g. accounteditor)
+                          (multiple allowed, space separated)
 
-       fastlane ios type:hybrid_local
-
-       fastlane android type:native_kotlin adv_auth:true
-
-       fastlane ios template:https://github.com/forcedotcom/SalesforceMobileSDK-Templates/MobileSyncExplorerSwift\#dev
+Options:
+  -d, --compileDebug            Compile and use the debug configuration of the generated app(s).
+  --ios, --iOSVersion=<text>    iOS version to test. If only the major version is provided, the highest available minor version is used.
+                                Multiple allowed with repeated flag or single quoted space separated list.
+                                (ex: --iOS=18.5 --iOS=18.6 or --iOS "17 18 26")
+  --device, --iOSDevice=<text>  iOS Simulator device type. Uses SimDeviceType identifier format. (ex: iPhone-SE-3rd-generation)
+  -r, --reRun                   Run the validation test again without re-generating or re-compiling the app.
+  -f, --firebase=true|false     Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise. (default: false)
+  --sf, --sfdx                  Use SF (formerly SFDX) to generate the app.
+  -p, --preserverGeneratedApps  Do not cleanup generated apps from previous runs.
+  -v, --verbose                 Show all command output. Automatically on for CI.
+  -h, --help                    Show this message and exit
+```
 
 ----------
 
-#### Platform Differences
-
-iOS exclusive options: `device:<"iPhone X"/iPhone-8/etc>`, `ios:<14.1/14-1/etc>`.
-
-Android exclusive options: `firebase:<true/false>`.
-
 ##### Local Testing
-For testing iOS the options above (or the defaults if not supplied) will determine what simulator gets created for the test run.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against which ever emulator is currently open.  
 
-##### CI
-Individual iOS test runs work exactly the same in CI as they do locally.  Due to the setup time required for cocoapods, all app type tests are grouped together into two parallel runs. One run for the minimum supported version of iOS, and one for the latest release.  
+iOS runs create (and later destroy) a simulator to test against.  Due to the overhead of downloading/installing/booting different Android emulator configurations, local builds simply run against whichever emulators are currently open.  If the `--firebase` option is provided the test will execute against all supported API levels simultaniously in Test Lab.
 
-Android uses Firebase Test Lab for executing the tests in CI.  Because of this, it is much more efficient to do the exact opposite of iOS and split test runs up by app type, since we can test all supported API versions at the same time per app.
+To compile the `test` executable after making changes to the `TestOrchestrator` project simply run `./compile.sh`.
+
+However, for local development of the cli it may be more convenient execute the code directly with Gradle:
+```bash
+./gradlew :TestOrchestrator:run --args="android native" 
+```
+
+##### App Regeneration Behavior
+
+| `--reRun` | `--preserverGeneratedApps` | Behavior                                                              |
+|-----------|----------------------------|-----------------------------------------------------------------------|
+| set       | either                     | Skip deletion entirely — re-use existing app(s)                       |
+| not set   | not set                    | Delete all `tmp*` dirs and regenerate everything                      |
+| not set   | set                        | Delete only the specified app(s) and regenerate them; preserve others |

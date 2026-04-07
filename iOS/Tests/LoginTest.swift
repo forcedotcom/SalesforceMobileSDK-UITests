@@ -24,24 +24,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.loginpageobjects
+//
+//  LoginTest.swift
+//  MobileSDKUITest
+//
+//  Created by Brandon Page on 2/2/18.
+//
 
-import androidx.test.uiautomator.*
-import android.util.Log
-import pageobjects.BasePageObject
+import XCTest
 
-/**
- * Created by bpage on 2/23/18.
- */
+class LoginTest: BaseSDKTest {
+    
+    func testLogin() {
+        let app = TestApplication()
+        let loginPage = LoginPageObject(testApp: app)
+        let authPage = AuthorizationPageObject(testApp: app)
+        app.launch()
 
-class AuthorizationPageObject : BasePageObject() {
-
-    fun tapAllowIfPresent() {
-        val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
-        Log.i("uia", "Waiting for allow button to be present.")
-        if (allowButton.waitForExists(timeout)) {
-            allowButton.click()
-            Thread.sleep(timeout)
-        }
+        loginPage.setUsername(name: username)
+        loginPage.setPassword(password: password)
+        loginPage.tapLogin()
+        authPage.tapAllowIfPresent()
+        
+        // Assert App loads
+        assertAppLoads(app: app)
     }
 }

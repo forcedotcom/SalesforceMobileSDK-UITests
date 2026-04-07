@@ -10,11 +10,13 @@
 
 # Generated files
 bin/
+lib/
 gen/
 out/
 DerivedData/
-Carthage/
-CarthageTest/Cartfile.resolved
+test
+tmp*
+*.tgz
 
 # Gradle files
 .gradle/
@@ -46,6 +48,7 @@ captures/
 
 # Keystore files
 *.jks
+*.keystore
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
@@ -87,8 +90,14 @@ iOS/Logs/
 iOS/ModuleCache.noindex/
 iOS/info.plist
 */xcuserdata
-CarthageTest/CarthageTest.xcodeproj/project.xcworkspace/xcuserdata/
-CarthageTest/CarthageTest.xcodeproj/xcuserdata/
+iOS/ui_test_config.json
 
 # Npm
 node_modules/
+
+# Claude
+.claude/*
+
+# Test Config
+shared/test/android/ui_test_config.json
+shared/test/ios/ui_test_config.json

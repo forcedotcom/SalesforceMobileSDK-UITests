@@ -1,4 +1,4 @@
-package PageObjects.LoginPageObjects
+package pageobjects.loginpageobjects
 
 import android.util.Log
 import androidx.test.uiautomator.UiSelector

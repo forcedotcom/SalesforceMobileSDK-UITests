@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.loginpageobjects
+//
+//  UITestConfig.swift
+//  SalesforceMobileSDK-UITest
+//
 
-import androidx.test.uiautomator.*
-import android.util.Log
-import pageobjects.BasePageObject
+import Foundation
+import UIKit
 
-/**
- * Created by bpage on 2/23/18.
- */
+private class BundleAnchor {}
 
-class AuthorizationPageObject : BasePageObject() {
+struct UITestConfig: Decodable {
+    let loginHosts: [LoginHost]
 
-    fun tapAllowIfPresent() {
-        val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
-        Log.i("uia", "Waiting for allow button to be present.")
-        if (allowButton.waitForExists(timeout)) {
-            allowButton.click()
-            Thread.sleep(timeout)
+    struct LoginHost: Decodable {
+        let name: String
+        let url: String
+        let users: [User]
+    }
+
+    struct User: Decodable {
+        let username: String
+        let password: String
+    }
+
+    static let shared: UITestConfig = {
+        guard let url = Bundle(for: BundleAnchor.self).url(forResource: "ui_test_config", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else {
+            fatalError("ui_test_config.json not found in test bundle.")
         }
+        return try! JSONDecoder().decode(UITestConfig.self, from: data)
+    }()
+
+    /// Returns the test user for the current iOS version.
+    /// Each major iOS version maps to a different user to avoid conflicts
+    /// when running tests on multiple simulators in parallel.
+    func user() -> User {
+        let regularAuth = loginHosts.first { $0.name == "regular_auth" }!
+        let major = Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "0") ?? 0
+        let index = major % regularAuth.users.count
+        return regularAuth.users[index]
     }
 }

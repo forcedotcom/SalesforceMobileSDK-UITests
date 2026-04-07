@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 
 buildscript {
     repositories {
@@ -31,6 +32,12 @@ android {
     kotlinOptions {
         jvmTarget = '21'
     }
+
+    sourceSets {
+        androidTest {
+            kotlin.srcDir("${rootProject.projectDir}/../shared/src/kotlin")
+        }
+    }
 }
 
 dependencies {
@@ -40,4 +47,5 @@ dependencies {
     androidTestImplementation 'androidx.test:core:1.6.1'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
+    androidTestImplementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3'
 }

@@ -42,47 +42,39 @@ const val LOGIN_RESOURCE_ID = "Login"
 class LoginPageObject : BasePageObject() {
 
     fun setUsername(name: String) {
-        val usernameField = getObject(
-            resourceId = USERNAME_RESOURCE_ID,
-            backup = UiSelector().className(editTextClass).index(0),
-        )
-
         Log.i("uia", "Waiting for username filed to be present.")
-        assert(usernameField.waitForExists(timeout * 10))
-        usernameField.setText(name)
+        getObject(
+            resourceId = USERNAME_RESOURCE_ID,
+            backup = UiSelector().className(editTextClass).instance(0),
+        ).setText(name)
     }
 
     fun setPassword(password: String) {
         Log.i("uia", "Waiting for password filed to be present.")
-        val passwordField = getObject(
+        getObject(
             resourceId = PASSWORD_RESOURCE_ID,
-            backup = UiSelector().className(editTextClass).index(2),
-        )
-
-        assert(passwordField.waitForExists(timeout * 5))
-        passwordField.setText(password)
+            backup = UiSelector().className(editTextClass).instance(1),
+        ).setText(password)
     }
 
     fun tapLogin() {
         Thread.sleep(timeout / 2)
-        val loginButton = getObject(
+        getObject(
             resourceId = LOGIN_RESOURCE_ID,
             backup = UiSelector().textMatches("Log In"),
-        )
-
-        assert(loginButton.waitForExists(timeout * 5))
-        loginButton.click()
+        ).click()
     }
 
-
-    // TODO: Remove this when the Android 15 resource-id issue is resolved.
     private fun getObject(resourceId: String, backup: UiSelector): UiObject {
-        return device.findObject(
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                UiSelector().resourceId(resourceId)
-            } else {
-                backup
-            }
-        )
+        val byResource = device.findObject(UiSelector().resourceId(resourceId))
+        val backup = device.findObject(backup)
+
+        return if (byResource.waitForExists(timeout * 5)) {
+            byResource
+        } else if (backup.waitForExists(timeout * 5)) {
+            backup
+        } else {
+            throw Exception("ResourceId: $resourceId not found.")
+        }
     }
 }

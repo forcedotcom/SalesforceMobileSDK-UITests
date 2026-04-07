@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2024-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package pageobjects.loginpageobjects
+//
+//  NativeLoginTests.swift
+//  SalesforceMobileSDK-UITest
+//
+//  Created by Brandon Page on 4/20/24.
+//
 
-import androidx.test.uiautomator.*
-import android.util.Log
-import pageobjects.BasePageObject
+import XCTest
 
-/**
- * Created by bpage on 2/23/18.
- */
-
-class AuthorizationPageObject : BasePageObject() {
-
-    fun tapAllowIfPresent() {
-        val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
-        Log.i("uia", "Waiting for allow button to be present.")
-        if (allowButton.waitForExists(timeout)) {
-            allowButton.click()
-            Thread.sleep(timeout)
-        }
+class NativeLoginTest: BaseSDKTest {
+    
+    func testLogin() {
+        let app = TestApplication()
+        let loginPage = NativeLoginPageObject(testApp: app)
+        app.launch()
+        
+        loginPage.setUsername(name: username)
+        loginPage.setPassword(password: password)
+        loginPage.tapLogin()
+        
+        // Assert App loads
+        assertAppLoads(app: app)
     }
 }

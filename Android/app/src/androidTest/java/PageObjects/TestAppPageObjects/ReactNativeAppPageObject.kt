@@ -26,6 +26,7 @@
  */
 package pageobjects.testapppageobjects
 
+import android.os.Build
 import androidx.test.uiautomator.UiSelector
 import android.util.Log
 import org.junit.Assert
@@ -38,22 +39,30 @@ import pageobjects.BasePageObject
 
 class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObject() {
 
-    init {
-        timeout *= 3
+    fun assertAppLoads() {
+        // On Android 12L–14 (API 32–34), React Native shows a black screen after the OAuth
+        // redirect recreates the activity and the JS bridge loses context.  Restarting resolves
+        // this because auth tokens are already persisted.
+        if (Build.VERSION.SDK_INT in 32..34) {
+            Log.i("uia", "API ${Build.VERSION.SDK_INT}: Restarting React Native app to avoid black screen.")
+            app.launch()
+        }
+
+        dismissAlertIfPresent()
+
+        val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
+        val title = device.findObject(UiSelector().text(expectedTitle))
+        title.waitForExists(timeout * 10)
+        Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
     }
 
-    fun assertAppLoads() {
+    private fun dismissAlertIfPresent() {
         val alertWindow = device.findObject(UiSelector().resourceId("android:id/alertTitle"))
-        if (alertWindow.exists()) {
+        if (alertWindow.waitForExists(timeout)) {
             Log.i("uia", "React Native requesting overlay permission.")
             // Tap Continue Button
             device.findObject(UiSelector().resourceId("android:id/button1")).click()
             Thread.sleep(timeout)
         }
-
-        val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
-        val title = device.findObject(UiSelector().className(viewClass).index(0))
-        title.waitForExists(timeout * 5)
-        Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
     }
 }
