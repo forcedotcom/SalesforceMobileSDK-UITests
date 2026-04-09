@@ -83,9 +83,12 @@ class BaseSDKTest: XCTestCase {
                 verifyInWebView(app: app, text: "Marc Benioff")
             }
         case .reactNative:
-            XCTAssert(app.descendants(matching: .textField).firstMatch.waitForNonExistence(timeout: timeout * 2), appLoadError)
-            let titlePredicate = NSPredicate(format: "label CONTAINS[c] %@", sampleAppTitle)
-            XCTAssert(app.descendants(matching: .any).matching(titlePredicate).firstMatch.waitForExistence(timeout: timeout * 2), appLoadError)
+            let rnTitle = app.staticTexts["Contacts"].firstMatch
+            XCTAssert(rnTitle.waitForExistence(timeout: timeout * 2), appLoadError)
+
+            // Check contacts loaded
+            let rnContact = app.staticTexts["Marc Benioff"].firstMatch
+            XCTAssert(rnContact.waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncSwift:
             let title = app.navigationBars["Contacts"].staticTexts["Contacts"]
             XCTAssert(title.waitForExistence(timeout: timeout), appLoadError)
