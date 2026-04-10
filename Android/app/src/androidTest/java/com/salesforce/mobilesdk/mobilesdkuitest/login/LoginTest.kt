@@ -64,6 +64,7 @@ class LoginTest {
         val loginPage = LoginPageObject()
 
         loginPage.setUsername(username)
+        loginPage.tapLogin()
         loginPage.setPassword(password)
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllowIfPresent()

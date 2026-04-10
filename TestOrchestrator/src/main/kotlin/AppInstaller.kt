@@ -151,6 +151,12 @@ fun createAndInstallIosSimulators(
         }
     }
 
+    // Disable keyboard slide typing introduction to prevent it from blocking Login
+    for (sim in simulators) {
+        "xcrun simctl spawn ${sim.simId} defaults write -g DidShowContinuousPathIntroduction -bool true".runCommand(suppressErrors = true)
+        "xcrun simctl spawn ${sim.simId} defaults write -g DidShowGestureKeyboardIntroduction -bool true".runCommand(suppressErrors = true)
+    }
+
     // Install app on all simulators
     for (sim in simulators) {
         progressBanner?.update {
