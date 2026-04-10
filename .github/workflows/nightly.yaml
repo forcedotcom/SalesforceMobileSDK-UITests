@@ -87,7 +87,7 @@ jobs:
       matrix:
         app: [MobileSyncExplorerSwift, hybrid_local, MobileSyncExplorerReactNative]
         upgradeFrom: ["v12.2.0", "v13.2.0"]
-    uses: ./.github/workflows/ios-upgrade-reusable-workflow.yaml
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
       upgradeFrom: ${{ matrix.upgradeFrom }}
