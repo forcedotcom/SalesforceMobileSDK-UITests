@@ -42,6 +42,7 @@ class LoginTest: BaseSDKTest {
         app.launch()
 
         loginPage.setUsername(name: username)
+        loginPage.tapLogin()
         loginPage.setPassword(password: password)
         loginPage.tapLogin()
         authPage.tapAllowIfPresent()

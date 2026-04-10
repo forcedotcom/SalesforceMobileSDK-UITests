@@ -27,6 +27,8 @@
 package pageobjects.loginpageobjects
 
 import android.os.Build
+import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM
 import android.util.Log
 import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiSelector
@@ -43,38 +45,45 @@ class LoginPageObject : BasePageObject() {
 
     fun setUsername(name: String) {
         Log.i("uia", "Waiting for username filed to be present.")
-        getObject(
-            resourceId = USERNAME_RESOURCE_ID,
-            backup = UiSelector().className(editTextClass).instance(0),
-        ).setText(name)
+        val usernameField = if (SDK_INT == VANILLA_ICE_CREAM) {
+            device.findObject(
+                UiSelector().className("android.widget.EditText").index(0)
+            )
+        } else {
+            device.findObject(UiSelector().resourceId(USERNAME_RESOURCE_ID))
+        }
+        if (!usernameField.waitForExists(timeout * 5)) {
+            throw AssertionError("Username field not found.")
+        }
+        usernameField.setText(name)
     }
 
     fun setPassword(password: String) {
         Log.i("uia", "Waiting for password filed to be present.")
-        getObject(
-            resourceId = PASSWORD_RESOURCE_ID,
-            backup = UiSelector().className(editTextClass).instance(1),
-        ).setText(password)
+        val passwordField = if (SDK_INT == VANILLA_ICE_CREAM) {
+            device.findObject(
+                UiSelector().className("android.widget.EditText").index(3)
+            )
+        } else {
+            device.findObject(UiSelector().resourceId(PASSWORD_RESOURCE_ID))
+        }
+        if (!passwordField.waitForExists(timeout * 5)) {
+            throw AssertionError("Password field not found.")
+        }
+        passwordField.setText(password)
     }
 
     fun tapLogin() {
-        Thread.sleep(timeout / 2)
-        getObject(
-            resourceId = LOGIN_RESOURCE_ID,
-            backup = UiSelector().textMatches("Log In"),
-        ).click()
-    }
-
-    private fun getObject(resourceId: String, backup: UiSelector): UiObject {
-        val byResource = device.findObject(UiSelector().resourceId(resourceId))
-        val backup = device.findObject(backup)
-
-        return if (byResource.waitForExists(timeout * 5)) {
-            byResource
-        } else if (backup.waitForExists(timeout * 5)) {
-            backup
+        val loginButton = if (SDK_INT == VANILLA_ICE_CREAM) {
+            device.findObject(
+                UiSelector().className("android.widget.Button").textContains("Log In")
+            )
         } else {
-            throw Exception("ResourceId: $resourceId not found.")
+            device.findObject(UiSelector().resourceId(LOGIN_RESOURCE_ID))
         }
+        if (!loginButton.waitForExists(timeout)) {
+            throw AssertionError("Log In button not found.")
+        }
+        loginButton.click()
     }
 }
