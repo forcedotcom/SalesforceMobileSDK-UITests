@@ -31,7 +31,7 @@ jobs:
     secrets: inherit
     
   ios-base-legacy:
-    name: ${{ matrix.app }} iOS 17+18
+    name: ${{ matrix.app }} iOS 18
     strategy:
       fail-fast: false
       matrix:
@@ -39,7 +39,7 @@ jobs:
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
-      ios: "17 18"
+      ios: "18"
       runner: macos-15
     secrets: inherit
 
@@ -73,7 +73,7 @@ jobs:
       fail-fast: false
       matrix:
         app: [MobileSyncExplorerKotlin, hybrid_local, MobileSyncExplorerReactNative]
-        upgradeFrom: ["12.2.0"]
+        upgradeFrom: ["v12.2.0", "v13.2.0"]
     uses: ./.github/workflows/android-upgrade-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
@@ -86,7 +86,7 @@ jobs:
       fail-fast: false
       matrix:
         app: [MobileSyncExplorerSwift, hybrid_local, MobileSyncExplorerReactNative]
-        upgradeFrom: ["12.2.0"]
+        upgradeFrom: ["v12.2.0", "v13.2.0"]
     uses: ./.github/workflows/ios-upgrade-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
