@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app:  [native, native_kotlin, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, MobileSyncExplorerKotlinTemplate, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+        app:  [native_kotlin, MobileSyncExplorerKotlinTemplate, hybrid_local, hybrid_remote, react_native, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}

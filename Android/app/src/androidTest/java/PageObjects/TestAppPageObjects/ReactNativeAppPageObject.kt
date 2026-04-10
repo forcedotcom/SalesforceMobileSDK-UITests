@@ -30,7 +30,6 @@ import android.os.Build
 import androidx.test.uiautomator.UiSelector
 import android.util.Log
 import org.junit.Assert
-import pageobjects.AppType
 import pageobjects.BasePageObject
 
 /**
@@ -50,10 +49,15 @@ class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObjec
 
         dismissAlertIfPresent()
 
-        val expectedTitle = if (app.type == AppType.REACT_NATIVE) "Mobile SDK Sample App" else "Contacts"
+        val expectedTitle = "Contacts"
         val title = device.findObject(UiSelector().text(expectedTitle))
         title.waitForExists(timeout * 10)
         Assert.assertEquals("App did not successfully login.", expectedTitle, title.text)
+
+        // Check contacts loaded
+        val contact = device.findObject(UiSelector().text("Marc Benioff"))
+        contact.waitForExists(timeout * 10)
+        Assert.assertTrue("Contacts did not load.", contact.exists())
     }
 
     private fun dismissAlertIfPresent() {
