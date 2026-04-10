@@ -37,6 +37,7 @@ import com.github.ajalt.clikt.parameters.arguments.help
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.arguments.unique
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.help
 import com.github.ajalt.clikt.parameters.options.multiple
@@ -133,7 +134,7 @@ class TestOrchestrator : CliktCommand() {
         .help("Run an upgrade test. Provide the SDK version/branch/tag to upgrade FROM (e.g. '12.1.0')." +
                 "\u0085The app is generated with this version, logged in, then upgraded to dev and verified.")
     val useFirebase: Boolean by option("-f", "--firebase").boolean()
-        .default(IS_CI && upgradeFrom.isNullOrBlank())
+        .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
         .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
     val verboseOutput: Boolean by option("-v", "--verbose").flag()
         .help("Show all command output. Automatically on for CI.")
