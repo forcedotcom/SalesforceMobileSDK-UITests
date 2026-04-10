@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [native, hybrid_local, react_native] 
+        app: [native_swift, hybrid_local, react_native] 
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [native, hybrid_local, react_native]
+        app: [native_kotlin, hybrid_local, react_native]
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
