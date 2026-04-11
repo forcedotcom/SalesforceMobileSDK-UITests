@@ -28,7 +28,8 @@ fun performUpgrade(appSource: AppSource, useSF: Boolean, debug: Boolean) {
     val newAppInfo = generateApp(appSource, useSF)
     compileApp(newAppInfo, debug)
 
-    runUpgradeTests(newAppInfo, simulators = getRunningTestSimulators())
+    val simulators = if (appSource.os == OS.IOS) getRunningTestSimulators() else emptyList()
+    runUpgradeTests(newAppInfo, simulators)
 }
 
 /**
@@ -53,14 +54,14 @@ fun setupOldPackager(version: String): String {
         "--branch", version,
         "--single-branch", "--depth", "1",
         "https://github.com/forcedotcom/SalesforceMobileSDK-Package.git",
-        OLD_PACKAGER_DIR
+        OLD_PACKAGER_DIR,
     ).runCommand()
     if (cloneResult != 0) {
         throw Exception("Failed to clone SalesforceMobileSDK-Package at version '$version'. " +
                 "Verify that the branch or tag exists.")
     }
 
-    // Old packager versions (pre-14) use install.js instead of a root package.json
+    // Old packager versions (pre-13.2) use install.js instead of a root package.json
     val hasRootPackageJson = File(OLD_PACKAGER_DIR, "package.json").exists()
     val hasInstallJs = File(OLD_PACKAGER_DIR, "install.js").exists()
 

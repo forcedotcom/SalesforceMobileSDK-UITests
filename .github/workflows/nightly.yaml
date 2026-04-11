@@ -72,8 +72,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [MobileSyncExplorerKotlin, hybrid_local, MobileSyncExplorerReactNative]
+        app: [MobileSyncExplorerKotlinTemplate, hybrid_local, MobileSyncExplorerReactNative]
         upgradeFrom: ["v12.2.0", "v13.2.0"]
+        exclude:
+          - app: MobileSyncExplorerReactNative
+            upgradeFrom: "v12.2.0"
     uses: ./.github/workflows/android-upgrade-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
@@ -87,6 +90,9 @@ jobs:
       matrix:
         app: [MobileSyncExplorerSwift, hybrid_local, MobileSyncExplorerReactNative]
         upgradeFrom: ["v12.2.0", "v13.2.0"]
+        exclude:
+          - app: MobileSyncExplorerReactNative
+            upgradeFrom: "v12.2.0"
     uses: ./.github/workflows/ios-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
