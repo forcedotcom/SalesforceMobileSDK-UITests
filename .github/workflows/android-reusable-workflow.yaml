@@ -3,7 +3,7 @@ on:
     inputs:
       app:
         type: string
-        default: native_kotlin
+        required: true
       sfdx:
         type: boolean
         default: false

@@ -3,7 +3,7 @@ on:
     inputs:
       app:
         type: string
-        default: native
+        required: true
       upgradeFrom:
         type: string
         required: true
