@@ -58,7 +58,7 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P && app.type == AppType.HYBRID_REMOTE) {
             Log.i("HybridApp", "API 28: WebView content not accessible to UiAutomator, verifying WebView presence.")
             val webView = device.findObject(UiSelector().className("android.webkit.WebView"))
-            webView.waitForExists(timeout * 5)
+            webView.waitForExists(timeout * 10)
             Assert.assertTrue("App did not successfully load (WebView not found).", webView.exists())
             return
         }

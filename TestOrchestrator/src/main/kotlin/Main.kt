@@ -324,6 +324,7 @@ class TestOrchestrator : CliktCommand() {
                     iOSDevice ?: DEFAULT_IOS_DEVICE,
                     useFirebase,
                     finishProgress = upgradeFrom == null,
+                    upgradeLogin = upgradeFrom != null,
                 )
 
                 // Upgrade Phase 2: Upgrade test

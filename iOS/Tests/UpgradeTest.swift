@@ -35,6 +35,27 @@ import XCTest
 
 class UpgradeTest: BaseSDKTest {
 
+    /// Phase 1 of upgrade testing: logs into the old app version and
+    /// asserts the login screen is no longer visible.  Intentionally
+    /// skips assertAppLoads so we don't need to maintain assertions
+    /// for older template UIs.
+    func testInitialLogin() {
+        let app = TestApplication()
+        let loginPage = LoginPageObject(testApp: app)
+        let authPage = AuthorizationPageObject(testApp: app)
+        app.launch()
+
+        loginPage.setUsername(name: username)
+        loginPage.tapLogin()
+        loginPage.setPassword(password: password)
+        loginPage.tapLogin()
+        authPage.tapAllowIfPresent()
+
+        // Assert login screen is no longer showing
+        let loginField = app.webViews.textFields["Username"]
+        XCTAssertFalse(loginField.waitForExistence(timeout: 5), "Login screen is still showing after login.")
+    }
+
     /// Launches the upgraded app and asserts that the main content loads
     /// without requiring login.  The orchestrator is responsible for
     /// installing the old version, logging in, and then installing the

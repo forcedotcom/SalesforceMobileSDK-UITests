@@ -74,6 +74,11 @@ fun upgradeAndroidApp(appInfo: AppInfo) {
     if (installResult.exitCode != 0) {
         throw Exception("Upgrade APK install failed.\n${installResult.output?.trim()}")
     }
+
+    // Allow the system to settle after the upgrade install before launching the app.
+    // On CI emulators this prevents races where the old process is still winding down.
+    verbosePrinter?.invoke("Waiting for post-upgrade stabilization")
+    Thread.sleep(5_000)
 }
 
 data class ResolvedRuntime(val identifier: String, val version: String)
