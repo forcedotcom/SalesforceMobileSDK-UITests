@@ -39,7 +39,7 @@ class AuthorizationPageObject : BasePageObject() {
     fun tapAllowIfPresent() {
         val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
         Log.i("uia", "Waiting for allow button to be present.")
-        if (allowButton.waitForExists(timeout)) {
+        if (allowButton.waitForExists(timeout * 2)) {
             allowButton.click()
             Thread.sleep(timeout)
         }

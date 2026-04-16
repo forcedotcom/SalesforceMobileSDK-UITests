@@ -80,20 +80,22 @@ class UpgradeTest {
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllowIfPresent()
 
-        // Assert login screen is no longer showing
-        val loginField = device.findObject(UiSelector().resourceId("username"))
+        // Assert the login Activity has been dismissed by waiting for its native
+        // overflow menu (present on both the login page and the OAuth authorization
+        // page) to disappear.
+        val loginActivityMarker = device.findObject(UiSelector().descriptionContains("More Options"))
         Assert.assertFalse(
-            "Login screen is still showing after login.",
-            loginField.waitForExists(5_000)
+            "Login Activity is still showing after login.",
+            loginActivityMarker.waitForExists(5_000)
         )
     }
 
     @Test
     fun testUpgradePreservesLogin() {
-        // Fail fast with a clear message if the login screen is showing
-        val loginField = device.findObject(UiSelector().resourceId("username"))
-        if (loginField.waitForExists(2_000)) {
-            Assert.fail("Upgrade broke login session: login screen is showing instead of app content.")
+        // Fail fast with a clear message if the login Activity is showing
+        val loginActivityMarker = device.findObject(UiSelector().descriptionContains("More Options"))
+        if (loginActivityMarker.waitForExists(2_000)) {
+            Assert.fail("Upgrade broke login session: login Activity is showing instead of app content.")
         }
 
         // After upgrade the app should load directly without showing a login screen.

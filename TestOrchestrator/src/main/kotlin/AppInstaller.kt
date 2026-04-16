@@ -66,6 +66,9 @@ fun upgradeAndroidApp(appInfo: AppInfo) {
         context = context.advance("Install Upgraded App")
         completed += 1
     }
+
+    dumpAdbDiagnostics(appInfo.packageName, "BEFORE upgrade install")
+
     verbosePrinter?.invoke("Force-stopping old app before upgrade")
     "$ADB shell am force-stop ${appInfo.packageName}".split(" ").runCommandCapture()
 
@@ -79,6 +82,59 @@ fun upgradeAndroidApp(appInfo: AppInfo) {
     // On CI emulators this prevents races where the old process is still winding down.
     verbosePrinter?.invoke("Waiting for post-upgrade stabilization")
     Thread.sleep(5_000)
+
+    dumpAdbDiagnostics(appInfo.packageName, "AFTER upgrade install")
+}
+
+private fun dumpAdbDiagnostics(packageName: String, label: String) {
+    println("")
+    println("=== DIAGNOSTIC [$label] ===")
+
+    println("--- Salesforce AccountManager accounts ---")
+    val accountsOutput = captureAdbQuiet(listOf("shell", "dumpsys", "account"))
+    val accountLines = accountsOutput.lines()
+        .filter {
+            val t = it.trim()
+            t.contains("com.salesforce", ignoreCase = true) ||
+                (t.startsWith("Account {") && t.contains("type="))
+        }
+        .distinct()
+    if (accountLines.isEmpty()) {
+        println("(no Salesforce accounts found)")
+    } else {
+        accountLines.forEach { println(it) }
+    }
+
+    println("--- Package info for $packageName ---")
+    val pkgOutput = captureAdbQuiet(listOf("shell", "dumpsys", "package", packageName))
+    val pkgLines = pkgOutput.lines()
+        .filter {
+            val t = it.trim()
+            t.startsWith("userId=") ||
+                t.startsWith("firstInstallTime=") ||
+                t.startsWith("lastUpdateTime=") ||
+                t.startsWith("dataDir=") ||
+                t.startsWith("versionCode=") ||
+                t.startsWith("versionName=")
+        }
+        .distinct()
+    if (pkgLines.isEmpty()) {
+        println("(package not found or no matching fields: $packageName)")
+    } else {
+        pkgLines.forEach { println(it) }
+    }
+
+    println("=== END DIAGNOSTIC [$label] ===")
+    println("")
+}
+
+private fun captureAdbQuiet(args: List<String>): String {
+    val process = ProcessBuilder(listOf(ADB) + args)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText()
+    process.waitFor()
+    return output
 }
 
 data class ResolvedRuntime(val identifier: String, val version: String)
