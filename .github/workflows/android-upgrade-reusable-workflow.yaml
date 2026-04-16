@@ -10,7 +10,7 @@ on:
         description: "SDK version/branch/tag to upgrade FROM"
       api-level:
         type: string
-        default: "35"
+        default: "31"
         description: "Android API level for the emulator"
 
 jobs:
@@ -57,7 +57,7 @@ jobs:
           api-level: ${{ inputs.api-level }}
           arch: x86_64
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu guest -noaudio -no-boot-anim -camera-back none -memory 2048 -no-snapshot-save
           disable-animations: true
           script: echo "Generated AVD snapshot for caching."
       - name: Build ${{ inputs.app }}, Login, Upgrade from ${{ inputs.upgradeFrom }} and Test
@@ -66,7 +66,7 @@ jobs:
           api-level: ${{ inputs.api-level }}
           arch: x86_64
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu guest -noaudio -no-boot-anim -camera-back none -memory 2048 -no-snapshot-save
           disable-animations: true
           script: |
             ./test android ${{ inputs.app }} --upgrade=${{ inputs.upgradeFrom }}

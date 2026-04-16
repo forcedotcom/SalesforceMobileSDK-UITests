@@ -19,6 +19,13 @@ import kotlin.collections.iterator
  * which asserts the user is still logged in.
  */
 fun performUpgrade(appSource: AppSource, useSF: Boolean, debug: Boolean) {
+    // Stop any lingering Gradle daemons from Phase 1 to reclaim memory
+    // before Phase 2 compilation starts alongside the running emulator.
+    if (appSource.os == OS.ANDROID) {
+        verbosePrinter?.invoke("Stopping Gradle daemons to free memory for Phase 2")
+        "./gradlew --stop".runCommand(workingDir = TestOrchestrator.ANDROID_TEST_DIR)
+    }
+
     progressBanner?.update {
         context = context.advance("Re-generate App (dev)")
         completed += 1

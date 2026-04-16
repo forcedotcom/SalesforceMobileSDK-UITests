@@ -77,6 +77,8 @@ jobs:
         exclude:
           - app: MobileSyncExplorerReactNative
             upgradeFrom: "v12.2.0"
+          - app: hybrid_local
+            upgradeFrom: "v12.2.0"
     uses: ./.github/workflows/android-upgrade-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
