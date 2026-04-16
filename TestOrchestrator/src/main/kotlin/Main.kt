@@ -76,6 +76,16 @@ const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
 const val OLD_PACKAGER_DIR = "SalesforceMobileSDK-Package-Old"
 
+// Aliases for templates whose repo name doesn't match the convention used
+// by the rest of the templates (e.g. MobileSyncExplorer{Swift,ReactNative}
+// have no "Template" suffix, but MobileSyncExplorerKotlinTemplate does).
+private val TEMPLATE_ALIASES = mapOf(
+    "mobilesyncexplorerkotlin" to "MobileSyncExplorerKotlinTemplate",
+)
+
+private fun resolveTemplateAlias(input: String): String =
+    TEMPLATE_ALIASES[input.lowercase()] ?: input
+
 
 class TestOrchestrator : CliktCommand() {
 
@@ -110,7 +120,7 @@ class TestOrchestrator : CliktCommand() {
             }
             when {
                 appType != null -> AppSource.ByType(os, type = appType)
-                else -> AppSource.ByTemplate(os, template = input)
+                else -> AppSource.ByTemplate(os, template = resolveTemplateAlias(input))
             }
         }
         .multiple().unique()
@@ -336,6 +346,11 @@ class TestOrchestrator : CliktCommand() {
                 progressBanner?.update {
                     context = context.fail(e.message ?: e.toString())
                 }
+                // Give the animation thread time to render the fail frame with
+                // the error text before stopping it, otherwise the banner can
+                // freeze on the in-progress frame and hide the error in
+                // non-verbose mode.
+                Thread.sleep(2_000)
                 progressBanner?.finish()
                 verbosePrinter?.invoke("${appSource.appName} failed: ${e.message ?: e.toString()}", err = true)
             }

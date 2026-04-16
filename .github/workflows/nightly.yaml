@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app:  [native_kotlin, MobileSyncExplorerKotlinTemplate, hybrid_local, hybrid_remote, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+        app:  [native_kotlin, MobileSyncExplorerKotlin, hybrid_local, hybrid_remote, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
@@ -72,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [MobileSyncExplorerKotlinTemplate, hybrid_local, MobileSyncExplorerReactNative]
+        app: [MobileSyncExplorerKotlin, hybrid_local, MobileSyncExplorerReactNative]
         upgradeFrom: ["v12.2.0", "v13.2.0"]
         exclude:
           - app: MobileSyncExplorerReactNative

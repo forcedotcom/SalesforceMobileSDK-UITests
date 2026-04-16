@@ -70,7 +70,7 @@ fun upgradeAndroidApp(appInfo: AppInfo) {
     "$ADB shell am force-stop ${appInfo.packageName}".split(" ").runCommandCapture()
 
     verbosePrinter?.invoke("Installing Upgraded App (preserving data)")
-    val installResult = "$ADB install -r ${appInfo.apkPath}".split(" ").runCommandCapture()
+    val installResult = "$ADB install -r --no-incremental ${appInfo.apkPath}".split(" ").runCommandCapture()
     if (installResult.exitCode != 0) {
         throw Exception("Upgrade APK install failed.\n${installResult.output?.trim()}")
     }

@@ -26,7 +26,6 @@
  */
 package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import android.os.Build
 import pageobjects.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -69,13 +68,10 @@ class UpgradeTest {
      */
     @Test
     fun testInitialLogin() {
-        val knownUserConfig: KnownUserConfig by lazy {
-            val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
-                .applicationInfo.minSdkVersion
-            val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.entries.toTypedArray().count()
-            KnownUserConfig.entries[userNumber]
-        }
-        val (username, password) = androidTestConfig.getUser(KnownLoginHostConfig.REGULAR_AUTH, knownUserConfig)
+        val (username, password) = androidTestConfig.getUser(
+            KnownLoginHostConfig.REGULAR_AUTH,
+            KnownUserConfig.FIFTH,
+        )
         val loginPage = LoginPageObject()
 
         loginPage.setUsername(username)
