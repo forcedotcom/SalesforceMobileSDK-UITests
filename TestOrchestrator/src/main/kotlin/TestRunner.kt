@@ -65,9 +65,7 @@ fun runTests(
             PanelProgressBarMaker.title = "Testing ${appInfo.appName} (iOS " +
                     "${simulators.joinToString(", ") { it.iOSVersion }})"
             val testScheme = if (upgradeLogin) "UpgradeTest" else null
-            // Corresponds to xcodebuild's -only-testing flag.
-            val onlyTesting = if (upgradeLogin) "UpgradeTest/testInitialLogin" else null
-            runIosTests(appInfo, simulators, testSchemeOverride = testScheme, onlyTesting)
+            runIosTests(appInfo, simulators, testSchemeOverride = testScheme)
         }
     }
 
@@ -150,7 +148,6 @@ private fun runIosUpgradeTests(appInfo: AppInfo, simulators: List<SimulatorInfo>
         simulators,
         resultBundlePath,
         appInfo,
-        onlyTesting = "UpgradeTest/testUpgradePreservesLogin",
     )
 
     if (result.exitCode != 0) {
@@ -283,7 +280,6 @@ private fun runIosTests(
     appInfo: AppInfo,
     simulators: List<SimulatorInfo>,
     testSchemeOverride: String? = null,
-    onlyTesting: String? = null,
 ) {
     val testScheme = testSchemeOverride ?: if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
         "NativeLoginTest"
@@ -302,7 +298,7 @@ private fun runIosTests(
     File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
 
     // Run Test
-    val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo, onlyTesting)
+    val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo)
 
     // Retry on Failure if running in CI
     if (result.exitCode != 0) {
@@ -348,7 +344,7 @@ private fun runIosTests(
         val retryBundlePath = "test_output/${appInfo.appName}_retry"
         File(IOS_TEST_DIR, retryBundlePath).deleteRecursively()
 
-        val retryResult = runXcodebuildTest(testScheme, failedSims, retryBundlePath, appInfo, onlyTesting)
+        val retryResult = runXcodebuildTest(testScheme, failedSims, retryBundlePath, appInfo)
 
         if (retryResult.exitCode != 0) {
             val retryBundleAbsPath = File(IOS_TEST_DIR, retryBundlePath).absolutePath
@@ -366,7 +362,6 @@ private fun runXcodebuildTest(
     simulators: List<SimulatorInfo>,
     resultBundlePath: String,
     appInfo: AppInfo,
-    onlyTesting: String? = null,
 ): com.salesforce.util.CommandResult {
     val testCommand = buildList {
         addAll(listOf(
@@ -374,7 +369,6 @@ private fun runXcodebuildTest(
             "-project", "SalesforceMobileSDK-UITest.xcodeproj",
             "-scheme", testScheme,
         ))
-        onlyTesting?.let { addAll(listOf("-only-testing", it)) }
         for (sim in simulators) {
             addAll(listOf("-destination", "platform=iOS Simulator,id=${sim.simId}"))
         }
