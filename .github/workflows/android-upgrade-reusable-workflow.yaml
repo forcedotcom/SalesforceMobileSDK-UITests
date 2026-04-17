@@ -68,35 +68,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 4096 -no-snapshot-save
           disable-animations: true
-          script: |
-            mkdir -p ci-diagnostics
-            # Stream logcat to a file in the background for post-mortem diagnostics.
-            adb logcat -v threadtime > ci-diagnostics/logcat.txt &
-            LOGCAT_PID=$!
-
-            set +e
-            ./test android ${{ inputs.app }} --upgrade=${{ inputs.upgradeFrom }}
-            TEST_EXIT=$?
-            set -e
-
-            if [ $TEST_EXIT -ne 0 ]; then
-              echo "=== Test failed; capturing device diagnostics ==="
-              adb exec-out screencap -p > ci-diagnostics/screenshot.png 2>/dev/null || true
-              adb shell uiautomator dump /sdcard/view-hierarchy.xml >/dev/null 2>&1 || true
-              adb pull /sdcard/view-hierarchy.xml ci-diagnostics/view-hierarchy.xml 2>/dev/null || true
-              adb shell dumpsys window > ci-diagnostics/dumpsys-window.txt 2>/dev/null || true
-              adb shell dumpsys activity top > ci-diagnostics/dumpsys-activity-top.txt 2>/dev/null || true
-              adb shell dumpsys activity activities > ci-diagnostics/dumpsys-activities.txt 2>/dev/null || true
-              adb shell dumpsys meminfo > ci-diagnostics/dumpsys-meminfo.txt 2>/dev/null || true
-              adb shell dumpsys gfxinfo > ci-diagnostics/dumpsys-gfxinfo.txt 2>/dev/null || true
-              adb shell ps -A > ci-diagnostics/ps.txt 2>/dev/null || true
-              adb shell getprop > ci-diagnostics/getprop.txt 2>/dev/null || true
-            fi
-
-            kill $LOGCAT_PID 2>/dev/null || true
-            wait $LOGCAT_PID 2>/dev/null || true
-
-            exit $TEST_EXIT
+          script: bash .github/scripts/run-upgrade-with-diagnostics.sh ${{ inputs.app }} ${{ inputs.upgradeFrom }}
       - name: Test Report
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
