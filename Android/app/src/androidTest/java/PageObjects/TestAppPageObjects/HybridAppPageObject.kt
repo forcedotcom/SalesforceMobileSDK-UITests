@@ -28,6 +28,7 @@ package pageobjects.testapppageobjects
 
 import android.os.Build
 import android.util.Log
+import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
 import org.junit.Assert
 import pageobjects.AppType
@@ -75,7 +76,14 @@ class HybridAppPageObject(private val app: TestApplication) : BasePageObject() {
                 webElement = device.findObject(UiSelector().descriptionContains(text))
                 if (!webElement.waitForExists(timeout * 5)) {
                     webElement = device.findObject(UiSelector().textContains(text))
-                    webElement.waitForExists(timeout * 5)
+                    if (!webElement.waitForExists(timeout * 5)) {
+                        // The target node may exist in the WebView but is off-screen on small emulators.
+                        runCatching {
+                            val scrollable = UiScrollable(UiSelector().scrollable(true))
+                            scrollable.setAsVerticalList()
+                            scrollable.scrollIntoView(UiSelector().textContains(text))
+                        }
+                    }
                 }
             }
         }

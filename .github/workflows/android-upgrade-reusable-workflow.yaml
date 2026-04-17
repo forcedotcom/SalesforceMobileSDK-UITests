@@ -68,7 +68,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 4096 -no-snapshot-save
           disable-animations: true
-          script: bash .github/scripts/run-upgrade-with-diagnostics.sh ${{ inputs.app }} ${{ inputs.upgradeFrom }}
+          script: ./test android ${{ inputs.app }} --upgrade=${{ inputs.upgradeFrom }}
       - name: Test Report
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
@@ -91,10 +91,3 @@ jobs:
         with:
           name: test-results-${{ inputs.app }}-android-api-${{ inputs.api-level }}-upgrade-${{ inputs.upgradeFrom }}
           path: Android/app/build/outputs/androidTest-results/
-      - name: Upload CI Diagnostics
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: ci-diagnostics-${{ inputs.app }}-android-api-${{ inputs.api-level }}-upgrade-${{ inputs.upgradeFrom }}
-          path: ci-diagnostics/
-          if-no-files-found: ignore

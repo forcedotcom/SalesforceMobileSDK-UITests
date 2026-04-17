@@ -119,11 +119,13 @@ private fun runAndroidUpgradeTest(appInfo: AppInfo) {
             Thread.sleep(5_000)
 
             val retryResult = testCommand.runCommandCapture(workingDir = ANDROID_TEST_DIR)
+            if (retryResult.exitCode != 0) captureAndroidScreenshot("android_upgrade_test_retry")
             retryResult.throwIfFailed(appInfo.appPath, "android_upgrade_test_retry", parseTestFailure(retryResult.output))
             return
         }
     }
 
+    if (result.exitCode != 0) captureAndroidScreenshot("android_upgrade_test")
     result.throwIfFailed(appInfo.appPath, "android_upgrade_test", parseTestFailure(result.output))
 }
 
@@ -182,7 +184,57 @@ private fun runAndroidUpgradeLogin(appInfo: AppInfo) {
         .split(" ").filter { it.isNotEmpty() }
         .runCommandCapture(workingDir = ANDROID_TEST_DIR)
 
-    result.throwIfFailed(appInfo.appPath, "android_upgrade_login", parseTestFailure(result.output))
+    if (result.exitCode != 0) captureAndroidScreenshot("android_upgrade_login")
+    result.throwIfFailed(
+        appInfo.appPath,
+        label = "android_upgrade_login",
+        message = parseTestFailure(result.output),
+    )
+}
+
+/**
+ * Captures a screenshot of every connected Android device to
+ * `Android/app/build/outputs/androidTest-results/screenshots/<label>[_<serial>].png`
+ * so that it is picked up by the existing test-results artifact upload on CI
+ * and is easy to locate locally.
+ */
+private fun captureAndroidScreenshot(label: String) {
+    val screenshotDir = File(
+        /* parent = */ ANDROID_TEST_DIR,
+        /* child = */ "app/build/outputs/androidTest-results/screenshots"
+    ).canonicalFile
+    if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
+        verbosePrinter?.invoke("Could not create screenshot directory.")
+        return
+    }
+
+    val devicesProc = ProcessBuilder(ADB, "devices").redirectErrorStream(true).start()
+    val devicesOut = devicesProc.inputStream.bufferedReader().readText()
+    devicesProc.waitFor()
+    val deviceIds = devicesOut.lines().drop(1)
+        .filter { it.contains("\tdevice") }
+        .map { it.substringBefore('\t').trim() }
+        .filter { it.isNotEmpty() }
+
+    deviceIds.forEach { id ->
+        val fileName = if (deviceIds.size == 1) "$label.png" else "${label}_$id.png"
+        val outFile = File(screenshotDir, fileName).canonicalFile
+        try {
+            val proc = ProcessBuilder(ADB, "-s", id, "exec-out", "screencap", "-p")
+                .redirectOutput(outFile)
+                .start()
+            val exit = proc.waitFor()
+            if (exit == 0 && outFile.length() > 0) {
+                verbosePrinter?.invoke("Screenshot saved: ${outFile.absolutePath}")
+            } else {
+                verbosePrinter?.invoke("Screenshot capture failed for device $id (exit $exit).")
+                outFile.delete()
+            }
+        } catch (e: Exception) {
+            verbosePrinter?.invoke("Screenshot capture threw for device $id: ${e.message}")
+            outFile.delete()
+        }
+    }
 }
 
 private fun runAndroidTestsLocal(appInfo: AppInfo) {
