@@ -71,6 +71,7 @@ jobs:
     # Run upgrade tests after so standard login's don't revoke upgrade refresh
     # tokens mid-execution by hitting the user session limit.
     needs: [android-base, android-sfdx]
+    if: ${{ !cancelled() }}
     name: ${{ matrix.app }} Android Upgrade from ${{ matrix.upgradeFrom }}
     strategy:
       fail-fast: false
