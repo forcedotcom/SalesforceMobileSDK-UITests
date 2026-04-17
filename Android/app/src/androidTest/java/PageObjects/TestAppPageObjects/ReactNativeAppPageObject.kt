@@ -39,14 +39,6 @@ import pageobjects.BasePageObject
 class ReactNativeAppPageObject(private val app: TestApplication) : BasePageObject() {
 
     fun assertAppLoads() {
-        // On Android 12L–14 (API 32–34), React Native shows a black screen after the OAuth
-        // redirect recreates the activity and the JS bridge loses context.  Restarting resolves
-        // this because auth tokens are already persisted.
-        if (Build.VERSION.SDK_INT in 32..34) {
-            Log.i("uia", "API ${Build.VERSION.SDK_INT}: Restarting React Native app to avoid black screen.")
-            app.launch()
-        }
-
         dismissAlertIfPresent()
 
         val expectedTitle = "Contacts"
