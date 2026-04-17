@@ -110,12 +110,6 @@ private fun runAndroidUpgradeTest(appInfo: AppInfo) {
 
     val result = testCommand.runCommandCapture(workingDir = ANDROID_TEST_DIR)
 
-    // Dump logcat on any Phase 2 failure so the CI log shows the SDK's
-    // error-level messages around post-upgrade startup.
-    if (result.exitCode != 0) {
-        dumpPostUpgradeLogcat()
-    }
-
     if (result.exitCode != 0 && TestOrchestrator.IS_CI) {
         val failureDetail = parseTestFailure(result.output)
         // Only retry for load/timeout failures, not for login-session-lost (which is a real SDK bug)

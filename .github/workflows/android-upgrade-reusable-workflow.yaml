@@ -10,7 +10,7 @@ on:
         description: "SDK version/branch/tag to upgrade FROM"
       api-level:
         type: string
-        default: "31"
+        default: "35"
         description: "Android API level for the emulator"
 
 jobs:

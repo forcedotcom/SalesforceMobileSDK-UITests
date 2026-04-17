@@ -68,6 +68,9 @@ jobs:
     secrets: inherit
 
   android-upgrade:
+    # Run upgrade tests after so standard login's don't revoke upgrade refresh
+    # tokens mid-execution by hitting the user session limit.
+    needs: [android-base, android-sfdx]
     name: ${{ matrix.app }} Android Upgrade from ${{ matrix.upgradeFrom }}
     strategy:
       fail-fast: false
@@ -86,6 +89,7 @@ jobs:
     secrets: inherit
 
   ios-upgrade:
+    # If macos runner concurrency limit increases run these after standard login like Android.
     name: ${{ matrix.app }} iOS Upgrade from ${{ matrix.upgradeFrom }}
     strategy:
       fail-fast: false

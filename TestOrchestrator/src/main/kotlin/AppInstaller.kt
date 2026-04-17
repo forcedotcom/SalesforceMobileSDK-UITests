@@ -67,19 +67,11 @@ fun upgradeAndroidApp(appInfo: AppInfo) {
         completed += 1
     }
 
-    // Enable adbd root so the diagnostic can inspect the app's private data
-    // directory. `run-as` is unavailable for release APKs, so this is the
-    // only way to list /data/user/0/<pkg>/ contents. No-op (and harmless)
-    // on production emulator images where rooting adbd is refused.
-    rootAdbQuiet()
-
-    dumpAdbDiagnostics(appInfo.packageName, "BEFORE upgrade install")
-
     verbosePrinter?.invoke("Force-stopping old app before upgrade")
     "$ADB shell am force-stop ${appInfo.packageName}".split(" ").runCommandCapture()
 
     verbosePrinter?.invoke("Installing Upgraded App (preserving data)")
-    val installResult = "$ADB install -r --no-incremental ${appInfo.apkPath}".split(" ").runCommandCapture()
+    val installResult = "$ADB install -r ${appInfo.apkPath}".split(" ").runCommandCapture()
     if (installResult.exitCode != 0) {
         throw Exception("Upgrade APK install failed.\n${installResult.output?.trim()}")
     }
@@ -88,127 +80,6 @@ fun upgradeAndroidApp(appInfo: AppInfo) {
     // On CI emulators this prevents races where the old process is still winding down.
     verbosePrinter?.invoke("Waiting for post-upgrade stabilization")
     Thread.sleep(5_000)
-
-    dumpAdbDiagnostics(appInfo.packageName, "AFTER upgrade install")
-
-    // Clear the logcat buffer so that the Phase 2 dump only contains logs
-    // emitted while the upgraded app starts up. Anything before this point
-    // is irrelevant (Phase 1 login, gradle noise, emulator boot).
-    captureAdbQuiet(listOf("logcat", "-c"))
-}
-
-/**
- * Dumps error-level logcat plus warnings from key system tags
- * (AccountManagerService, Keystore2, KeystoreService) since the most recent
- * `logcat -c`. Release builds gate the SDK's debug/info/warn logs, so only
- * error-level SDK messages survive — but system tags that cover credential
- * and keystore access are always loud enough to reveal account-loading
- * failures on post-upgrade startup.
- */
-fun dumpPostUpgradeLogcat() {
-    println("")
-    println("=== LOGCAT [post-upgrade startup, *:E + system warnings] ===")
-    val output = captureAdbQuiet(
-        listOf(
-            "logcat", "-d", "-v", "threadtime",
-            "AccountManagerService:W",
-            "Keystore2:W",
-            "KeystoreService:W",
-            "*:E",
-        )
-    ).trim()
-    if (output.isEmpty()) {
-        println("(logcat empty)")
-    } else {
-        println(output)
-    }
-    println("=== END LOGCAT ===")
-    println("")
-}
-
-private fun dumpAdbDiagnostics(packageName: String, label: String) {
-    println("")
-    println("=== DIAGNOSTIC [$label] ===")
-
-    println("--- Salesforce AccountManager accounts ---")
-    val accountsOutput = captureAdbQuiet(listOf("shell", "dumpsys", "account"))
-    val accountLines = accountsOutput.lines()
-        .filter {
-            val t = it.trim()
-            t.contains("com.salesforce", ignoreCase = true) ||
-                (t.startsWith("Account {") && t.contains("type="))
-        }
-        .distinct()
-    if (accountLines.isEmpty()) {
-        println("(no Salesforce accounts found)")
-    } else {
-        accountLines.forEach { println(it) }
-    }
-
-    println("--- Package info for $packageName ---")
-    val pkgOutput = captureAdbQuiet(listOf("shell", "dumpsys", "package", packageName))
-    val pkgLines = pkgOutput.lines()
-        .filter {
-            val t = it.trim()
-            t.startsWith("userId=") ||
-                t.startsWith("firstInstallTime=") ||
-                t.startsWith("lastUpdateTime=") ||
-                t.startsWith("dataDir=") ||
-                t.startsWith("versionCode=") ||
-                t.startsWith("versionName=")
-        }
-        .distinct()
-    if (pkgLines.isEmpty()) {
-        println("(package not found or no matching fields: $packageName)")
-    } else {
-        pkgLines.forEach { println(it) }
-    }
-
-    // The app's private data dir is owned by the app's uid; shell (the default
-    // adbd user) cannot read it. `run-as` doesn't work for a release APK. If
-    // `adb root` succeeded earlier, we can list it here; otherwise the output
-    // will show permission-denied lines, which is itself informative.
-    // Comparing this listing BEFORE vs AFTER reveals whether `install -r`
-    // actually preserved shared_prefs/, databases/, etc., which is what the
-    // SDK relies on for token decryption and SmartStore access.
-    println("--- App private data listing (dataDir, shared_prefs/, databases/) ---")
-    val dataListing = captureAdbQuiet(
-        listOf(
-            "shell", "ls", "-la",
-            "/data/user/0/$packageName/",
-            "/data/user/0/$packageName/shared_prefs/",
-            "/data/user/0/$packageName/databases/",
-        )
-    ).trim()
-    if (dataListing.isEmpty()) {
-        println("(no listing available)")
-    } else {
-        println(dataListing)
-    }
-
-    println("=== END DIAGNOSTIC [$label] ===")
-    println("")
-}
-
-/**
- * Attempts to restart adbd as root so subsequent shell commands can access
- * the app's private data directory. Harmless if rooting is refused (production
- * image); the subsequent listings will simply show permission-denied lines.
- * `wait-for-device` ensures the adb connection is re-established before the
- * next command, since `adb root` briefly disconnects adbd.
- */
-private fun rootAdbQuiet() {
-    captureAdbQuiet(listOf("root"))
-    captureAdbQuiet(listOf("wait-for-device"))
-}
-
-private fun captureAdbQuiet(args: List<String>): String {
-    val process = ProcessBuilder(listOf(ADB) + args)
-        .redirectErrorStream(true)
-        .start()
-    val output = process.inputStream.bufferedReader().readText()
-    process.waitFor()
-    return output
 }
 
 data class ResolvedRuntime(val identifier: String, val version: String)
