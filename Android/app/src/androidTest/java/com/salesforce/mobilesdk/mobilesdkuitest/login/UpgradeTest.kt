@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-present, salesforce.com, inc.
+ * Copyright (c) 2026-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,10 +26,11 @@
  */
 package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import android.os.Build
 import pageobjects.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import com.salesforce.KnownLoginHostConfig
 import com.salesforce.KnownUserConfig
 import com.salesforce.androidTestConfig
@@ -41,26 +42,36 @@ import pageobjects.loginpageobjects.*
 import pageobjects.testapppageobjects.*
 
 /**
- * Created by bpage on 2/2/18.
+ * Validates that a user remains logged in after an app upgrade.
+ * The app should have been installed with an older SDK version and logged in
+ * before being upgraded to the current SDK version.  This test launches the
+ * upgraded app and asserts that the main content loads without requiring login.
  */
 @RunWith(AndroidJUnit4::class)
-class LoginTest {
+class UpgradeTest {
     val app = TestApplication()
-    val knownUserConfig: KnownUserConfig by lazy {
-        val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
-            .applicationInfo.minSdkVersion
-        val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.entries.toTypedArray().count()
-        KnownUserConfig.entries[userNumber]
-    }
+
+    private val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
     @Before
     fun setupTestApp() {
         app.launch()
+        // Allow extra time for SDK data migration after upgrade
+        Thread.sleep(3_000)
     }
 
+    /**
+     * Phase 1 of upgrade testing: logs into the old app version and asserts
+     * the login screen is no longer visible.  Intentionally skips
+     * assertAppLoads so we don't need to maintain assertions for older
+     * template UIs.
+     */
     @Test
-    fun testLogin() {
-        val (username, password) = androidTestConfig.getUser(KnownLoginHostConfig.REGULAR_AUTH, knownUserConfig)
+    fun testInitialLogin() {
+        val (username, password) = androidTestConfig.getUser(
+            KnownLoginHostConfig.REGULAR_AUTH,
+            KnownUserConfig.FIFTH,
+        )
         val loginPage = LoginPageObject()
 
         loginPage.setUsername(username)
@@ -69,6 +80,25 @@ class LoginTest {
         loginPage.tapLogin()
         AuthorizationPageObject().tapAllowIfPresent()
 
+        // Assert the login Activity has been dismissed by waiting for its native
+        // overflow menu (present on both the login page and the OAuth authorization
+        // page) to disappear.
+        val loginActivityMarker = device.findObject(UiSelector().descriptionContains("More Options"))
+        Assert.assertFalse(
+            "Login Activity is still showing after login.",
+            loginActivityMarker.waitForExists(5_000)
+        )
+    }
+
+    @Test
+    fun testUpgradePreservesLogin() {
+        // Fail fast with a clear message if the login Activity is showing
+        val loginActivityMarker = device.findObject(UiSelector().descriptionContains("More Options"))
+        if (loginActivityMarker.waitForExists(2_000)) {
+            Assert.fail("Upgrade broke login session: login Activity is showing instead of app content.")
+        }
+
+        // After upgrade the app should load directly without showing a login screen.
         when (app.type) {
             AppType.NATIVE, AppType.NATIVE_KOTLIN ->
                 NativeAppPageObject(app).assertAppLoads()

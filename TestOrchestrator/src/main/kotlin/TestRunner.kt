@@ -26,6 +26,7 @@
  */
 package com.salesforce
 
+import com.salesforce.TestOrchestrator.Companion.ADB
 import com.salesforce.TestOrchestrator.Companion.ANDROID_TEST_CLASS_DIR
 import com.salesforce.TestOrchestrator.Companion.ANDROID_TEST_DIR
 import com.salesforce.TestOrchestrator.Companion.GCLOUD_RESULTS_DIR
@@ -39,10 +40,19 @@ import com.salesforce.util.verbosePrinter
 import kotlinx.serialization.json.*
 import java.io.File
 
-fun runTests(appInfo: AppInfo, iOSVersions: List<String>, iOSDevice: String, useFirebase: Boolean) {
+fun runTests(
+    appInfo: AppInfo,
+    iOSVersions: List<String>,
+    iOSDevice: String,
+    useFirebase: Boolean,
+    finishProgress: Boolean = true,
+    upgradeLogin: Boolean = false,
+) {
     when (appInfo.os) {
         OS.ANDROID -> {
-            if (useFirebase) {
+            if (upgradeLogin) {
+                runAndroidUpgradeLogin(appInfo)
+            } else if (useFirebase) {
                 runAndroidTestsFirebase(appInfo)
             } else {
                 runAndroidTestsLocal(appInfo)
@@ -52,10 +62,25 @@ fun runTests(appInfo: AppInfo, iOSVersions: List<String>, iOSDevice: String, use
             copyIosTestConfig()
             val simulators = createAndInstallIosSimulators(appInfo, iOSVersions, iOSDevice)
             // Update banner title with resolved iOS versions
-            PanelProgressBarMaker.title =
-                "Testing ${appInfo.appName} (iOS ${simulators.joinToString(", ") { it.iOSVersion }})"
-            runIosTests(appInfo, simulators)
+            PanelProgressBarMaker.title = "Testing ${appInfo.appName} (iOS " +
+                    "${simulators.joinToString(", ") { it.iOSVersion }})"
+            runIosTests(appInfo, simulators, upgradeLogin)
         }
+    }
+
+    if (finishProgress) {
+        progressBanner?.update {
+            context = context.pass()
+            completed += 1
+        }
+        progressBanner?.finish()
+    }
+}
+
+fun runUpgradeTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
+    when (appInfo.os) {
+        OS.ANDROID -> runAndroidUpgradeTest(appInfo)
+        OS.IOS -> runIosUpgradeTests(appInfo, simulators)
     }
 
     progressBanner?.update {
@@ -63,6 +88,153 @@ fun runTests(appInfo: AppInfo, iOSVersions: List<String>, iOSDevice: String, use
         completed += 1
     }
     progressBanner?.finish()
+}
+
+private fun runAndroidUpgradeTest(appInfo: AppInfo) {
+    upgradeAndroidApp(appInfo)
+
+    val classParam = "-Pandroid.testInstrumentationRunnerArguments.class=${ANDROID_TEST_CLASS_DIR}.UpgradeTest#testUpgradePreservesLogin"
+    val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
+    val complexHybridParam = appInfo.complexHybridType?.let {
+        "-Pandroid.testInstrumentationRunnerArguments.complexHybrid=$it"
+    } ?: ""
+
+    val testCommand = "./gradlew $classParam $packageParam $complexHybridParam connectedAndroidTest"
+        .split(" ").filter { it.isNotEmpty() }
+
+    progressBanner?.update {
+        context = context.advance("Run Upgrade Test")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Running Upgrade Test")
+
+    val result = testCommand.runCommandCapture(workingDir = ANDROID_TEST_DIR)
+
+    if (result.exitCode != 0 && TestOrchestrator.IS_CI) {
+        val failureDetail = parseTestFailure(result.output)
+        // Only retry for load/timeout failures, not for login-session-lost (which is a real SDK bug)
+        if (!failureDetail.contains("login session", ignoreCase = true)) {
+            verbosePrinter?.invoke("Upgrade test failed, retrying once after force-stop: $failureDetail")
+            "$ADB shell am force-stop ${appInfo.packageName}".split(" ").runCommandCapture()
+            Thread.sleep(5_000)
+
+            val retryResult = testCommand.runCommandCapture(workingDir = ANDROID_TEST_DIR)
+            if (retryResult.exitCode != 0) captureAndroidScreenshot("android_upgrade_test_retry")
+            retryResult.throwIfFailed(appInfo.appPath, "android_upgrade_test_retry", parseTestFailure(retryResult.output))
+            return
+        }
+    }
+
+    if (result.exitCode != 0) captureAndroidScreenshot("android_upgrade_test")
+    result.throwIfFailed(appInfo.appPath, "android_upgrade_test", parseTestFailure(result.output))
+}
+
+private fun runIosUpgradeTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
+    copyIosTestConfig()
+    upgradeIosApp(appInfo, simulators)
+
+    val versionsLabel = simulators.joinToString(", ") { it.iOSVersion }
+
+    progressBanner?.update {
+        context = context.advance("Run Upgrade Test (iOS $versionsLabel)")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Running Upgrade Test on iOS $versionsLabel")
+
+    val resultBundlePath = "test_output/${appInfo.appName}_upgrade"
+    File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
+
+    val result = runXcodebuildTest(
+        testScheme = "UpgradeTest",
+        simulators,
+        resultBundlePath,
+        appInfo,
+        onlyTesting = "SalesforceMobileSDK-UITest/UpgradeTest/testUpgradePreservesLogin",
+    )
+
+    if (result.exitCode != 0) {
+        val resultBundleAbsPath = File(IOS_TEST_DIR, resultBundlePath).absolutePath
+        val logPath = result.saveFullOutput(appInfo.appPath, "ios_upgrade_test")
+        val logMsg = logPath?.let { "\nFull output: $it" } ?: ""
+        val failureMsg = parseXCResultFailures(resultBundleAbsPath)
+            ?: parseTestFailure(result.output)
+        throw Exception("$failureMsg$logMsg")
+    }
+}
+
+private fun runAndroidUpgradeLogin(appInfo: AppInfo) {
+    installAndroidApp(appInfo)
+
+    "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS"
+        .runCommand(suppressErrors = true)
+
+    val classParam = "-Pandroid.testInstrumentationRunnerArguments.class=${ANDROID_TEST_CLASS_DIR}.UpgradeTest#testInitialLogin"
+    val packageParam = "-Pandroid.testInstrumentationRunnerArguments.packageName=${appInfo.packageName}"
+    val complexHybridParam = appInfo.complexHybridType?.let {
+        "-Pandroid.testInstrumentationRunnerArguments.complexHybrid=$it"
+    } ?: ""
+
+    progressBanner?.update {
+        context = context.advance("Run Initial Login")
+        completed += 1
+    }
+    verbosePrinter?.invoke("Running Initial Login (upgrade Phase 1)")
+
+    val result = "./gradlew $classParam $packageParam $complexHybridParam connectedAndroidTest"
+        .split(" ").filter { it.isNotEmpty() }
+        .runCommandCapture(workingDir = ANDROID_TEST_DIR)
+
+    if (result.exitCode != 0) captureAndroidScreenshot("android_upgrade_login")
+    result.throwIfFailed(
+        appInfo.appPath,
+        label = "android_upgrade_login",
+        message = parseTestFailure(result.output),
+    )
+}
+
+/**
+ * Captures a screenshot of every connected Android device to
+ * `Android/app/build/outputs/androidTest-results/screenshots/<label>[_<serial>].png`
+ * so that it is picked up by the existing test-results artifact upload on CI
+ * and is easy to locate locally.
+ */
+private fun captureAndroidScreenshot(label: String) {
+    val screenshotDir = File(
+        /* parent = */ ANDROID_TEST_DIR,
+        /* child = */ "app/build/outputs/androidTest-results/screenshots"
+    ).canonicalFile
+    if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
+        verbosePrinter?.invoke("Could not create screenshot directory.")
+        return
+    }
+
+    val devicesProc = ProcessBuilder(ADB, "devices").redirectErrorStream(true).start()
+    val devicesOut = devicesProc.inputStream.bufferedReader().readText()
+    devicesProc.waitFor()
+    val deviceIds = devicesOut.lines().drop(1)
+        .filter { it.contains("\tdevice") }
+        .map { it.substringBefore('\t').trim() }
+        .filter { it.isNotEmpty() }
+
+    deviceIds.forEach { id ->
+        val fileName = if (deviceIds.size == 1) "$label.png" else "${label}_$id.png"
+        val outFile = File(screenshotDir, fileName).canonicalFile
+        try {
+            val proc = ProcessBuilder(ADB, "-s", id, "exec-out", "screencap", "-p")
+                .redirectOutput(outFile)
+                .start()
+            val exit = proc.waitFor()
+            if (exit == 0 && outFile.length() > 0) {
+                verbosePrinter?.invoke("Screenshot saved: ${outFile.absolutePath}")
+            } else {
+                verbosePrinter?.invoke("Screenshot capture failed for device $id (exit $exit).")
+                outFile.delete()
+            }
+        } catch (e: Exception) {
+            verbosePrinter?.invoke("Screenshot capture threw for device $id: ${e.message}")
+            outFile.delete()
+        }
+    }
 }
 
 private fun runAndroidTestsLocal(appInfo: AppInfo) {
@@ -156,12 +328,17 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
         }
 }
 
-private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
-    val testScheme = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
-        "NativeLoginTest"
-    } else {
-        "LoginTest"
+private fun runIosTests(
+    appInfo: AppInfo,
+    simulators: List<SimulatorInfo>,
+    upgradeLogin: Boolean = false,
+) {
+    val testScheme = when {
+        upgradeLogin -> "UpgradeTest"
+        appInfo.appName.contains("nativelogin", ignoreCase = true) -> "NativeLoginTest"
+        else -> "LoginTest"
     }
+    val onlyTesting = if (upgradeLogin) "SalesforceMobileSDK-UITest/UpgradeTest/testInitialLogin" else null
     val versionsLabel = simulators.joinToString(", ") { it.iOSVersion }
 
     progressBanner?.update {
@@ -174,7 +351,7 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
     File(IOS_TEST_DIR, resultBundlePath).deleteRecursively()
 
     // Run Test
-    val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo)
+    val result = runXcodebuildTest(testScheme, simulators, resultBundlePath, appInfo, onlyTesting)
 
     // Retry on Failure if running in CI
     if (result.exitCode != 0) {
@@ -220,7 +397,7 @@ private fun runIosTests(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
         val retryBundlePath = "test_output/${appInfo.appName}_retry"
         File(IOS_TEST_DIR, retryBundlePath).deleteRecursively()
 
-        val retryResult = runXcodebuildTest(testScheme, failedSims, retryBundlePath, appInfo)
+        val retryResult = runXcodebuildTest(testScheme, failedSims, retryBundlePath, appInfo, onlyTesting)
 
         if (retryResult.exitCode != 0) {
             val retryBundleAbsPath = File(IOS_TEST_DIR, retryBundlePath).absolutePath
@@ -237,7 +414,8 @@ private fun runXcodebuildTest(
     testScheme: String,
     simulators: List<SimulatorInfo>,
     resultBundlePath: String,
-    appInfo: AppInfo
+    appInfo: AppInfo,
+    onlyTesting: String? = null,
 ): com.salesforce.util.CommandResult {
     val testCommand = buildList {
         addAll(listOf(
@@ -245,6 +423,7 @@ private fun runXcodebuildTest(
             "-project", "SalesforceMobileSDK-UITest.xcodeproj",
             "-scheme", testScheme,
         ))
+        onlyTesting?.let { addAll(listOf("-only-testing", it)) }
         for (sim in simulators) {
             addAll(listOf("-destination", "platform=iOS Simulator,id=${sim.simId}"))
         }

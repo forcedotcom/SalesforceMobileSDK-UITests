@@ -57,6 +57,31 @@ fun installAndroidApp(appInfo: AppInfo) {
     }
 }
 
+/**
+ * Installs the upgraded app over the existing one without uninstalling first.
+ * This preserves app data so the login session survives the upgrade.
+ */
+fun upgradeAndroidApp(appInfo: AppInfo) {
+    progressBanner?.update {
+        context = context.advance("Install Upgraded App")
+        completed += 1
+    }
+
+    verbosePrinter?.invoke("Force-stopping old app before upgrade")
+    "$ADB shell am force-stop ${appInfo.packageName}".split(" ").runCommandCapture()
+
+    verbosePrinter?.invoke("Installing Upgraded App (preserving data)")
+    val installResult = "$ADB install -r ${appInfo.apkPath}".split(" ").runCommandCapture()
+    if (installResult.exitCode != 0) {
+        throw Exception("Upgrade APK install failed.\n${installResult.output?.trim()}")
+    }
+
+    // Allow the system to settle after the upgrade install before launching the app.
+    // On CI emulators this prevents races where the old process is still winding down.
+    verbosePrinter?.invoke("Waiting for post-upgrade stabilization")
+    Thread.sleep(5_000)
+}
+
 data class ResolvedRuntime(val identifier: String, val version: String)
 
 data class SimulatorInfo(val simId: String, val iOSVersion: String)
@@ -167,6 +192,24 @@ fun createAndInstallIosSimulators(
     }
 
     return simulators
+}
+
+/**
+ * Installs the upgraded app over the existing one on all simulators.
+ */
+fun upgradeIosApp(appInfo: AppInfo, simulators: List<SimulatorInfo>) {
+    for (sim in simulators) {
+        progressBanner?.update {
+            context = context.advance("Install Upgraded App (iOS ${sim.iOSVersion})")
+            completed += 1
+        }
+        verbosePrinter?.invoke("Terminating old app on simulator ${sim.simId} before upgrade")
+        listOf("xcrun", "simctl", "terminate", sim.simId, appInfo.packageName)
+            .runCommandCapture()
+
+        verbosePrinter?.invoke("Installing Upgraded App on iOS ${sim.iOSVersion} (preserving data)")
+        installIosApp(appInfo, sim)
+    }
 }
 
 /**

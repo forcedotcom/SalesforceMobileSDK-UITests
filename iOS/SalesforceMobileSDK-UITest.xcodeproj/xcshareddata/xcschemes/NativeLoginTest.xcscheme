@@ -75,6 +75,9 @@
                <Test
                   Identifier = "PasscodeTests">
                </Test>
+               <Test
+                  Identifier = "UpgradeTest">
+               </Test>
             </SkippedTests>
          </TestableReference>
       </Testables>

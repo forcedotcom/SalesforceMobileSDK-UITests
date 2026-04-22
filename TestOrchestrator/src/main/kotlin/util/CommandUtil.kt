@@ -183,7 +183,9 @@ private fun List<String>.runSingleCommand(workingDir: String, suppressErrors: Bo
     val exitCode = process.waitFor()
 
     if (!suppressErrors && !verboseCommandOutput && exitCode != 0 && !capturedOutput.isNullOrBlank()) {
-        System.err.print(capturedOutput)
+        val logFile = File.createTempFile("command_failure_", ".log")
+        logFile.writeText(capturedOutput)
+        System.err.println("Command failed (exit $exitCode). Full output saved to: ${logFile.absolutePath}")
     }
 
     return exitCode

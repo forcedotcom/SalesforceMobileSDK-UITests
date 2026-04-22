@@ -37,6 +37,7 @@ import com.github.ajalt.clikt.parameters.arguments.help
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.arguments.unique
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.help
 import com.github.ajalt.clikt.parameters.options.multiple
@@ -73,6 +74,17 @@ const val ANDROID_MIN_API_LEVEL = 28
 const val ANDROID_MAX_API_LEVEL = 36
 const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
+const val OLD_PACKAGER_DIR = "SalesforceMobileSDK-Package-Old"
+
+// Aliases for templates whose repo name doesn't match the convention used
+// by the rest of the templates (e.g. MobileSyncExplorer{Swift,ReactNative}
+// have no "Template" suffix, but MobileSyncExplorerKotlinTemplate does).
+private val TEMPLATE_ALIASES = mapOf(
+    "mobilesyncexplorerkotlin" to "MobileSyncExplorerKotlinTemplate",
+)
+
+private fun resolveTemplateAlias(input: String): String =
+    TEMPLATE_ALIASES[input.lowercase()] ?: input
 
 
 class TestOrchestrator : CliktCommand() {
@@ -108,7 +120,7 @@ class TestOrchestrator : CliktCommand() {
             }
             when {
                 appType != null -> AppSource.ByType(os, type = appType)
-                else -> AppSource.ByTemplate(os, template = input)
+                else -> AppSource.ByTemplate(os, template = resolveTemplateAlias(input))
             }
         }
         .multiple().unique()
@@ -124,12 +136,16 @@ class TestOrchestrator : CliktCommand() {
         .help("iOS Simulator device type.  Uses SimDeviceType identifier format.  (ex: $DEFAULT_IOS_DEVICE)")
     val reRunTest: Boolean by option("-r", "--reRun").flag()
         .help("Run the validation test again without re-generating the app.")
-    val useFirebase: Boolean by option("-f", "--firebase").boolean().default(IS_CI)
-        .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
     val useSF: Boolean by option("--sf", "--sfdx").flag()
         .help("Use SF (formerly SFDX) to generate the app.")
     val preserverGeneratedApps: Boolean by option("-p", "--preserverGeneratedApps").flag()
         .help("Do not cleanup generated apps from previous runs.")
+    val upgradeFrom: String? by option("-u", "--upgrade", "--upgradeFrom")
+        .help("Run an upgrade test. Provide the SDK version/branch/tag to upgrade FROM (e.g. '12.1.0')." +
+                "\u0085The app is generated with this version, logged in, then upgraded to dev and verified.")
+    val useFirebase: Boolean by option("-f", "--firebase").boolean()
+        .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
+        .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
     val verboseOutput: Boolean by option("-v", "--verbose").flag()
         .help("Show all command output. Automatically on for CI.")
 
@@ -155,6 +171,9 @@ class TestOrchestrator : CliktCommand() {
                 if (appSources.find { it.appName.contains("swift") } != null) {
                     throw UsageError("Swift apps can only be built with iOS")
                 }
+                if (upgradeFrom != null && useFirebase) {
+                    throw UsageError("Upgrade testing is not supported with Firebase Test Lab. Use local testing instead.")
+                }
             }
 
             OS.IOS -> {
@@ -162,6 +181,10 @@ class TestOrchestrator : CliktCommand() {
                     throw UsageError("Kotlin apps can only be built with Android")
                 }
             }
+        }
+
+        if (upgradeFrom != null && reRunTest) {
+            throw UsageError("--upgrade cannot be combined with --reRun.")
         }
 
         if (!reRunTest) {
@@ -211,6 +234,17 @@ class TestOrchestrator : CliktCommand() {
                 if (appSource.isComplexHybrid && !reRunTest) {
                     totalSteps++
                 }
+                if (upgradeFrom != null) {
+                    // Upgrade adds: clone old packager (Phase 1), plus Phase 2:
+                    // re-generate, set login URL, set OAuth, compile, sign (Android only),
+                    // install upgrade, run upgrade test, pass
+                    totalSteps += when(os) {
+                        OS.ANDROID -> 8L
+                        OS.IOS -> 6L + effectiveVersions.size
+                    }
+                    if (appSource.isComplexHybrid) totalSteps++
+                    if (appSource.isReact) totalSteps++
+                }
 
                 progressBanner = progressBarContextLayout<ProgressState> {
                     text {
@@ -236,12 +270,28 @@ class TestOrchestrator : CliktCommand() {
                     text("Progress"); progressBar()
 
                     text { if (context.testPassed) "\nCompleted:" else "" }
-                    text { if (context.testPassed) TextColors.green("\nLogin Test Passed!") else "" }
+                    text {
+                        if (context.testPassed) {
+                            TextColors.green(
+                                text = if (upgradeFrom != null) {
+                                    "\nUpgrade Test Passed!"
+                                } else {
+                                    "\nLogin Test Passed!"
+                                }
+                            )
+                        } else ""
+                    }
                     text { if (context.error != null) "\nError:" else "" }
                     text { if (context.error != null) TextColors.red("\n${context.error!!}") else "" }
                 }.animateOnThread(
                     terminal,
-                    context = ProgressState(currentStep = "Generate App"),
+                    context = ProgressState(
+                        currentStep = if (upgradeFrom != null) {
+                            "Clone Packager ($upgradeFrom)"
+                        } else {
+                            "Generate App"
+                        }
+                    ),
                     total = totalSteps,
                     maker = marker,
                 ).also { it.execute() }
@@ -249,7 +299,19 @@ class TestOrchestrator : CliktCommand() {
 
             try {
                 val appInfo = if (!reRunTest) {
-                    generateApp(appSource, useSF)
+                    if (upgradeFrom != null) {
+                        // Upgrade Phase 1: Generate with old SDK version
+                        val oldPackager = setupOldPackager(upgradeFrom!!)
+                        val oldAppInfo = generateApp(
+                            appSource,
+                            useSF,
+                            packagerDir = oldPackager,
+                            packagerVersion = upgradeFrom,
+                        )
+                        relocateApp(oldAppInfo, upgradeFrom!!)
+                    } else {
+                        generateApp(appSource, useSF)
+                    }
                 } else {
                     verbosePrinter?.invoke("Skipping App Generation")
                     getAppInfo(appSource)
@@ -265,12 +327,30 @@ class TestOrchestrator : CliktCommand() {
                     compileApp(appInfo, debug)
                 }
 
-                runTests(appInfo, effectiveVersions, iOSDevice ?: DEFAULT_IOS_DEVICE, useFirebase)
+                // Run login test (installs app, logs in, asserts app loads)
+                runTests(
+                    appInfo,
+                    iOSVersions = effectiveVersions,
+                    iOSDevice ?: DEFAULT_IOS_DEVICE,
+                    useFirebase,
+                    finishProgress = upgradeFrom == null,
+                    upgradeLogin = upgradeFrom != null,
+                )
+
+                // Upgrade Phase 2: Upgrade test
+                if (upgradeFrom != null) {
+                    performUpgrade(appSource, useSF, debug)
+                }
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)
                 progressBanner?.update {
                     context = context.fail(e.message ?: e.toString())
                 }
+                // Give the animation thread time to render the fail frame with
+                // the error text before stopping it, otherwise the banner can
+                // freeze on the in-progress frame and hide the error in
+                // non-verbose mode.
+                Thread.sleep(2_000)
                 progressBanner?.finish()
                 verbosePrinter?.invoke("${appSource.appName} failed: ${e.message ?: e.toString()}", err = true)
             }

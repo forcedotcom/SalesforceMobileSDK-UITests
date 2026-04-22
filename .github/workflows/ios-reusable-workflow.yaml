@@ -3,7 +3,7 @@ on:
     inputs:
       app:
         type: string
-        default: native_swift
+        required: true
       sfdx:
         type: boolean
         default: false
@@ -17,10 +17,14 @@ on:
       is_pr:
         type: boolean
         default: false
+      upgradeFrom:
+        type: string
+        default: ""
+        description: "SDK version/branch/tag to upgrade FROM (leave empty for normal test)"
 
 jobs:
   test-ios:
-    name: ${{ inputs.app }} iOS ${{ inputs.ios }}
+    name: ${{ inputs.app }} iOS ${{ inputs.ios }}${{ inputs.upgradeFrom != '' && format(' Upgrade from {0}', inputs.upgradeFrom) || '' }}
     runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +51,7 @@ jobs:
         run: |
           ./install.sh
           echo $IOS_UI_TEST_CONFIG > ./shared/test/ios/ui_test_config.json
-      - name: Build ${{ inputs.app }} and Test Login (iOS ${{ inputs.ios }})
+      - name: Build ${{ inputs.app }}${{ inputs.upgradeFrom != '' && format(', Login, Upgrade from {0} and Test', inputs.upgradeFrom) || ' and Test Login' }} (iOS ${{ inputs.ios }})
         env:
           GITHUB_RUN_NUM: ${{ github.run_number }}
         run: |
@@ -56,7 +60,12 @@ jobs:
             SFDX="--sf"
           fi
 
-          ./test ios ${{ inputs.app }} --ios "${{ inputs.ios }}" ${SFDX}
+          UPGRADE=""
+          if [ -n "${{ inputs.upgradeFrom }}" ]; then
+            UPGRADE="--upgrade=${{ inputs.upgradeFrom }}"
+          fi
+
+          ./test ios ${{ inputs.app }} --ios "${{ inputs.ios }}" ${SFDX} ${UPGRADE}
       - name: Convert Test Results to JUnit XML
         if: success() || failure()
         run: |
@@ -107,8 +116,8 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: success() || failure()
         with:
-          check_name: ${{ inputs.app }} iOS ${{ inputs.ios }} Test Results
-          job_name: ${{ inputs.app }} iOS ${{ inputs.ios }} Test Results
+          check_name: ${{ inputs.app }} iOS ${{ inputs.ios }}${{ inputs.upgradeFrom != '' && ' Upgrade' || '' }} Test Results
+          job_name: ${{ inputs.app }} iOS ${{ inputs.ios }}${{ inputs.upgradeFrom != '' && ' Upgrade' || '' }} Test Results
           require_tests: true
           check_retries: true
           flaky_summary: true
@@ -123,5 +132,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-${{ inputs.app }}-ios-${{ inputs.ios }}-sfdx-${{ inputs.sfdx }}
+          name: test-results-${{ inputs.app }}-ios-${{ inputs.ios }}${{ inputs.upgradeFrom != '' && format('-upgrade-{0}', inputs.upgradeFrom) || format('-sfdx-{0}', inputs.sfdx) }}
           path: ios_results/**.xml

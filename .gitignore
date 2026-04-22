@@ -74,9 +74,11 @@ sfdx-mobilesdk-plugin-*.tgz
 
 # Temp Directory for Builing Apps
 tmp*/
+v*/
 
 # Packager
 SalesforceMobileSDK-Package/
+SalesforceMobileSDK-Package-Old/
 
 # Test Results
 test_output/
