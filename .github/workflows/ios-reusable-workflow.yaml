@@ -21,6 +21,10 @@ on:
         type: string
         default: ""
         description: "SDK version/branch/tag to upgrade FROM (leave empty for normal test)"
+      sdkVersion:
+        type: string
+        default: ""
+        description: "SDK branch/tag to generate and test (leave empty for dev)"
 
 jobs:
   test-ios:
@@ -65,7 +69,12 @@ jobs:
             UPGRADE="--upgrade=${{ inputs.upgradeFrom }}"
           fi
 
-          ./test ios ${{ inputs.app }} --ios "${{ inputs.ios }}" ${SFDX} ${UPGRADE}
+          SDK_VERSION=""
+          if [ -n "${{ inputs.sdkVersion }}" ]; then
+            SDK_VERSION="--sdkVersion=${{ inputs.sdkVersion }}"
+          fi
+
+          ./test ios ${{ inputs.app }} --ios "${{ inputs.ios }}" ${SFDX} ${UPGRADE} ${SDK_VERSION}
       - name: Convert Test Results to JUnit XML
         if: success() || failure()
         run: |

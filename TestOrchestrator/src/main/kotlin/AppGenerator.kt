@@ -40,6 +40,7 @@ fun generateApp(
     useSF: Boolean,
     packagerDir: String = "SalesforceMobileSDK-Package",
     packagerVersion: String? = null,
+    org: String = FORCE_DOT_COM_ORG,
 ): AppInfo {
     val generationCommand = mutableListOf(
         "./$packagerDir/test/test_force.js",
@@ -65,7 +66,7 @@ fun generateApp(
                 // Old packager for upgrade testing: use the version tag so the
                 // old SDK templates are cloned (e.g. #v13.1.1).
                 verbosePrinter?.invoke("Generating ${appSource.template} Template App ($packagerVersion)")
-                "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}#$packagerVersion"
+                "https://github.com/$org/SalesforceMobileSDK-Templates/${appSource.template}#$packagerVersion"
             } else {
                 verbosePrinter?.invoke("Generating ${appSource.template} Template App")
                 "https://github.com/forcedotcom/SalesforceMobileSDK-Templates/${appSource.template}#\\dev"

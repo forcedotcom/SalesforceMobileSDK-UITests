@@ -75,6 +75,7 @@ const val ANDROID_MAX_API_LEVEL = 36
 const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
 const val OLD_PACKAGER_DIR = "SalesforceMobileSDK-Package-Old"
+const val FORCE_DOT_COM_ORG = "forcedotcom"
 
 // Aliases for templates whose repo name doesn't match the convention used
 // by the rest of the templates (e.g. MobileSyncExplorer{Swift,ReactNative}
@@ -141,8 +142,11 @@ class TestOrchestrator : CliktCommand() {
     val preserverGeneratedApps: Boolean by option("-p", "--preserverGeneratedApps").flag()
         .help("Do not cleanup generated apps from previous runs.")
     val upgradeFrom: String? by option("-u", "--upgrade", "--upgradeFrom")
-        .help("Run an upgrade test. Provide the SDK version/branch/tag to upgrade FROM (e.g. '12.1.0')." +
+        .help("Run an upgrade test. Provide the SDK version (as a branch or tag) to upgrade FROM (e.g. 'v12.1.0')." +
                 "\u0085The app is generated with this version, logged in, then upgraded to dev and verified.")
+    val sdkVersion: String? by option("--sdk", "--sdkVersion")
+        .help("Generate and test the app using a specific SDK branch or tag (e.g. 'master', 'v13.2.0')." +
+                "\u0085You can optionally specify the Github org with a '/' (e.g 'brandonpage/my-feature-branch')")
     val useFirebase: Boolean by option("-f", "--firebase").boolean()
         .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
         .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
@@ -186,6 +190,14 @@ class TestOrchestrator : CliktCommand() {
         if (upgradeFrom != null && reRunTest) {
             throw UsageError("--upgrade cannot be combined with --reRun.")
         }
+
+        if (sdkVersion != null && upgradeFrom != null) {
+            throw UsageError("--sdkVersion cannot be combined with --upgrade.")
+        }
+        if (sdkVersion != null && reRunTest) {
+            throw UsageError("--sdkVersion cannot be combined with --reRun.")
+        }
+
 
         if (!reRunTest) {
             val tmpDirs = File(".").listFiles { files ->
@@ -245,6 +257,10 @@ class TestOrchestrator : CliktCommand() {
                     if (appSource.isComplexHybrid) totalSteps++
                     if (appSource.isReact) totalSteps++
                 }
+                if (sdkVersion != null) {
+                    // sdkVersion adds: clone packager step
+                    totalSteps++
+                }
 
                 progressBanner = progressBarContextLayout<ProgressState> {
                     text {
@@ -286,10 +302,10 @@ class TestOrchestrator : CliktCommand() {
                 }.animateOnThread(
                     terminal,
                     context = ProgressState(
-                        currentStep = if (upgradeFrom != null) {
-                            "Clone Packager ($upgradeFrom)"
-                        } else {
-                            "Generate App"
+                        currentStep = when {
+                            upgradeFrom != null -> "Clone Packager ($upgradeFrom)"
+                            sdkVersion != null -> "Clone Packager ($sdkVersion)"
+                            else -> "Generate App"
                         }
                     ),
                     total = totalSteps,
@@ -309,6 +325,22 @@ class TestOrchestrator : CliktCommand() {
                             packagerVersion = upgradeFrom,
                         )
                         relocateApp(oldAppInfo, upgradeFrom!!)
+                    } else if (sdkVersion != null) {
+                        // Version test: Generate with specific SDK branch/tag
+                        // Support fork syntax: "owner/branch" or plain "branch"
+                        val (sdkOrg, sdkBranch) = if ('/' in sdkVersion!!) {
+                            sdkVersion!!.substringBefore('/') to sdkVersion!!.substringAfter('/')
+                        } else {
+                            FORCE_DOT_COM_ORG to sdkVersion!!
+                        }
+                        val packager = setupOldPackager(sdkBranch, org = sdkOrg)
+                        generateApp(
+                            appSource,
+                            useSF,
+                            packagerDir = packager,
+                            packagerVersion = sdkBranch,
+                            org = sdkOrg,
+                        )
                     } else {
                         generateApp(appSource, useSF)
                     }
