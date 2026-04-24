@@ -35,6 +35,16 @@ import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 
+// Maps AppType.scriptValue to its template path name in SalesforceMobileSDK-Templates.
+// Mirrors appTypesToPath from SalesforceMobileSDK-Package/shared/constants.js.
+private val APP_TYPE_TO_TEMPLATE = mapOf(
+    "native_swift" to "iOSNativeSwiftTemplate",
+    "native_kotlin" to "AndroidNativeKotlinTemplate",
+    "hybrid_local" to "HybridLocalTemplate",
+    "hybrid_remote" to "HybridRemoteTemplate",
+    "react_native" to "ReactNativeTemplate",
+)
+
 fun generateApp(
     appSource: AppSource,
     useSF: Boolean,
@@ -50,9 +60,19 @@ fun generateApp(
 
     when(appSource) {
         is AppSource.ByType -> {
-            verbosePrinter?.invoke("Generating ${appSource.type.scriptValue} App")
             val type = if (appSource.isComplexHybrid) "hybrid_local" else appSource.type.scriptValue
-            generationCommand.add("--appType=$type")
+
+            if (org != FORCE_DOT_COM_ORG) {
+                // Fork: use --templaterepouri pointing at the fork's templates
+                val templatePath = APP_TYPE_TO_TEMPLATE[type]
+                    ?: throw Exception("No template mapping for app type '$type'.")
+                val templateUrl = "https://github.com/$org/SalesforceMobileSDK-Templates/$templatePath#$packagerVersion"
+                verbosePrinter?.invoke("Generating ${appSource.type.scriptValue} App ($org/$packagerVersion)")
+                generationCommand.add("--templaterepouri=$templateUrl")
+            } else {
+                verbosePrinter?.invoke("Generating ${appSource.type.scriptValue} App")
+                generationCommand.add("--appType=$type")
+            }
 
             if (appSource.isHybrid) {
                 generationCommand.add("--no-plugin-update")
@@ -63,8 +83,6 @@ fun generateApp(
                 verbosePrinter?.invoke("Generating Template App")
                 appSource.template
             } else if (packagerVersion != null) {
-                // Old packager for upgrade testing: use the version tag so the
-                // old SDK templates are cloned (e.g. #v13.1.1).
                 verbosePrinter?.invoke("Generating ${appSource.template} Template App ($packagerVersion)")
                 "https://github.com/$org/SalesforceMobileSDK-Templates/${appSource.template}#$packagerVersion"
             } else {
