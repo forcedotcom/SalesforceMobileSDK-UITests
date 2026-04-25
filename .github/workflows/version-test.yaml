@@ -1,0 +1,50 @@
+name: Version Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdkVersion:
+        description: "SDK branch or tag to test (e.g. 'master' or 'v13.2.0')"
+        required: true
+        type: string
+
+jobs:
+  android:
+    name: ${{ matrix.app }} Android
+    strategy:
+      fail-fast: false
+      matrix:
+        app:  [native_kotlin, MobileSyncExplorerKotlin, hybrid_local, hybrid_remote, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+    uses: ./.github/workflows/android-reusable-workflow.yaml
+    with:
+      app: ${{ matrix.app }}
+      sdkVersion: ${{ inputs.sdkVersion }}
+    secrets: inherit
+
+  ios-legacy:
+    name: ${{ matrix.app }} iOS 18
+    strategy:
+      fail-fast: false
+      matrix:
+        app:  [native_swift, MobileSyncExplorerSwift, hybrid_local, hybrid_remote, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+        ios: ["17", "18"]
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
+    with:
+      app: ${{ matrix.app }}
+      ios: ${{ matrix.ios }}
+      runner: macos-15
+      sdkVersion: ${{ inputs.sdkVersion }}
+    secrets: inherit
+
+  ios:
+    name: ${{ matrix.app }} iOS 26
+    strategy:
+      fail-fast: false
+      matrix:
+        app:  [native_swift, MobileSyncExplorerSwift, hybrid_local, hybrid_remote, MobileSyncExplorerReactNative, complex_hybrid_accounteditor, complex_hybrid_mobilesyncexplorer]
+    uses: ./.github/workflows/ios-reusable-workflow.yaml
+    with:
+      app: ${{ matrix.app }}
+      ios: "26"
+      sdkVersion: ${{ inputs.sdkVersion }}
+    secrets: inherit

@@ -7,6 +7,10 @@ on:
       sfdx:
         type: boolean
         default: false
+      sdkVersion:
+        type: string
+        default: ""
+        description: "SDK branch/tag to generate and test (leave empty for dev)"
       is_pr:
         type: boolean
         default: false
@@ -56,10 +60,15 @@ jobs:
           SFDX=""
 
           if ${{ inputs.sfdx }} ; then
-            TYPE="--sf"
+            SFDX="--sf"
           fi
 
-          ./test android ${{ inputs.app }} ${SFDX}
+          SDK_VERSION=""
+          if [ -n "${{ inputs.sdkVersion }}" ]; then
+            SDK_VERSION="--sdkVersion=${{ inputs.sdkVersion }}"
+          fi
+
+          ./test android ${{ inputs.app }} ${SFDX} ${SDK_VERSION}
       - name: Copy Test Results
         continue-on-error: true
         if: success() || failure()

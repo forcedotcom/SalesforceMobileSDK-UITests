@@ -36,7 +36,6 @@ import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.arguments.help
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.arguments.unique
-import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.help
@@ -75,6 +74,7 @@ const val ANDROID_MAX_API_LEVEL = 36
 const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
 const val OLD_PACKAGER_DIR = "SalesforceMobileSDK-Package-Old"
+const val FORCE_DOT_COM_ORG = "forcedotcom"
 
 // Aliases for templates whose repo name doesn't match the convention used
 // by the rest of the templates (e.g. MobileSyncExplorer{Swift,ReactNative}
@@ -82,10 +82,6 @@ const val OLD_PACKAGER_DIR = "SalesforceMobileSDK-Package-Old"
 private val TEMPLATE_ALIASES = mapOf(
     "mobilesyncexplorerkotlin" to "MobileSyncExplorerKotlinTemplate",
 )
-
-private fun resolveTemplateAlias(input: String): String =
-    TEMPLATE_ALIASES[input.lowercase()] ?: input
-
 
 class TestOrchestrator : CliktCommand() {
 
@@ -141,8 +137,14 @@ class TestOrchestrator : CliktCommand() {
     val preserverGeneratedApps: Boolean by option("-p", "--preserverGeneratedApps").flag()
         .help("Do not cleanup generated apps from previous runs.")
     val upgradeFrom: String? by option("-u", "--upgrade", "--upgradeFrom")
-        .help("Run an upgrade test. Provide the SDK version/branch/tag to upgrade FROM (e.g. '12.1.0')." +
+        .help("Run an upgrade test. Provide the SDK version (as a branch or tag) to upgrade FROM (e.g. 'v12.1.0')." +
                 "\u0085The app is generated with this version, logged in, then upgraded to dev and verified.")
+    val sdkVersion: String? by option("--sdk", "--sdkVersion")
+        .help("Generate and test the app using a specific SDK branch or tag (e.g. 'master', 'v13.2.0')." +
+                "\u0085Optionally specify a Packager fork org with '/' (e.g. 'brandonpage/my-feature-branch').")
+    val templateBranch: String? by option("-b", "--templateBranch")
+        .help("Generate the app (to test) using a specific branch.  The dev packager is used. " +
+                "\u0085Optionally specify a fork org with '/' (e.g. 'brandonpage/my-feature-branch').")
     val useFirebase: Boolean by option("-f", "--firebase").boolean()
         .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
         .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
@@ -185,6 +187,13 @@ class TestOrchestrator : CliktCommand() {
 
         if (upgradeFrom != null && reRunTest) {
             throw UsageError("--upgrade cannot be combined with --reRun.")
+        }
+
+        if (sdkVersion != null && upgradeFrom != null) {
+            throw UsageError("--sdkVersion cannot be combined with --upgrade.")
+        }
+        if (sdkVersion != null && reRunTest) {
+            throw UsageError("--sdkVersion cannot be combined with --reRun.")
         }
 
         if (!reRunTest) {
@@ -245,6 +254,10 @@ class TestOrchestrator : CliktCommand() {
                     if (appSource.isComplexHybrid) totalSteps++
                     if (appSource.isReact) totalSteps++
                 }
+                if (sdkVersion != null) {
+                    // sdkVersion adds: clone packager step
+                    totalSteps++
+                }
 
                 progressBanner = progressBarContextLayout<ProgressState> {
                     text {
@@ -286,10 +299,10 @@ class TestOrchestrator : CliktCommand() {
                 }.animateOnThread(
                     terminal,
                     context = ProgressState(
-                        currentStep = if (upgradeFrom != null) {
-                            "Clone Packager ($upgradeFrom)"
-                        } else {
-                            "Generate App"
+                        currentStep = when {
+                            upgradeFrom != null -> "Clone Packager ($upgradeFrom)"
+                            sdkVersion != null -> "Clone Packager ($sdkVersion)"
+                            else -> "Generate App"
                         }
                     ),
                     total = totalSteps,
@@ -299,6 +312,13 @@ class TestOrchestrator : CliktCommand() {
 
             try {
                 val appInfo = if (!reRunTest) {
+                    // Resolve template org/branch if --templateBranch is set
+                    val (templateOrg, templateBranch) = if (templateBranch != null) {
+                        parseOrgAndBranch(templateBranch!!)
+                    } else {
+                        FORCE_DOT_COM_ORG to null
+                    }
+
                     if (upgradeFrom != null) {
                         // Upgrade Phase 1: Generate with old SDK version
                         val oldPackager = setupOldPackager(upgradeFrom!!)
@@ -306,9 +326,29 @@ class TestOrchestrator : CliktCommand() {
                             appSource,
                             useSF,
                             packagerDir = oldPackager,
-                            packagerVersion = upgradeFrom,
+                            packagerVersion = templateBranch ?: upgradeFrom,
+                            org = templateOrg,
                         )
                         relocateApp(oldAppInfo, upgradeFrom!!)
+                    } else if (sdkVersion != null) {
+                        // Version test: Clone packager at specific branch/tag
+                        val (sdkOrg, sdkBranch) = parseOrgAndBranch(sdkVersion!!)
+                        val packager = setupOldPackager(sdkBranch, org = sdkOrg)
+                        generateApp(
+                            appSource,
+                            useSF,
+                            packagerDir = packager,
+                            packagerVersion = templateBranch ?: sdkBranch,
+                            org = templateOrg,
+                        )
+                    } else if (templateBranch != null) {
+                        // Template-only test: Use dev packager
+                        generateApp(
+                            appSource,
+                            useSF,
+                            packagerVersion = templateBranch,
+                            org = templateOrg,
+                        )
                     } else {
                         generateApp(appSource, useSF)
                     }
@@ -360,6 +400,14 @@ class TestOrchestrator : CliktCommand() {
             exitProcess(1)
         }
     }
+
+    private fun resolveTemplateAlias(input: String): String =
+        TEMPLATE_ALIASES[input.lowercase()] ?: input
+
+    /** Splits "owner/branch" into (owner, branch), defaulting to forcedotcom. */
+    private fun parseOrgAndBranch(value: String): Pair<String, String> =
+        if ('/' in value) value.substringBefore('/') to value.substringAfter('/')
+        else FORCE_DOT_COM_ORG to value
 
     companion object {
 

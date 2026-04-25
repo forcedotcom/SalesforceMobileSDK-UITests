@@ -44,7 +44,7 @@ fun performUpgrade(appSource: AppSource, useSF: Boolean, debug: Boolean) {
  * into a separate directory for generating apps from an older SDK version.
  * Returns the directory name.
  */
-fun setupOldPackager(version: String): String {
+fun setupOldPackager(version: String, org: String = FORCE_DOT_COM_ORG): String {
     val dir = File(OLD_PACKAGER_DIR)
     if (dir.exists()) {
         dir.deleteRecursively()
@@ -60,7 +60,7 @@ fun setupOldPackager(version: String): String {
         "git", "clone",
         "--branch", version,
         "--single-branch", "--depth", "1",
-        "https://github.com/forcedotcom/SalesforceMobileSDK-Package.git",
+        "https://github.com/$org/SalesforceMobileSDK-Package.git",
         OLD_PACKAGER_DIR,
     ).runCommand()
     if (cloneResult != 0) {
