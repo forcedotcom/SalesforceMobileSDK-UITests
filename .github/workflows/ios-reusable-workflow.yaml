@@ -25,17 +25,26 @@ on:
         type: string
         default: ""
         description: "SDK branch/tag to generate and test (leave empty for dev)"
+    secrets:
+      IOS_UI_TEST_CONFIG:
+        required: true
+
+permissions:
+  contents: read
 
 jobs:
   test-ios:
     name: ${{ inputs.app }} iOS ${{ inputs.ios }}${{ inputs.upgradeFrom != '' && format(' Upgrade from {0}', inputs.upgradeFrom) || '' }}
     runs-on: ${{ inputs.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         if: ${{ inputs.is_pr }}
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          persist-credentials: false
         if: ${{ ! inputs.is_pr }}
       - name: Free Disk Space
         run: |
@@ -58,23 +67,28 @@ jobs:
       - name: Build ${{ inputs.app }}${{ inputs.upgradeFrom != '' && format(', Login, Upgrade from {0} and Test', inputs.upgradeFrom) || ' and Test Login' }} (iOS ${{ inputs.ios }})
         env:
           GITHUB_RUN_NUM: ${{ github.run_number }}
+          APP: ${{ inputs.app }}
+          IOS: ${{ inputs.ios }}
+          SFDX_INPUT: ${{ inputs.sfdx }}
+          UPGRADE_FROM_INPUT: ${{ inputs.upgradeFrom }}
+          SDK_VERSION_INPUT: ${{ inputs.sdkVersion }}
         run: |
-          SFDX=""
-          if ${{ inputs.sfdx }} ; then
-            SFDX="--sf"
+          SFDX_FLAG=""
+          if [ "$SFDX_INPUT" = "true" ] ; then
+            SFDX_FLAG="--sf"
           fi
 
-          UPGRADE=""
-          if [ -n "${{ inputs.upgradeFrom }}" ]; then
-            UPGRADE="--upgrade=${{ inputs.upgradeFrom }}"
+          UPGRADE_FLAG=""
+          if [ -n "$UPGRADE_FROM_INPUT" ]; then
+            UPGRADE_FLAG="--upgrade=$UPGRADE_FROM_INPUT"
           fi
 
-          SDK_VERSION=""
-          if [ -n "${{ inputs.sdkVersion }}" ]; then
-            SDK_VERSION="--sdkVersion=${{ inputs.sdkVersion }}"
+          SDK_VERSION_FLAG=""
+          if [ -n "$SDK_VERSION_INPUT" ]; then
+            SDK_VERSION_FLAG="--sdkVersion=$SDK_VERSION_INPUT"
           fi
 
-          ./test ios ${{ inputs.app }} --ios "${{ inputs.ios }}" ${SFDX} ${UPGRADE} ${SDK_VERSION}
+          ./test ios "$APP" --ios "$IOS" $SFDX_FLAG $UPGRADE_FLAG $SDK_VERSION_FLAG
       - name: Convert Test Results to JUnit XML
         if: success() || failure()
         run: |
@@ -122,7 +136,7 @@ jobs:
           PYEOF
           done >> $GITHUB_STEP_SUMMARY
       - name: Test Report
-        uses: mikepenz/action-junit-report@v6
+        uses: mikepenz/action-junit-report@3a81627bfac62268172037048872e8ebd4207e6d  # v6.4.1
         if: success() || failure()
         with:
           check_name: ${{ inputs.app }} iOS ${{ inputs.ios }}${{ inputs.upgradeFrom != '' && ' Upgrade' || '' }} Test Results
@@ -138,7 +152,7 @@ jobs:
           simplified_summary: true
           report_paths: 'ios_results/**.xml'
       - name: Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         if: success() || failure()
         with:
           name: test-results-${{ inputs.app }}-ios-${{ inputs.ios }}${{ inputs.upgradeFrom != '' && format('-upgrade-{0}', inputs.upgradeFrom) || format('-sfdx-{0}', inputs.sfdx) }}

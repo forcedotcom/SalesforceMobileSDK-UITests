@@ -8,8 +8,13 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   android:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} Android
     strategy:
       fail-fast: false
@@ -19,9 +24,13 @@ jobs:
     with:
       app: ${{ matrix.app }}
       sdkVersion: ${{ inputs.sdkVersion }}
-    secrets: inherit
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   ios-legacy:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 18
     strategy:
       fail-fast: false
@@ -34,9 +43,12 @@ jobs:
       ios: ${{ matrix.ios }}
       runner: macos-15
       sdkVersion: ${{ inputs.sdkVersion }}
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 26
     strategy:
       fail-fast: false
@@ -47,4 +59,5 @@ jobs:
       app: ${{ matrix.app }}
       ios: "26"
       sdkVersion: ${{ inputs.sdkVersion }}
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}

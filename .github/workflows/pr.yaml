@@ -1,34 +1,45 @@
 name: Pull Request
 
 on:
-  # Dangerous without Member Check setup!
-  pull_request_target:
+  # pull_request_target required for fork PRs to receive secrets.
+  # Mitigated by permission-check job's Member Check pattern.
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
     branches: [master]
+
+permissions:
+  contents: read
 
 jobs:
   permission-check:
     runs-on: ubuntu-latest
     steps:
       - name: Check Write Permission
-        uses: octokit/request-action@v2.x
+        uses: octokit/request-action@dad4362715b7fb2ddedf9772c8670824af564f0d  # v2.4.0
         id: check_permissions
         with:
           route: GET /repos/${{ github.repository }}/collaborators/${{ github.triggering_actor }}/permission
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Debug Permission Response
+        env:
+          PERMISSION_DATA: ${{ steps.check_permissions.outputs.data }}
         run: |
-          echo "Permission raw response: ${{ steps.check_permissions.outputs.data }}"
+          echo "Permission raw response: $PERMISSION_DATA"
       - name: Validate Write Permission
+        env:
+          PERMISSION_DATA: ${{ steps.check_permissions.outputs.data }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
         run: |
-          permission=$(echo "${{ fromJson(steps.check_permissions.outputs.data).permission }}")
-          echo "User ${{ github.triggering_actor }} has permission: $permission"
+          permission=$(echo "$PERMISSION_DATA" | jq -r '.permission // empty')
+          echo "User $TRIGGERING_ACTOR has permission: $permission"
           if [[ "$permission" != "write" && "$permission" != "admin" ]]; then
-            echo "User ${{ github.triggering_actor }} does not have sufficient permission (write or admin) to proceed. Someone from the team needs to rerun this workflow AFTER it has been deemed safe."
+            echo "User $TRIGGERING_ACTOR does not have sufficient permission (write or admin) to proceed. Someone from the team needs to rerun this workflow AFTER it has been deemed safe."
             exit 1
           fi
 
   ios-pr:
+    permissions:
+      contents: read
     needs: [permission-check]
     strategy:
       fail-fast: false
@@ -38,9 +49,12 @@ jobs:
     with:
       app: ${{ matrix.app }}
       is_pr: true
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   android-pr:
+    permissions:
+      contents: read
     needs: [permission-check]
     strategy:
       fail-fast: false
@@ -50,4 +64,6 @@ jobs:
     with:
       app: ${{ matrix.app }}
       is_pr: true
-    secrets: inherit
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}

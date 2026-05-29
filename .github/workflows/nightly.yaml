@@ -1,13 +1,18 @@
 name: Build and Test All Apps
 
-on: 
+on:
   schedule:
     - cron: "0 6 * * 0"  # cron is UTC, this translates to 10 PM PST Saturday.
   # This lets us trigger the workflow from a browser.
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   android-base:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} Android
     strategy:
       fail-fast: false
@@ -16,9 +21,13 @@ jobs:
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
-    secrets: inherit
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   android-sfdx:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} Android sfdx
     strategy:
       fail-fast: false
@@ -28,9 +37,13 @@ jobs:
     with:
       app: ${{ matrix.app }}
       sfdx: true
-    secrets: inherit
-    
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
   ios-base-legacy:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 18
     strategy:
       fail-fast: false
@@ -41,9 +54,12 @@ jobs:
       app: ${{ matrix.app }}
       ios: "18"
       runner: macos-15
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios-base:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 26
     strategy:
       fail-fast: false
@@ -53,9 +69,12 @@ jobs:
     with:
       app: ${{ matrix.app }}
       ios: "26"
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios-sfdx:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS sfdx
     strategy:
       fail-fast: false
@@ -65,9 +84,12 @@ jobs:
     with:
       app: ${{ matrix.app }}
       sfdx: true
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   android-upgrade:
+    permissions:
+      contents: read
     # Run upgrade tests after so standard login's don't revoke upgrade refresh
     # tokens mid-execution by hitting the user session limit.
     needs: [android-base, android-sfdx]
@@ -87,9 +109,12 @@ jobs:
     with:
       app: ${{ matrix.app }}
       upgradeFrom: ${{ matrix.upgradeFrom }}
-    secrets: inherit
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
 
   ios-upgrade:
+    permissions:
+      contents: read
     # If macos runner concurrency limit increases run these after standard login like Android.
     name: ${{ matrix.app }} iOS Upgrade from ${{ matrix.upgradeFrom }}
     strategy:
@@ -104,4 +129,5 @@ jobs:
     with:
       app: ${{ matrix.app }}
       upgradeFrom: ${{ matrix.upgradeFrom }}
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
