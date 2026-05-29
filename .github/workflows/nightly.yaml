@@ -1,10 +1,13 @@
 name: Build and Test All Apps
 
-on: 
+on:
   schedule:
     - cron: "0 6 * * 0"  # cron is UTC, this translates to 10 PM PST Saturday.
   # This lets us trigger the workflow from a browser.
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   android-base:
@@ -16,7 +19,9 @@ jobs:
     uses: ./.github/workflows/android-reusable-workflow.yaml
     with:
       app: ${{ matrix.app }}
-    secrets: inherit
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   android-sfdx:
     name: ${{ matrix.app }} Android sfdx
@@ -28,8 +33,10 @@ jobs:
     with:
       app: ${{ matrix.app }}
       sfdx: true
-    secrets: inherit
-    
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
   ios-base-legacy:
     name: ${{ matrix.app }} iOS 18
     strategy:
@@ -41,7 +48,8 @@ jobs:
       app: ${{ matrix.app }}
       ios: "18"
       runner: macos-15
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios-base:
     name: ${{ matrix.app }} iOS 26
@@ -53,7 +61,8 @@ jobs:
     with:
       app: ${{ matrix.app }}
       ios: "26"
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios-sfdx:
     name: ${{ matrix.app }} iOS sfdx
@@ -65,7 +74,8 @@ jobs:
     with:
       app: ${{ matrix.app }}
       sfdx: true
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   android-upgrade:
     # Run upgrade tests after so standard login's don't revoke upgrade refresh
@@ -87,7 +97,8 @@ jobs:
     with:
       app: ${{ matrix.app }}
       upgradeFrom: ${{ matrix.upgradeFrom }}
-    secrets: inherit
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
 
   ios-upgrade:
     # If macos runner concurrency limit increases run these after standard login like Android.
@@ -104,4 +115,5 @@ jobs:
     with:
       app: ${{ matrix.app }}
       upgradeFrom: ${{ matrix.upgradeFrom }}
-    secrets: inherit
+    secrets:
+      IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
