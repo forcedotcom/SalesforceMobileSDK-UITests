@@ -38,6 +38,8 @@ jobs:
           fi
 
   ios-pr:
+    permissions:
+      contents: read
     needs: [permission-check]
     strategy:
       fail-fast: false
@@ -51,6 +53,8 @@ jobs:
       IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   android-pr:
+    permissions:
+      contents: read
     needs: [permission-check]
     strategy:
       fail-fast: false

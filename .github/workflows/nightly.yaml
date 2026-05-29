@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   android-base:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} Android
     strategy:
       fail-fast: false
@@ -24,6 +26,8 @@ jobs:
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   android-sfdx:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} Android sfdx
     strategy:
       fail-fast: false
@@ -38,6 +42,8 @@ jobs:
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   ios-base-legacy:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 18
     strategy:
       fail-fast: false
@@ -52,6 +58,8 @@ jobs:
       IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios-base:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 26
     strategy:
       fail-fast: false
@@ -65,6 +73,8 @@ jobs:
       IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios-sfdx:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS sfdx
     strategy:
       fail-fast: false
@@ -78,6 +88,8 @@ jobs:
       IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   android-upgrade:
+    permissions:
+      contents: read
     # Run upgrade tests after so standard login's don't revoke upgrade refresh
     # tokens mid-execution by hitting the user session limit.
     needs: [android-base, android-sfdx]
@@ -101,6 +113,8 @@ jobs:
       ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
 
   ios-upgrade:
+    permissions:
+      contents: read
     # If macos runner concurrency limit increases run these after standard login like Android.
     name: ${{ matrix.app }} iOS Upgrade from ${{ matrix.upgradeFrom }}
     strategy:

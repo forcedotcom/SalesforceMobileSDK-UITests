@@ -13,6 +13,8 @@ permissions:
 
 jobs:
   android:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} Android
     strategy:
       fail-fast: false
@@ -27,6 +29,8 @@ jobs:
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
   ios-legacy:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 18
     strategy:
       fail-fast: false
@@ -43,6 +47,8 @@ jobs:
       IOS_UI_TEST_CONFIG: ${{ secrets.IOS_UI_TEST_CONFIG }}
 
   ios:
+    permissions:
+      contents: read
     name: ${{ matrix.app }} iOS 26
     strategy:
       fail-fast: false
