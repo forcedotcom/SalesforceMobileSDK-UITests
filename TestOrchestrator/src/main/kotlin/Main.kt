@@ -69,7 +69,7 @@ import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 import kotlin.system.exitProcess
 
-const val ANDROID_MIN_API_LEVEL = 28
+const val ANDROID_MIN_API_LEVEL = 31
 const val ANDROID_MAX_API_LEVEL = 36
 const val DEFAULT_IOS_VERSION = "26"
 const val DEFAULT_IOS_DEVICE = "iPhone-SE-3rd-generation"
