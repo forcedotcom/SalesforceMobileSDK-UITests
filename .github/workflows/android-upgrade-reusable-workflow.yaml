@@ -22,7 +22,7 @@ permissions:
 jobs:
   test-android-upgrade:
     name: ${{ inputs.app }} API ${{ inputs.api-level }} Upgrade from ${{ inputs.upgradeFrom }}
-    runs-on: ubuntu-latest
+    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
