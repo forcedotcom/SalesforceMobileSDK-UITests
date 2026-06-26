@@ -26,7 +26,7 @@ permissions:
 jobs:
   test-android:
     name: ${{ inputs.app }}
-    runs-on: ubuntu-latest
+    runs-on: forcedotcom-ubuntu  # forks: use ubuntu-latest (org-scoped runner)
     env:
       GCLOUD_RESULTS_DIR: "UITest-${{ inputs.app }}-sfdx-${{ inputs.sfdx }}-build-${{ github.run_number }}"
     steps:
