@@ -18,7 +18,12 @@ import kotlin.collections.iterator
  * re-compile it, install it over the old version, and run the upgrade test
  * which asserts the user is still logged in.
  */
-fun performUpgrade(appSource: AppSource, useSF: Boolean, debug: Boolean) {
+fun performUpgrade(
+    appSource: AppSource,
+    useSF: Boolean,
+    debug: Boolean,
+    appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
+) {
     // Stop any lingering Gradle daemons from Phase 1 to reclaim memory
     // before Phase 2 compilation starts alongside the running emulator.
     if (appSource.os == OS.ANDROID) {
@@ -32,7 +37,7 @@ fun performUpgrade(appSource: AppSource, useSF: Boolean, debug: Boolean) {
     }
     verbosePrinter?.invoke("Re-generating app with dev SDK")
 
-    val newAppInfo = generateApp(appSource, useSF)
+    val newAppInfo = generateApp(appSource, useSF, appConfig = appConfig)
     compileApp(newAppInfo, debug)
 
     val simulators = if (appSource.os == OS.IOS) getRunningTestSimulators() else emptyList()

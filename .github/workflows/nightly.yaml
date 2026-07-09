@@ -41,6 +41,26 @@ jobs:
       ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
       GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
+  android-hostless-redirect:
+    permissions:
+      contents: read
+    # Exercises the genuinely-hostless callback (ecaadvancedopaque:///success/done ->
+    # android:host="") so the generated redirect <intent-filter> is verified to DELIVER
+    # the browser round-trip for the empty-authority shape (W-23294087). Covers the three
+    # distinct manifest-generation paths: native, hybrid injection, and React Native.
+    name: ${{ matrix.app }} Android hostless redirect
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [native_kotlin, hybrid_local, MobileSyncExplorerReactNative]
+    uses: ./.github/workflows/android-reusable-workflow.yaml
+    with:
+      app: ${{ matrix.app }}
+      appConfig: eca_opaque_hostless
+    secrets:
+      ANDROID_UI_TEST_CONFIG: ${{ secrets.ANDROID_UI_TEST_CONFIG }}
+      GCLOUD_SERVICE_KEY: ${{ secrets.GCLOUD_SERVICE_KEY }}
+
   ios-base-legacy:
     permissions:
       contents: read

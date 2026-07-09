@@ -52,6 +52,10 @@ enum class KnownLoginHostConfig {
 
 enum class KnownAppConfig {
     ECA_OPAQUE,
+    // Genuinely-hostless callback (scheme:///path -> android:host=""). Exercises the
+    // empty-authority redirect intent-filter delivery path (W-23294087). Reuses the
+    // ECA opaque consumer key; only the redirect URI differs (triple-slash form).
+    ECA_OPAQUE_HOSTLESS,
     ECA_JWT,
     BEACON_OPAQUE,
     BEACON_JWT,

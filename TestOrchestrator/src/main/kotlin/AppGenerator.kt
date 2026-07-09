@@ -51,6 +51,7 @@ fun generateApp(
     packagerDir: String = "SalesforceMobileSDK-Package",
     packagerVersion: String? = null,
     org: String = FORCE_DOT_COM_ORG,
+    appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
 ): AppInfo {
     val generationCommand = mutableListOf(
         "./$packagerDir/test/test_force.js",
@@ -106,9 +107,9 @@ fun generateApp(
     // "ui_test_config.json file not found." if the config is missing at
     // generation time (previously it was only read later, at compile time).
     val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
-    val appConfig = testConfig.getApp(KnownAppConfig.ECA_OPAQUE)
-    generationCommand.add("--consumerkey=${appConfig.consumerKey}")
-    generationCommand.add("--callbackurl=${appConfig.redirectUri}")
+    val resolvedAppConfig = testConfig.getApp(appConfig)
+    generationCommand.add("--consumerkey=${resolvedAppConfig.consumerKey}")
+    generationCommand.add("--callbackurl=${resolvedAppConfig.redirectUri}")
     generationCommand.add("--loginserver=${testConfig.loginHosts.first().url}")
 
     if (generationCommand.runCommand() != 0) {
