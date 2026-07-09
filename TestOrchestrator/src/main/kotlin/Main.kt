@@ -230,9 +230,9 @@ class TestOrchestrator : CliktCommand() {
                     OS.ANDROID -> "Testing ${appSource.appName}"
                 }
                 var totalSteps: Long = when(os) {
-                    OS.ANDROID -> if (reRunTest) 3 else 7
+                    OS.ANDROID -> if (reRunTest) 3 else 5
                     OS.IOS -> {
-                        val base = if (reRunTest) 2 else 5
+                        val base = if (reRunTest) 2 else 3
                         // Add steps per iOS version being tested
                         base + (3L * effectiveVersions.size)
                     }
@@ -245,11 +245,12 @@ class TestOrchestrator : CliktCommand() {
                 }
                 if (upgradeFrom != null) {
                     // Upgrade adds: clone old packager (Phase 1), plus Phase 2:
-                    // re-generate, set login URL, set OAuth, compile, sign (Android only),
+                    // re-generate, compile, sign (Android only),
                     // install upgrade, run upgrade test, pass
+                    // (OAuth/login config is now applied at generation time, not compile time.)
                     totalSteps += when(os) {
-                        OS.ANDROID -> 8L
-                        OS.IOS -> 6L + effectiveVersions.size
+                        OS.ANDROID -> 6L
+                        OS.IOS -> 4L + effectiveVersions.size
                     }
                     if (appSource.isComplexHybrid) totalSteps++
                     if (appSource.isReact) totalSteps++

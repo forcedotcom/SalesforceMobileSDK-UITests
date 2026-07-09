@@ -35,46 +35,14 @@ import java.io.File
 fun compileApp(
     appInfo: AppInfo,
     debug: Boolean = false,
-    knownAppConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
 ) {
-    val testConfig = if (appInfo.os == OS.ANDROID) androidTestConfig else iosTestConfig
-    val loginUrl = testConfig.loginHosts.first().url
-    val appConfig = testConfig.getApp(knownAppConfig)
     val configuration = if (debug) "Debug" else "Release"
 
-    setLoginUrl(appInfo, loginUrl)
-
-    progressBanner?.update {
-        context = context.advance("Set OAuth Config")
-        completed += 1
-    }
-    verbosePrinter?.invoke("Setting OAuth Config")
+    // OAuth config (consumer key, redirect URI, login server) is now injected at
+    // generation time via test_force.js --consumerkey/--callbackurl/--loginserver
+    // (see AppGenerator.generateApp), so there is nothing to patch here anymore.
 
     with(appInfo) {
-        when {
-            isHybrid && os == OS.ANDROID -> {
-                val bootConfig = File(androidRoot, "app/src/main/assets/www/bootconfig.json")
-                updateJsonBootConfig(bootConfig, appConfig)
-            }
-
-            isHybrid && os == OS.IOS -> {
-                val bootConfig = File(iosRoot, "www/bootconfig.json")
-                updateJsonBootConfig(bootConfig, appConfig)
-            }
-
-            os == OS.ANDROID -> {
-                val bootConfig = File(androidRoot, "app/src/main/res/values/bootconfig.xml")
-                updateXmlBootConfig(bootConfig, appConfig)
-            }
-
-            else -> {
-                val resourcesBootConfig = File(iosRoot, "$appName/Resources/bootconfig.plist")
-                val bootConfig = if (resourcesBootConfig.exists()) resourcesBootConfig
-                                 else File(iosRoot, "$appName/bootconfig.plist")
-                updatePlistBootConfig(bootConfig, appConfig)
-            }
-        }
-
         progressBanner?.update {
             context = context.advance("Compile App")
             completed += 1
@@ -109,10 +77,10 @@ fun compileApp(
                 }
             }
             OS.IOS -> {
-                val workspaceOrProject = if (File(iosRoot, "$appName.xcworkspace").exists()) {
-                    listOf("-workspace", "$appName.xcworkspace")
+                val workspaceOrProject = if (File(iosRoot, "$iosXcodeName.xcworkspace").exists()) {
+                    listOf("-workspace", "$iosXcodeName.xcworkspace")
                 } else {
-                    listOf("-project", "$appName.xcodeproj")
+                    listOf("-project", "$iosXcodeName.xcodeproj")
                 }
                 // Older RN templates bundle the fmt library (via Flipper)
                 // which fails to compile with newer Xcode/Clang due to
@@ -120,7 +88,7 @@ fun compileApp(
                 if (isReact) patchFmtConsteval(iosRoot)
 
                 val buildResult = (listOf("xcodebuild", "build") + workspaceOrProject + listOf(
-                    "-scheme", appName,
+                    "-scheme", iosXcodeName,
                     "-sdk", "iphonesimulator",
                     "-destination", "generic/platform=iOS Simulator",
                     "-configuration", configuration,
@@ -136,91 +104,6 @@ fun compileApp(
             }
         }
     }
-}
-
-private fun setLoginUrl(appInfo: AppInfo, loginUrl: String) {
-    progressBanner?.update {
-        context = context.advance("Set Login URL")
-        completed += 1
-    }
-    verbosePrinter?.invoke("Setting Login URL")
-
-    when (appInfo.os) {
-        OS.ANDROID -> {
-            val serversFile = File(appInfo.androidRoot, "app/src/main/res/xml/servers.xml")
-            serversFile.parentFile.mkdirs()
-            serversFile.writeText(
-                """<?xml version="1.0" encoding="utf-8"?>
-                |<servers>
-                |    <server name="Default" url="$loginUrl" />
-                |</servers>
-                |""".trimMargin()
-            )
-        }
-        OS.IOS -> {
-            val plistName = if (appInfo.isHybrid) "${appInfo.appName}-Info.plist" else "Info.plist"
-            val plistPath = File(appInfo.iosRoot, "${appInfo.appName}/$plistName")
-            val loginHost = loginUrl.removePrefix("https://").removePrefix("http://")
-            val content = plistPath.readText()
-            val key = "<key>SFDCOAuthLoginHost</key>"
-
-            if (content.contains(key)) {
-                plistPath.writeText(
-                    content.replace(
-                        Regex("""(<key>SFDCOAuthLoginHost</key>\s*<string>)[^<]*(</string>)"""),
-                        "$1$loginHost$2"
-                    )
-                )
-            } else {
-                // Insert before closing </dict>
-                plistPath.writeText(
-                    content.replace(
-                        "</dict>",
-                        "\t<key>SFDCOAuthLoginHost</key>\n\t<string>$loginHost</string>\n</dict>"
-                    )
-                )
-            }
-        }
-    }
-}
-
-private fun updateXmlBootConfig(file: File, appConfig: AppConfig) {
-    var content = file.readText()
-    content = content.replace(
-        Regex("""(<string name="remoteAccessConsumerKey">)[^<]*(</string>)"""),
-        "$1${appConfig.consumerKey}$2"
-    )
-    content = content.replace(
-        Regex("""(<string name="oauthRedirectURI">)[^<]*(</string>)"""),
-        "$1${appConfig.redirectUri}$2"
-    )
-    file.writeText(content)
-}
-
-private fun updatePlistBootConfig(file: File, appConfig: AppConfig) {
-    var content = file.readText()
-    content = content.replace(
-        Regex("""(<key>remoteAccessConsumerKey</key>\s*<string>)[^<]*(</string>)"""),
-        "$1${appConfig.consumerKey}$2"
-    )
-    content = content.replace(
-        Regex("""(<key>oauthRedirectURI</key>\s*<string>)[^<]*(</string>)"""),
-        "$1${appConfig.redirectUri}$2"
-    )
-    file.writeText(content)
-}
-
-private fun updateJsonBootConfig(file: File, appConfig: AppConfig) {
-    var content = file.readText()
-    content = content.replace(
-        Regex(""""remoteAccessConsumerKey"\s*:\s*"[^"]*""""),
-        """"remoteAccessConsumerKey": "${appConfig.consumerKey}""""
-    )
-    content = content.replace(
-        Regex(""""oauthRedirectURI"\s*:\s*"[^"]*""""),
-        """"oauthRedirectURI": "${appConfig.redirectUri}""""
-    )
-    file.writeText(content)
 }
 
 private fun signReleaseApk(apkPath: String) {

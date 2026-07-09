@@ -225,6 +225,10 @@ fun installIosApp(appInfo: AppInfo, sim: SimulatorInfo) {
     val configuration = if (appInfo.debugBuild) "Debug" else "Release"
 
     verbosePrinter?.invoke("Installing App on iOS ${sim.iOSVersion}")
+    // The built `.app` product carries the Xcode PRODUCT_NAME. For Cordova (hybrid) this comes from
+    // config.xml's <name> (the app name), so the product is `$appName.app` even though the Cordova
+    // project/scheme are named `App`. Native/React Native also use `$appName`. So install by
+    // `$appName` in all cases; the app is launched by its bundle id (appInfo.packageName).
     val simInstallResult = "xcrun simctl install ${sim.simId} $buildPath/Products/$configuration-iphonesimulator/${appInfo.appName}.app".runCommand()
     if (simInstallResult != 0) {
         throw Exception("Failed to install ${appInfo.appName} on iOS ${sim.iOSVersion} simulator (exit $simInstallResult).")

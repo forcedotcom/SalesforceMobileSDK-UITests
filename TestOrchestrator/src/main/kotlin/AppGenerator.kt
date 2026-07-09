@@ -98,6 +98,19 @@ fun generateApp(
         generationCommand.add("--use-sfdx")
     }
 
+    // Inject OAuth config at generation time so the template (and the packager's
+    // callback-URL parser) writes real consumer key / redirect URI / login server
+    // into bootconfig, servers.xml, Info.plist and the Android redirect
+    // <intent-filter>. Note: the platform UITestConfig is read from
+    // ui_test_config.json lazily, so this line can throw
+    // "ui_test_config.json file not found." if the config is missing at
+    // generation time (previously it was only read later, at compile time).
+    val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
+    val appConfig = testConfig.getApp(KnownAppConfig.ECA_OPAQUE)
+    generationCommand.add("--consumerkey=${appConfig.consumerKey}")
+    generationCommand.add("--callbackurl=${appConfig.redirectUri}")
+    generationCommand.add("--loginserver=${testConfig.loginHosts.first().url}")
+
     if (generationCommand.runCommand() != 0) {
         throw Exception("Unable to generate app.")
     }

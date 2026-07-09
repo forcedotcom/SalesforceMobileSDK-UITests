@@ -46,6 +46,12 @@ data class AppInfo(
         isReact -> "$appPath/ios"
         else -> appPath
     }
+    // Name of the Xcode project/workspace, scheme, and built `.app` product. Native and React Native
+    // templates name these after the app (`$appName`). Cordova (hybrid) always emits `App`
+    // (App.xcworkspace, scheme `App`, App.app) regardless of the app name, so the compile and install
+    // steps must target `App` there. The bundle id (`packageName`) is unaffected — Cordova sets it
+    // from config.xml to `com.salesforce.$appName`, matching how the app is installed/launched.
+    val iosXcodeName = if (isHybrid) "App" else appName
     val apkPath = "$androidRoot/app/build/outputs/apk/${
         if (debugBuild) {
             "debug/app-debug.apk"

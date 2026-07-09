@@ -39,6 +39,16 @@ class UpgradeTest: BaseSDKTest {
     /// asserts the login screen is no longer visible.  Intentionally
     /// skips assertAppLoads so we don't need to maintain assertions
     /// for older template UIs.
+    ///
+    /// This phase runs against the *pre-upgrade* (pre-14.0) app the orchestrator installs, where
+    /// advanced authentication is not forced on, so interactive login still happens in the legacy
+    /// in-app WebView with an on-page "Log In" button. `LoginPageObject` has since been re-pointed
+    /// at the external browser (ASWebAuthenticationSession) that 14.0 uses by default, so its
+    /// `tapLogin()` submits by pressing return rather than tapping the WebView button. To avoid
+    /// breaking this phase, the legacy WebView login is driven inline here instead.
+    // TODO: Once the pre-upgrade version under test also forces advanced authentication (i.e. the
+    // from-version is 14.0+), replace this inline legacy WebView flow with `loginPage.tapLogin()`
+    // (keyboard-return submit) to match the other login page objects.
     func testInitialLogin() {
         let app = TestApplication()
         let loginPage = LoginPageObject(testApp: app)
@@ -46,14 +56,29 @@ class UpgradeTest: BaseSDKTest {
         app.launch()
 
         loginPage.setUsername(name: username)
-        loginPage.tapLogin()
+        tapLegacyWebViewLoginButton(app: app)
         loginPage.setPassword(password: password)
-        loginPage.tapLogin()
+        tapLegacyWebViewLoginButton(app: app)
         authPage.tapAllowIfPresent()
 
-        // Assert login screen is no longer showing
-        let loginField = app.webViews.textFields["Username"]
-        XCTAssertFalse(loginField.waitForExistence(timeout: 5), "Login screen is still showing after login.")
+        // Assert login is complete — the login surface is no longer showing. Match on the login
+        // username field regardless of the surface it is hosted in (the legacy in-app WebView on the
+        // pre-upgrade app, or the external browser used from 14.0 on), so this marker survives a
+        // future move of the from-version onto the browser flow.
+        let webViewLoginField = app.webViews.textFields["Username"]
+        let browserLoginField = app.webViews.webViews.webViews.textFields.firstMatch
+        XCTAssertFalse(webViewLoginField.waitForExistence(timeout: 5), "Login screen is still showing after login.")
+        XCTAssertFalse(browserLoginField.exists, "Login screen is still showing after login.")
+    }
+
+    /// Taps the on-page "Log In" button of the legacy in-app WebView login form. Used only by the
+    /// pre-upgrade (pre-14.0) app in phase 1, which authenticates in the in-app WebView rather than
+    /// the external browser. Mirrors the button-tap `LoginPageObject.tapLogin()` performed before it
+    /// was re-pointed at the browser's keyboard-return submit.
+    private func tapLegacyWebViewLoginButton(app: TestApplication) {
+        let loginButton = app.webViews.buttons["Log In"].firstMatch
+        _ = loginButton.waitForExistence(timeout: timeout)
+        loginButton.tap()
     }
 
     /// Launches the upgraded app and asserts that the main content loads
