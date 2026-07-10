@@ -38,10 +38,6 @@ fun compileApp(
 ) {
     val configuration = if (debug) "Debug" else "Release"
 
-    // OAuth config (consumer key, redirect URI, login server) is now injected at
-    // generation time via test_force.js --consumerkey/--callbackurl/--loginserver
-    // (see AppGenerator.generateApp), so there is nothing to patch here anymore.
-
     with(appInfo) {
         progressBanner?.update {
             context = context.advance("Compile App")
