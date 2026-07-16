@@ -41,6 +41,10 @@ class LoginTest: BaseSDKTest {
         let authPage = AuthorizationPageObject(testApp: app)
         app.launch()
 
+        // Trigger pending system-alert interruption handlers. In CI, the
+        // ASWebAuthenticationSession consent sheet can otherwise block login.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+
         loginPage.setUsername(name: username)
         loginPage.tapLogin()
         loginPage.setPassword(password: password)
