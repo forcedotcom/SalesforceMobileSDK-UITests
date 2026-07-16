@@ -68,12 +68,18 @@ val iosTestConfig: UITestConfig by lazy { loadConfig("ios") }
 
 private fun loadConfig(platformPath: String): UITestConfig {
     val configFileName = "ui_test_config.json"
-    val jsonString = listOf(
+    val searchPaths = listOf(
         "shared/test/$platformPath/$configFileName",
         "/data/local/tmp/$configFileName",
-    ).firstNotNullOfOrNull { path ->
+    )
+    val jsonString = searchPaths.firstNotNullOfOrNull { path ->
         File(path).takeIf { it.exists() }?.readText()
-    } ?: throw Exception("$configFileName file not found.")
+    } ?: throw Exception(
+        "$configFileName not found in any of: ${searchPaths.joinToString()}. " +
+            "Copy shared/test/$platformPath/$configFileName.sample to " +
+            "shared/test/$platformPath/$configFileName and fill in your OAuth app config " +
+            "(consumer key + redirect URI) before running the tests."
+    )
 
     return Json.decodeFromString(jsonString)
 }

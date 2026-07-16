@@ -139,10 +139,10 @@ class LoginPageObject {
         let topBar = app.otherElements["TopBrowserBar"]
         var closeButton = topBar.buttons["Close"]
         if !closeButton.waitForExistence(timeout: timeout) {
-            // Earlier iOS versions use "Cancel"
+            // Earlier iOS versions use "Cancel"; only that fallback needs its own wait.
             closeButton = topBar.buttons["Cancel"]
+            _ = closeButton.waitForExistence(timeout: timeout)
         }
-        _ = closeButton.waitForExistence(timeout: timeout)
         closeButton.tap()
     }
     

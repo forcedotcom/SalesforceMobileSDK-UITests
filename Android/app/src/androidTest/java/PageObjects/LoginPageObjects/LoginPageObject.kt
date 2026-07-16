@@ -125,6 +125,7 @@ class LoginPageObject : BasePageObject() {
                 device.waitForIdle(QUICK_CHECK_TIMEOUT)
             }
         }
+        throw AssertionError("Chrome Custom Tab never appeared after ${FRE_DISMISS_TIMEOUT}ms.")
     }
 
     /**

@@ -103,9 +103,10 @@ fun generateApp(
     // callback-URL parser) writes real consumer key / redirect URI / login server
     // into bootconfig, servers.xml, Info.plist and the Android redirect
     // <intent-filter>. Note: the platform UITestConfig is read from
-    // ui_test_config.json lazily, so this line can throw
-    // "ui_test_config.json file not found." if the config is missing at
-    // generation time (previously it was only read later, at compile time).
+    // ui_test_config.json lazily, so this line can throw a "config not found"
+    // error (naming the searched paths and the .sample to copy) if the config
+    // is missing at generation time (previously it was only read later, at
+    // compile time).
     val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
     val resolvedAppConfig = testConfig.getApp(appConfig)
     generationCommand.add("--consumerkey=${resolvedAppConfig.consumerKey}")

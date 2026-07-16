@@ -68,7 +68,7 @@ class UpgradeTest: BaseSDKTest {
         let webViewLoginField = app.webViews.textFields["Username"]
         let browserLoginField = app.webViews.webViews.webViews.textFields.firstMatch
         XCTAssertFalse(webViewLoginField.waitForExistence(timeout: 5), "Login screen is still showing after login.")
-        XCTAssertFalse(browserLoginField.exists, "Login screen is still showing after login.")
+        XCTAssertFalse(browserLoginField.waitForExistence(timeout: 3), "Login screen is still showing after login.")
     }
 
     /// Taps the on-page "Log In" button of the legacy in-app WebView login form. Used only by the
