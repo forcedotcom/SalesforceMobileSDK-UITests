@@ -37,43 +37,113 @@ import XCTest
 class LoginPageObject {
     let app:XCUIApplication
     let timeout:double_t = 10
-    
+
     init(testApp: XCUIApplication) {
         app = testApp
     }
-    
-    func setUsername(name: String) -> Void {
-        sleep(3)
-        hideKeyboard()
-        let nameField = app.descendants(matching: .textField).element
-        _ = nameField.waitForExistence(timeout: timeout * 12)
-        nameField.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        sleep(1)
-        nameField.typeText(name)
+
+    /// The browser web content that hosts the login form. Under forced advanced auth the form is
+    /// served in an external browser (ASWebAuthenticationSession). Some app types (notably hybrid)
+    /// trigger authentication more than once on cold launch, which stacks multiple browser sheets —
+    /// each an identical `webViews.webViews.webViews` subtree with its own username/password fields.
+    /// A bare `app.descendants(...).element` then throws "Multiple matching elements found" because
+    /// `.element` requires exactly one match. Drive the frontmost (last-presented, top-of-stack)
+    /// browser — the one the user would actually interact with — and scope every field/button query
+    /// to that single subtree so username, password, and the Log In button all come from it.
+    private var loginWebView: XCUIElement {
+        let webViews = app.webViews.webViews.webViews
+        let count = webViews.count
+        return count > 1 ? webViews.element(boundBy: count - 1) : webViews.firstMatch
     }
-    
+
+    func setUsername(name: String) -> Void {
+        // Under forced advanced auth the login form is served in the external browser
+        // (ASWebAuthenticationSession); wait for it to finish rendering before touching fields.
+        waitForLoginFormReady()
+        hideKeyboard()
+        let nameField = loginWebView.textFields.firstMatch
+        _ = nameField.waitForExistence(timeout: timeout * 12)
+        // The browser pre-populates the username from the OAuth login_hint. A pre-filled web field
+        // does not reliably attach the software keyboard on tap, so typing into it fails with
+        // "Neither element nor any descendant has keyboard focus". When the field already holds a
+        // value, trust the prefill and skip typing — the caller will advance with the "Log In"
+        // button. Only type when the field is genuinely empty.
+        let existing = nameField.value as? String ?? ""
+        if !existing.isEmpty && existing != "Username" {
+            return
+        }
+        setFieldValue(nameField, value: name)
+    }
+
     func setPassword(password: String) -> Void {
         hideKeyboard()
-        let passwordField = app.descendants(matching: .secureTextField).element
-        _ = passwordField.waitForExistence(timeout: timeout)
-        passwordField.tap()
-        sleep(1)
-        passwordField.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        sleep(1)
-        passwordField.typeText(password)
+        // Tapping "Log In" on the username step navigates the browser to the password page; allow the
+        // same generous browser-page-load window used for the initial form before touching the field.
+        let passwordField = loginWebView.secureTextFields.firstMatch
+        _ = passwordField.waitForExistence(timeout: timeout * 12)
+        setFieldValue(passwordField, value: password)
     }
-    
+
+    /// Enters `value` into a browser login-form field. The external browser may pre-populate a
+    /// field (e.g. a remembered username), and tapping an already-filled web field does not always
+    /// attach the software keyboard — typing then fails with "no keyboard focus". So tap to focus,
+    /// skip typing when the field already holds the desired value, and only type otherwise. Mirrors
+    /// the SDK AuthFlowTester UITests' setTextField for the forced-advanced-auth browser flow.
+    private func setFieldValue(_ field: XCUIElement, value: String) {
+        field.tap()
+        sleep(1)
+        if (field.value as? String) == value {
+            return
+        }
+        field.typeText(value)
+    }
+
+    /// Waits for the login form served in the external browser (ASWebAuthenticationSession) to be
+    /// fully loaded and interactive. Under forced advanced authentication interactive login happens
+    /// in the browser rather than the in-app WebView; after the browser launches it navigates to the
+    /// login page and the form fields are not immediately available. Waits for the username text
+    /// field inside the web content to appear, which signals the login form has finished rendering.
+    func waitForLoginFormReady() -> Void {
+        // Wait against the whole browser-webview hierarchy (not `loginWebView`) so this resolves before
+        // any stacked sheets settle; once a text field exists, `loginWebView` selects the frontmost one.
+        let webViewTextField = app.webViews.webViews.webViews.textFields.firstMatch
+        _ = webViewTextField.waitForExistence(timeout: timeout * 12)
+    }
+
+    /// Submits the current login step. Under forced advanced authentication the login form is served
+    /// in the external browser (ASWebAuthenticationSession), which renders an on-page "Log In" button.
+    /// Tapping that button is how a user advances, and it does not require keyboard focus — synthesizing
+    /// a Return keypress into a web field fails ("Neither element nor any descendant has keyboard
+    /// focus") whenever the field was pre-filled and never attached the software keyboard. Falls back
+    /// to a Return keypress only if no button is present. Callers drive the form the same way a user
+    /// would: (accept prefilled or type) username, submit; type password, submit.
     func tapLogin() -> Void {
         hideKeyboard()
-        let loginButton = app.webViews.buttons["Log In"].firstMatch
-        _ = loginButton.waitForExistence(timeout: timeout * 6)
-        loginButton.tap()
+        let webView = loginWebView
+        // Salesforce's identity-first browser form labels the button "Log In"; match loosely to also
+        // catch "Log In to Sandbox" and locale/label variants.
+        let loginButton = webView.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Log In'")).firstMatch
+        if loginButton.waitForExistence(timeout: timeout) && loginButton.isHittable {
+            loginButton.tap()
+            return
+        }
+        // Fallback: submit the on-screen field with Return (only works if the keyboard is attached).
+        let secureField = webView.secureTextFields.firstMatch
+        let field = secureField.exists ? secureField : webView.textFields.firstMatch
+        field.typeText(XCUIKeyboardKey.return.rawValue)
     }
-    
+
+    /// Dismisses the external browser (ASWebAuthenticationSession) without completing login. The
+    /// browser chrome exposes a "Close" button on current iOS versions and "Cancel" on earlier ones.
     func tapBack() -> Void {
-        let backButton = app.navigationBars["Log In"].children(matching: .button).element(boundBy: 0)
-        _ = backButton.waitForExistence(timeout: timeout)
-        backButton.tap()
+        let topBar = app.otherElements["TopBrowserBar"]
+        var closeButton = topBar.buttons["Close"]
+        if !closeButton.waitForExistence(timeout: timeout) {
+            // Earlier iOS versions use "Cancel"; only that fallback needs its own wait.
+            closeButton = topBar.buttons["Cancel"]
+            _ = closeButton.waitForExistence(timeout: timeout)
+        }
+        closeButton.tap()
     }
     
     func hideKeyboard() -> Void {

@@ -51,6 +51,7 @@ fun generateApp(
     packagerDir: String = "SalesforceMobileSDK-Package",
     packagerVersion: String? = null,
     org: String = FORCE_DOT_COM_ORG,
+    appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
 ): AppInfo {
     val generationCommand = mutableListOf(
         "./$packagerDir/test/test_force.js",
@@ -97,6 +98,20 @@ fun generateApp(
     if (useSF) {
         generationCommand.add("--use-sfdx")
     }
+
+    // Inject OAuth config at generation time so the template (and the packager's
+    // callback-URL parser) writes real consumer key / redirect URI / login server
+    // into bootconfig, servers.xml, Info.plist and the Android redirect
+    // <intent-filter>. Note: the platform UITestConfig is read from
+    // ui_test_config.json lazily, so this line can throw a "config not found"
+    // error (naming the searched paths and the .sample to copy) if the config
+    // is missing at generation time (previously it was only read later, at
+    // compile time).
+    val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
+    val resolvedAppConfig = testConfig.getApp(appConfig)
+    generationCommand.add("--consumerkey=${resolvedAppConfig.consumerKey}")
+    generationCommand.add("--callbackurl=${resolvedAppConfig.redirectUri}")
+    generationCommand.add("--loginserver=${testConfig.loginHosts.first().url}")
 
     if (generationCommand.runCommand() != 0) {
         throw Exception("Unable to generate app.")

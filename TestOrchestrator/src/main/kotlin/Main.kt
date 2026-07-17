@@ -36,6 +36,7 @@ import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.arguments.help
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.github.ajalt.clikt.parameters.arguments.unique
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.help
@@ -145,6 +146,13 @@ class TestOrchestrator : CliktCommand() {
     val templateBranch: String? by option("-b", "--templateBranch")
         .help("Generate the app (to test) using a specific branch.  The dev packager is used. " +
                 "\u0085Optionally specify a fork org with '/' (e.g. 'brandonpage/my-feature-branch').")
+    val appConfig: KnownAppConfig by option("--appConfig")
+        .enum<KnownAppConfig>(ignoreCase = true)
+        .default(KnownAppConfig.ECA_OPAQUE)
+        .help("Which OAuth app config (consumer key + redirect URI) from ui_test_config.json to " +
+                "generate the app with. Defaults to ${KnownAppConfig.ECA_OPAQUE.name.lowercase()}. " +
+                "\u0085Use ${KnownAppConfig.ECA_OPAQUE_HOSTLESS.name.lowercase()} to exercise the " +
+                "hostless (scheme:///path) redirect intent-filter delivery path.")
     val useFirebase: Boolean by option("-f", "--firebase").boolean()
         .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
         .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
@@ -230,9 +238,9 @@ class TestOrchestrator : CliktCommand() {
                     OS.ANDROID -> "Testing ${appSource.appName}"
                 }
                 var totalSteps: Long = when(os) {
-                    OS.ANDROID -> if (reRunTest) 3 else 7
+                    OS.ANDROID -> if (reRunTest) 3 else 5
                     OS.IOS -> {
-                        val base = if (reRunTest) 2 else 5
+                        val base = if (reRunTest) 2 else 3
                         // Add steps per iOS version being tested
                         base + (3L * effectiveVersions.size)
                     }
@@ -245,11 +253,12 @@ class TestOrchestrator : CliktCommand() {
                 }
                 if (upgradeFrom != null) {
                     // Upgrade adds: clone old packager (Phase 1), plus Phase 2:
-                    // re-generate, set login URL, set OAuth, compile, sign (Android only),
+                    // re-generate, compile, sign (Android only),
                     // install upgrade, run upgrade test, pass
+                    // (OAuth/login config is now applied at generation time, not compile time.)
                     totalSteps += when(os) {
-                        OS.ANDROID -> 8L
-                        OS.IOS -> 6L + effectiveVersions.size
+                        OS.ANDROID -> 6L
+                        OS.IOS -> 4L + effectiveVersions.size
                     }
                     if (appSource.isComplexHybrid) totalSteps++
                     if (appSource.isReact) totalSteps++
@@ -328,6 +337,7 @@ class TestOrchestrator : CliktCommand() {
                             packagerDir = oldPackager,
                             packagerVersion = templateBranch ?: upgradeFrom,
                             org = templateOrg,
+                            appConfig = appConfig,
                         )
                         relocateApp(oldAppInfo, upgradeFrom!!)
                     } else if (sdkVersion != null) {
@@ -340,6 +350,7 @@ class TestOrchestrator : CliktCommand() {
                             packagerDir = packager,
                             packagerVersion = templateBranch ?: sdkBranch,
                             org = templateOrg,
+                            appConfig = appConfig,
                         )
                     } else if (templateBranch != null) {
                         // Template-only test: Use dev packager
@@ -348,9 +359,10 @@ class TestOrchestrator : CliktCommand() {
                             useSF,
                             packagerVersion = templateBranch,
                             org = templateOrg,
+                            appConfig = appConfig,
                         )
                     } else {
-                        generateApp(appSource, useSF)
+                        generateApp(appSource, useSF, appConfig = appConfig)
                     }
                 } else {
                     verbosePrinter?.invoke("Skipping App Generation")
@@ -379,7 +391,7 @@ class TestOrchestrator : CliktCommand() {
 
                 // Upgrade Phase 2: Upgrade test
                 if (upgradeFrom != null) {
-                    performUpgrade(appSource, useSF, debug)
+                    performUpgrade(appSource, useSF, debug, appConfig = appConfig)
                 }
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)

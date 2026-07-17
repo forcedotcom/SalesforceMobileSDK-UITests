@@ -157,3 +157,10 @@ jobs:
         with:
           name: test-results-${{ inputs.app }}-ios-${{ inputs.ios }}${{ inputs.upgradeFrom != '' && format('-upgrade-{0}', inputs.upgradeFrom) || format('-sfdx-{0}', inputs.sfdx) }}
           path: ios_results/**.xml
+      - name: Upload Xcode Result Bundles
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        if: failure()
+        with:
+          name: xcresults-${{ inputs.app }}-ios-${{ inputs.ios }}${{ inputs.upgradeFrom != '' && format('-upgrade-{0}', inputs.upgradeFrom) || format('-sfdx-{0}', inputs.sfdx) }}
+          path: iOS/test_output/**
+          if-no-files-found: warn

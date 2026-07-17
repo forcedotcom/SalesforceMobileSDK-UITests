@@ -47,6 +47,23 @@ class BaseSDKTest: XCTestCase {
     override func setUp() {
         super.setUp()
         continueAfterFailure = false
+
+        // Advanced authentication is forced on by default, so interactive login now happens in the
+        // external browser (ASWebAuthenticationSession). Launching it raises a system consent alert
+        // ("...Wants to Use...to Sign In"), and the browser may also surface paste confirmations.
+        // Dismiss whichever alert appears so it does not block the automation session.
+        addUIInterruptionMonitor(withDescription: "System Alert") { alert in
+            let dominated = ["Allow", "OK", "Continue", "Allow While Using App",
+                             "Don\u{2019}t Allow", "Allow Paste"]
+            for label in dominated {
+                let button = alert.buttons[label]
+                if button.exists {
+                    button.tap()
+                    return true
+                }
+            }
+            return false
+        }
     }
     
     override func tearDown() {
