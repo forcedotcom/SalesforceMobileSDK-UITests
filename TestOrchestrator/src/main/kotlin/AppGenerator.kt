@@ -56,6 +56,7 @@ fun generateApp(
     packagerVersion: String? = null,
     org: String = FORCE_DOT_COM_ORG,
     appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
+    applyHybridRemoteDPoPWorkaround: Boolean = true,
 ): AppInfo {
     val generationCommand = mutableListOf(
         "./$packagerDir/test/test_force.js",
@@ -131,7 +132,78 @@ fun generateApp(
         setupReactNative(appInfo)
     }
 
+    if (applyHybridRemoteDPoPWorkaround) {
+        applyHybridRemoteDPoPWorkaround(appSource, appInfo)
+    }
+
     return appInfo
+}
+
+internal fun applyHybridRemoteDPoPWorkaround(appSource: AppSource, appInfo: AppInfo) {
+    if (appSource !is AppSource.ByType || appSource.type != AppType.HYBRID_REMOTE) return
+
+    val (sourceFile, anchor, statement) = when (appInfo.os) {
+        OS.ANDROID -> Triple(
+            File(
+                appInfo.androidRoot,
+                "app/src/main/java/${appInfo.packageName.replace('.', '/')}/MainApplication.kt",
+            ),
+            "SalesforceHybridSDKManager.initHybrid(applicationContext)",
+            "SalesforceHybridSDKManager.getInstance().useDPoP = false",
+        )
+        OS.IOS -> Triple(
+            File(appInfo.iosRoot, "App/Plugins/com.salesforce/AppDelegate.swift"),
+            "SalesforceHybridSDKManager.initializeSDK()",
+            "SalesforceManager.shared.usesDPoP = false",
+        )
+    }
+
+    patchSourceAfterAnchor(sourceFile, anchor, statement)
+}
+
+internal fun supportsHybridRemoteDPoPWorkaround(sdkVersion: String?): Boolean {
+    if (sdkVersion == null || sdkVersion in setOf("dev", "master")) return true
+
+    // DPoP is unavailable before SDK 14. Unknown branches fail closed instead of
+    // injecting an API that may not exist in the generated app's dependencies.
+    val majorVersion = Regex("""(?:^|[^\d])(\d+)(?:\.|_|-|$)""")
+        .find(sdkVersion)
+        ?.groupValues
+        ?.get(1)
+        ?.toIntOrNull()
+    return majorVersion != null && majorVersion >= 14
+}
+
+private fun patchSourceAfterAnchor(sourceFile: File, anchor: String, statement: String) {
+    if (!sourceFile.exists()) {
+        throw IllegalStateException("Cannot apply DPoP workaround: generated source file not found at ${sourceFile.path}.")
+    }
+
+    sourceFile.writeText(transformSourceAfterAnchor(sourceFile.readText(), anchor, statement, sourceFile.path))
+}
+
+internal fun transformSourceAfterAnchor(source: String, anchor: String, statement: String, sourceName: String): String {
+    val anchorCount = source.windowed(anchor.length).count { it == anchor }
+    if (anchorCount != 1) {
+        throw IllegalStateException(
+            "Cannot apply DPoP workaround to $sourceName: expected exactly one '$anchor', found $anchorCount."
+        )
+    }
+
+    val anchorStart = source.indexOf(anchor)
+    val lineStart = source.lastIndexOf('\n', anchorStart - 1) + 1
+    val indentation = source.substring(lineStart, anchorStart)
+    val anchorEnd = anchorStart + anchor.length
+    val expectedInsertion = "$anchor\n$indentation$statement"
+    if (source.regionMatches(anchorStart, expectedInsertion, 0, expectedInsertion.length)) return source
+
+    if (source.contains(statement)) {
+        throw IllegalStateException(
+            "Cannot apply DPoP workaround to $sourceName: '$statement' exists outside the expected location."
+        )
+    }
+
+    return source.substring(0, anchorEnd) + "\n$indentation$statement" + source.substring(anchorEnd)
 }
 
 private fun setupComplexHybrid(appInfo: AppInfo) {
