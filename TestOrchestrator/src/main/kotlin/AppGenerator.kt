@@ -34,6 +34,9 @@ import java.io.File
 import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 // Maps AppType.scriptValue to its template path name in SalesforceMobileSDK-Templates.
 // Mirrors appTypesToPath from SalesforceMobileSDK-Package/shared/constants.js.
@@ -44,6 +47,7 @@ private val APP_TYPE_TO_TEMPLATE = mapOf(
     "hybrid_remote" to "HybridRemoteTemplate",
     "react_native" to "ReactNativeTemplate",
 )
+private val PRETTY_JSON = Json { prettyPrint = true }
 
 fun generateApp(
     appSource: AppSource,
@@ -154,14 +158,30 @@ private fun setupComplexHybrid(appInfo: AppInfo) {
     }
 
     val wwwDir = File(appInfo.appPath, "www")
-    sampleDir.listFiles()?.forEach { file ->
-        file.copyRecursively(File(wwwDir, file.name), overwrite = true)
-    }
+    copyComplexHybridSampleContent(sampleDir, wwwDir)
 
     val cordovaResult = "cordova prepare".runCommand(workingDir = appInfo.appPath)
     if (cordovaResult != 0) {
         throw Exception("Cordova prepare failed for complex hybrid.")
     }
+}
+
+internal fun copyComplexHybridSampleContent(sampleDir: File, wwwDir: File) {
+    val bootConfigFile = File(wwwDir, "bootconfig.json")
+    val generatedBootConfig = Json.parseToJsonElement(bootConfigFile.readText()).jsonObject
+    val generatedOAuthConfig = mapOf(
+        "remoteAccessConsumerKey" to generatedBootConfig.getValue("remoteAccessConsumerKey"),
+        "oauthRedirectURI" to generatedBootConfig.getValue("oauthRedirectURI"),
+    )
+
+    sampleDir.listFiles()?.forEach { file ->
+        file.copyRecursively(File(wwwDir, file.name), overwrite = true)
+    }
+
+    val sampleBootConfig = Json.parseToJsonElement(bootConfigFile.readText()).jsonObject
+    val mergedBootConfig = JsonObject(sampleBootConfig + generatedOAuthConfig)
+    val formattedJson = PRETTY_JSON.encodeToString(JsonObject.serializer(), mergedBootConfig)
+    bootConfigFile.writeText("$formattedJson\n")
 }
 
 private fun setupReactNative(appInfo: AppInfo) {
