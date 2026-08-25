@@ -27,7 +27,10 @@
 package pageobjects.loginpageobjects
 
 import android.util.Log
+import android.view.accessibility.AccessibilityWindowInfo
+import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiSelector
+import androidx.test.platform.app.InstrumentationRegistry
 import pageobjects.BasePageObject
 
 const val USERNAME_RESOURCE_ID = "username"
@@ -45,6 +48,12 @@ const val CHROME_CLOSE_BUTTON_ID = "com.android.chrome:id/close_button"
  * not at all (e.g. first-run dialogs). These are not dependent on server-side rendering.
  */
 private const val QUICK_CHECK_TIMEOUT: Long = 500
+private const val KEYBOARD_DISMISS_TIMEOUT: Long = 2_000
+
+private const val LOCAL_NETWORK_PERMISSION_MESSAGE =
+    "wants to access other devices on your local network"
+private const val CHROME_PERMISSION_MESSAGE_ID = "com.android.chrome:id/text"
+private const val CHROME_NEGATIVE_BUTTON_ID = "com.android.chrome:id/negative_button"
 
 /**
  * Ceiling for clearing Chrome's First Run Experience, which on a cold profile is a slow multi-page
@@ -66,15 +75,11 @@ class LoginPageObject : BasePageObject() {
     fun setUsername(name: String) {
         skipGoogleSignIn()
         Log.i("uia", "Waiting for username field to be present.")
-        var usernameField = device.findObject(UiSelector().resourceId(USERNAME_RESOURCE_ID))
-        if (!usernameField.waitForExists(timeout * 5)) {
-            usernameField = device.findObject(
-                UiSelector().className(editTextClass).instance(0)
-            )
-            if (!usernameField.waitForExists(timeout * 5)) {
-                throw AssertionError("Username field not found.")
-            }
-        }
+        val usernameField = waitForLoginControl(
+            UiSelector().resourceId(USERNAME_RESOURCE_ID),
+            UiSelector().className(editTextClass).instance(0),
+            "Username field not found."
+        )
         usernameField.click()
         usernameField.setText(name)
     }
@@ -82,30 +87,93 @@ class LoginPageObject : BasePageObject() {
     fun setPassword(password: String) {
         skipGoogleSignIn()
         Log.i("uia", "Waiting for password field to be present.")
-        var passwordField = device.findObject(UiSelector().resourceId(PASSWORD_RESOURCE_ID))
-        if (!passwordField.waitForExists(timeout * 5)) {
-            passwordField = device.findObject(
-                UiSelector().className(editTextClass).instance(0)
-            )
-            if (!passwordField.waitForExists(timeout * 5)) {
-                throw AssertionError("Password field not found.")
-            }
-        }
+        val passwordField = waitForLoginControl(
+            UiSelector().resourceId(PASSWORD_RESOURCE_ID),
+            UiSelector().className(editTextClass).instance(0),
+            "Password field not found."
+        )
         passwordField.click()
         passwordField.setText(password)
     }
 
     fun tapLogin() {
-        var loginButton = device.findObject(UiSelector().resourceId(LOGIN_RESOURCE_ID))
-        if (!loginButton.waitForExists(timeout)) {
-            loginButton = device.findObject(
-                UiSelector().className("android.widget.Button").textContains("Log In")
-            )
-            if (!loginButton.waitForExists(timeout)) {
-                throw AssertionError("Log In button not found.")
+        dismissKeyboardIfPresent()
+        val loginButton = waitForLoginControl(
+            UiSelector().resourceId(LOGIN_RESOURCE_ID),
+            UiSelector().className("android.widget.Button").textContains("Log In"),
+            "Log In button not found.",
+            timeout
+        )
+        loginButton.click()
+    }
+
+    private fun dismissKeyboardIfPresent() {
+        val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        if (uiAutomation.windows.none { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }) {
+            return
+        }
+
+        device.pressBack()
+        val deadline = System.currentTimeMillis() + KEYBOARD_DISMISS_TIMEOUT
+        while (System.currentTimeMillis() < deadline &&
+            uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }) {
+            device.waitForIdle(QUICK_CHECK_TIMEOUT)
+        }
+        if (uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }) {
+            throw AssertionError("Keyboard did not close before tapping Log In.")
+        }
+    }
+
+    private fun waitForLoginControl(
+        primarySelector: UiSelector,
+        fallbackSelector: UiSelector,
+        errorMessage: String,
+        waitTimeout: Long = timeout * 5
+    ): UiObject {
+        for (selector in listOf(primarySelector, fallbackSelector)) {
+            val control = device.findObject(selector)
+            if (waitForLoginControl(control, waitTimeout)) {
+                return control
             }
         }
-        loginButton.click()
+        throw AssertionError(errorMessage)
+    }
+
+    private fun waitForLoginControl(control: UiObject, waitTimeout: Long): Boolean {
+        val deadline = System.currentTimeMillis() + waitTimeout
+        while (System.currentTimeMillis() < deadline) {
+            blockLocalNetworkAccessIfPresent()
+            if (control.waitForExists(QUICK_CHECK_TIMEOUT)) {
+                blockLocalNetworkAccessIfPresent()
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Blocks Chrome's optional local-network request, which is unrelated to remote OAuth login.
+     * The message check prevents Chrome's shared negative-button id from dismissing other dialogs.
+     */
+    private fun blockLocalNetworkAccessIfPresent() {
+        val permissionMessage = device.findObject(
+            UiSelector()
+                .resourceId(CHROME_PERMISSION_MESSAGE_ID)
+                .textContains(LOCAL_NETWORK_PERMISSION_MESSAGE)
+        )
+        if (!permissionMessage.exists()) {
+            return
+        }
+
+        Log.i("uia", "Blocking Chrome local-network access prompt.")
+        val blockButton = device.findObject(UiSelector().resourceId(CHROME_NEGATIVE_BUTTON_ID))
+        if (!blockButton.waitForExists(QUICK_CHECK_TIMEOUT)) {
+            throw AssertionError("Chrome local-network Block button not found.")
+        }
+        blockButton.click()
+        if (!permissionMessage.waitUntilGone(timeout)) {
+            throw AssertionError("Chrome local-network access prompt did not close.")
+        }
     }
 
     /**
@@ -136,7 +204,7 @@ class LoginPageObject : BasePageObject() {
     private fun dismissOneFreControl(): Boolean {
         val dismissByIdOrText = listOf(
             "com.android.chrome:id/signin_fre_dismiss_button",
-            "com.android.chrome:id/negative_button",
+            CHROME_NEGATIVE_BUTTON_ID,
         )
         for (resourceId in dismissByIdOrText) {
             val button = device.findObject(UiSelector().resourceId(resourceId))
