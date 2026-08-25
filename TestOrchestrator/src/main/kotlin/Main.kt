@@ -150,9 +150,7 @@ class TestOrchestrator : CliktCommand() {
         .enum<KnownAppConfig>(ignoreCase = true)
         .default(KnownAppConfig.ECA_OPAQUE)
         .help("Which OAuth app config (consumer key + redirect URI) from ui_test_config.json to " +
-                "generate the app with. Defaults to ${KnownAppConfig.ECA_OPAQUE.name.lowercase()}. " +
-                "\u0085Use ${KnownAppConfig.ECA_OPAQUE_HOSTLESS.name.lowercase()} to exercise the " +
-                "hostless (scheme:///path) redirect intent-filter delivery path.")
+                "generate the app with. Defaults to ${KnownAppConfig.ECA_OPAQUE.name.lowercase()}.")
     val useFirebase: Boolean by option("-f", "--firebase").boolean()
         .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
         .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")

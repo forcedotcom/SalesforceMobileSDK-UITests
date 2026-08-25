@@ -30,6 +30,12 @@ import androidx.test.uiautomator.*
 import android.util.Log
 import pageobjects.BasePageObject
 
+private const val ALLOW_RESOURCE_ID = "oaapprove"
+private const val AUTHORIZATION_HEADER_RESOURCE_ID = "header"
+private const val AUTHORIZATION_HEADER_TEXT = "Allow Access"
+private const val WEB_VIEW_CLASS = "android.webkit.WebView"
+private const val SCROLL_PERCENT = 0.9f
+
 /**
  * Created by bpage on 2/23/18.
  */
@@ -37,11 +43,48 @@ import pageobjects.BasePageObject
 class AuthorizationPageObject : BasePageObject() {
 
     fun tapAllowIfPresent() {
-        val allowButton = device.findObject(UiSelector().resourceId("oaapprove"))
+        var allowButton = device.findObject(UiSelector().resourceId(ALLOW_RESOURCE_ID))
         Log.i("uia", "Waiting for allow button to be present.")
-        if (allowButton.waitForExists(timeout * 2)) {
-            allowButton.click()
-            Thread.sleep(timeout)
+        if (!allowButton.waitForExists(timeout * 2)) {
+            val authorizationHeader = device.findObject(
+                UiSelector()
+                    .resourceId(AUTHORIZATION_HEADER_RESOURCE_ID)
+                    .textContains(AUTHORIZATION_HEADER_TEXT)
+            )
+            if (!authorizationHeader.exists()) {
+                return
+            }
+            allowButton = device.findObject(
+                UiSelector()
+                    .className("android.widget.Button")
+                    .textMatches("\\s*Allow\\s*")
+            )
+            if (!allowButton.waitForExists(timeout)) {
+                return
+            }
+        }
+
+        val webView = device.wait(
+            Until.findObject(By.pkg(allowButton.packageName).clazz(WEB_VIEW_CLASS)),
+            timeout
+        )
+            ?: throw AssertionError("Authorization WebView not found.")
+        val buttonBounds = allowButton.visibleBounds
+        val webViewBounds = webView.visibleBounds
+        val buttonIsFullyVisible = buttonBounds.height() > 0 &&
+                buttonBounds.top >= webViewBounds.top &&
+                buttonBounds.bottom < webViewBounds.bottom
+
+        if (!buttonIsFullyVisible) {
+            Log.i("uia", "Scrolling authorization page to reveal Allow button.")
+            webView.scroll(Direction.DOWN, SCROLL_PERCENT)
+        }
+
+        if (!allowButton.click()) {
+            throw AssertionError("Could not tap the authorization Allow button.")
+        }
+        if (!allowButton.waitUntilGone(timeout * 2)) {
+            throw AssertionError("Authorization page did not close after tapping Allow.")
         }
     }
 }

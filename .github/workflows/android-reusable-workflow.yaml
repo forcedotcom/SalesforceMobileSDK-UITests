@@ -14,7 +14,7 @@ on:
       appConfig:
         type: string
         default: ""
-        description: "OAuth app config from ui_test_config.json (e.g. eca_opaque_hostless); empty uses the orchestrator default"
+        description: "OAuth app config from ui_test_config.json (e.g. eca_opaque); empty uses the orchestrator default"
       is_pr:
         type: boolean
         default: false
