@@ -15,8 +15,6 @@ gen/
 out/
 DerivedData/
 test
-!TestOrchestrator/src/test/
-!TestOrchestrator/src/test/**
 tmp*
 *.tgz
 
