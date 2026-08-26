@@ -104,7 +104,8 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(rnTitle.waitForExistence(timeout: timeout * 2), appLoadError)
 
             // Check contacts loaded
-            let rnContact = app.staticTexts["Marc Benioff"].firstMatch
+            let contactPredicate = NSPredicate(format: "label CONTAINS[c] %@", "Marc Benioff")
+            let rnContact = app.descendants(matching: .any).matching(contactPredicate).firstMatch
             XCTAssert(rnContact.waitForExistence(timeout: timeout), mobileSyncError)
         case .mobileSyncSwift:
             let title = app.navigationBars["Contacts"].staticTexts["Contacts"]
@@ -120,7 +121,8 @@ class BaseSDKTest: XCTestCase {
             XCTAssert(title.waitForExistence(timeout: timeout * 2), appLoadError)
 
             // Check MobileSync Works
-            let contact = app.staticTexts["Marc Benioff"].firstMatch
+            let contactPredicate = NSPredicate(format: "label CONTAINS[c] %@", "Marc Benioff")
+            let contact = app.descendants(matching: .any).matching(contactPredicate).firstMatch
             XCTAssert(contact.waitForExistence(timeout: timeout), mobileSyncError)
         }
     }
