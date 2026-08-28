@@ -72,7 +72,7 @@ class UpgradeTest {
             KnownLoginHostConfig.REGULAR_AUTH,
             KnownUserConfig.FIFTH,
         )
-        val loginPage = LoginPageObject()
+        val loginPage = LoginPageObject(expectAdvancedAuthentication = false)
 
         loginPage.setUsername(username)
         loginPage.tapLogin()

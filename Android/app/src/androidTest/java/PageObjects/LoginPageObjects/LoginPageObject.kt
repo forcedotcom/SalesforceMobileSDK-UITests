@@ -69,11 +69,14 @@ private const val FRE_DISMISS_TIMEOUT: Long = 30_000
  * reach; UiAutomator cross-process lookups are used instead. Fields are matched by their web
  * resource id first, then fall back to the generic EditText/Button classes when Chrome does not
  * surface the ids (QUERY_ALL_PACKAGES in the androidTest manifest grants the cross-process access).
+ * Pre-14.0 upgrade tests opt out of the Custom Tab preparation and drive the in-app WebView.
  */
-class LoginPageObject : BasePageObject() {
+class LoginPageObject(
+    private val expectAdvancedAuthentication: Boolean = true,
+) : BasePageObject() {
 
     fun setUsername(name: String) {
-        skipGoogleSignIn()
+        prepareLoginSurface()
         Log.i("uia", "Waiting for username field to be present.")
         val usernameField = waitForLoginControl(
             UiSelector().resourceId(USERNAME_RESOURCE_ID),
@@ -85,7 +88,7 @@ class LoginPageObject : BasePageObject() {
     }
 
     fun setPassword(password: String) {
-        skipGoogleSignIn()
+        prepareLoginSurface()
         Log.i("uia", "Waiting for password field to be present.")
         val passwordField = waitForLoginControl(
             UiSelector().resourceId(PASSWORD_RESOURCE_ID),
@@ -121,6 +124,16 @@ class LoginPageObject : BasePageObject() {
         }
         if (uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }) {
             throw AssertionError("Keyboard did not close before tapping Log In.")
+        }
+    }
+
+    /**
+     * Advanced authentication opens the login form in Chrome, whose first-run UI may need clearing.
+     * Upgrade tests run against a pre-14.0 app whose login form remains in the app's WebView.
+     */
+    private fun prepareLoginSurface() {
+        if (expectAdvancedAuthentication) {
+            skipGoogleSignIn()
         }
     }
 

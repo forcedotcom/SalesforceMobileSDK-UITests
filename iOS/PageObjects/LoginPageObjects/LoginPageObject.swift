@@ -37,28 +37,30 @@ import XCTest
 class LoginPageObject {
     let app:XCUIApplication
     let timeout:double_t = 10
+    private let expectAdvancedAuthentication: Bool
 
-    init(testApp: XCUIApplication) {
+    init(testApp: XCUIApplication, expectAdvancedAuthentication: Bool = true) {
         app = testApp
+        self.expectAdvancedAuthentication = expectAdvancedAuthentication
     }
 
-    /// The browser web content that hosts the login form. Under forced advanced auth the form is
-    /// served in an external browser (ASWebAuthenticationSession). Some app types (notably hybrid)
-    /// trigger authentication more than once on cold launch, which stacks multiple browser sheets —
-    /// each an identical `webViews.webViews.webViews` subtree with its own username/password fields.
-    /// A bare `app.descendants(...).element` then throws "Multiple matching elements found" because
-    /// `.element` requires exactly one match. Drive the frontmost (last-presented, top-of-stack)
-    /// browser — the one the user would actually interact with — and scope every field/button query
-    /// to that single subtree so username, password, and the Log In button all come from it.
+    /// The web content that hosts the login form. Pre-14.0 upgrade tests use the app's top-level
+    /// WebView. Under forced advanced auth the form is served in an external browser
+    /// (ASWebAuthenticationSession). Some app types (notably hybrid) trigger authentication more
+    /// than once on cold launch, which stacks multiple browser sheets — each an identical
+    /// `webViews.webViews.webViews` subtree with its own username/password fields. Drive the
+    /// frontmost (last-presented, top-of-stack) browser and scope every field/button query to it.
     private var loginWebView: XCUIElement {
+        if !expectAdvancedAuthentication {
+            return app.webViews.firstMatch
+        }
         let webViews = app.webViews.webViews.webViews
         let count = webViews.count
         return count > 1 ? webViews.element(boundBy: count - 1) : webViews.firstMatch
     }
 
     func setUsername(name: String) -> Void {
-        // Under forced advanced auth the login form is served in the external browser
-        // (ASWebAuthenticationSession); wait for it to finish rendering before touching fields.
+        // Wait for the configured login surface to finish rendering before touching fields.
         waitForLoginFormReady()
         hideKeyboard()
         let nameField = loginWebView.textFields.firstMatch
@@ -98,15 +100,10 @@ class LoginPageObject {
         field.typeText(value)
     }
 
-    /// Waits for the login form served in the external browser (ASWebAuthenticationSession) to be
-    /// fully loaded and interactive. Under forced advanced authentication interactive login happens
-    /// in the browser rather than the in-app WebView; after the browser launches it navigates to the
-    /// login page and the form fields are not immediately available. Waits for the username text
-    /// field inside the web content to appear, which signals the login form has finished rendering.
+    /// Waits for the configured login form to be fully loaded and interactive. Browser-based
+    /// advanced authentication and the legacy in-app WebView both render the fields asynchronously.
     func waitForLoginFormReady() -> Void {
-        // Wait against the whole browser-webview hierarchy (not `loginWebView`) so this resolves before
-        // any stacked sheets settle; once a text field exists, `loginWebView` selects the frontmost one.
-        let webViewTextField = app.webViews.webViews.webViews.textFields.firstMatch
+        let webViewTextField = loginWebView.textFields.firstMatch
         _ = webViewTextField.waitForExistence(timeout: timeout * 12)
     }
 
