@@ -296,13 +296,18 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     } else {
         "LoginTest"
     }
-    var devices = ""
-    for (level in ANDROID_MIN_API_LEVEL..ANDROID_MAX_API_LEVEL) {
-        devices += "--device model=MediumPhone.arm,version=$level,locale=en,orientation=portrait "
-    }
     val envVars = "class=${ANDROID_TEST_CLASS_DIR}.$testClass" +
         ",packageName=${appInfo.packageName}" +
         (appInfo.complexHybridType?.let { ",complexHybrid=$it" } ?: "")
+
+    val devices = (ANDROID_MIN_API_LEVEL..ANDROID_MAX_API_LEVEL).joinToString(" ") { level ->
+        val model = if (level >= ANDROID_16_KB_PAGE_SIZE_MIN_API_LEVEL) {
+            "MediumPhone_ps16k.arm"
+        } else {
+            "MediumPhone.arm"
+        }
+        "--device model=$model,version=$level,locale=en,orientation=portrait"
+    }
 
     """
         gcloud firebase test android run
@@ -315,15 +320,15 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
             --results-history-name=UITest-${appInfo.appName}
             --results-dir=$GCLOUD_RESULTS_DIR
             --environment-variables $envVars
-            --no-performance-metrics 
-            --no-auto-google-login 
+            --no-performance-metrics
+            --no-auto-google-login
             --num-flaky-test-attempts=2
     """.trimIndent().split("\\s+".toRegex()).filter { it.isNotEmpty() }
         .runCommandCapture(workingDir = ANDROID_TEST_DIR).let { result ->
             result.throwIfFailed(
                 appInfo.appPath,
                 label = "firebase_test",
-                message =  parseTestFailure(result.output),
+                message = parseTestFailure(result.output),
             )
         }
 }
