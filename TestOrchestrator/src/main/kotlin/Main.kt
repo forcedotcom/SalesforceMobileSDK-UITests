@@ -337,7 +337,6 @@ class TestOrchestrator : CliktCommand() {
                             packagerVersion = templateBranch ?: upgradeFrom,
                             org = templateOrg,
                             appConfig = appConfig,
-                            applyHybridRemoteDPoPWorkaround = false,
                         )
                         relocateApp(oldAppInfo, upgradeFrom!!)
                     } else if (sdkVersion != null) {
@@ -351,7 +350,6 @@ class TestOrchestrator : CliktCommand() {
                             packagerVersion = templateBranch ?: sdkBranch,
                             org = templateOrg,
                             appConfig = appConfig,
-                            applyHybridRemoteDPoPWorkaround = supportsHybridRemoteDPoPWorkaround(sdkBranch),
                         )
                     } else if (templateBranch != null) {
                         // Template-only test: Use dev packager
