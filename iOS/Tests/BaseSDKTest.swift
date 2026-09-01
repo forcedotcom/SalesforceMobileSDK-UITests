@@ -129,7 +129,7 @@ class BaseSDKTest: XCTestCase {
     
     private func verifyInWebView(app: TestApplication, text: String) {
         let containsPredicate = NSPredicate(format: "label CONTAINS[c] %@", text)
-        let webElement = app.staticTexts.matching(containsPredicate).firstMatch
+        let webElement = app.webViews.descendants(matching: .any).matching(containsPredicate).firstMatch
         let exists = NSPredicate(format: "exists == 1")
         
         expectation(for: exists, evaluatedWith: webElement, handler: nil)
