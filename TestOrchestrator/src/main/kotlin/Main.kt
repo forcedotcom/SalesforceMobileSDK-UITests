@@ -390,7 +390,13 @@ class TestOrchestrator : CliktCommand() {
 
                 // Upgrade Phase 2: Upgrade test
                 if (upgradeFrom != null) {
-                    performUpgrade(appSource, useSF, debug, appConfig = appConfig)
+                    performUpgrade(
+                        appSource,
+                        useSF,
+                        debug,
+                        upgradeFrom = upgradeFrom!!,
+                        appConfig = appConfig,
+                    )
                 }
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)

@@ -72,6 +72,8 @@ class UpgradeTest {
             KnownLoginHostConfig.REGULAR_AUTH,
             KnownUserConfig.FIFTH,
         )
+        // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 and v13.2.1 use the
+        // in-app WebView instead of a Custom Tab. Remove this after both lines are retired.
         val loginPage = LoginPageObject(expectAdvancedAuthentication = false)
 
         loginPage.setUsername(username)

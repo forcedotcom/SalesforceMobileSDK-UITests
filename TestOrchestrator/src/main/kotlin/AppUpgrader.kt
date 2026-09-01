@@ -22,6 +22,7 @@ fun performUpgrade(
     appSource: AppSource,
     useSF: Boolean,
     debug: Boolean,
+    upgradeFrom: String,
     appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
 ) {
     // Stop any lingering Gradle daemons from Phase 1 to reclaim memory
@@ -38,10 +39,71 @@ fun performUpgrade(
     verbosePrinter?.invoke("Re-generating app with dev SDK")
 
     val newAppInfo = generateApp(appSource, useSF, appConfig = appConfig)
+    // LEGACY UPGRADE AUTOMATION (SDK 12.x ONLY): v12.2.0 hybrid session restoration needs the
+    // startup workaround below. v13.2.1 does not use it. Remove this branch with 12.x coverage.
+    if (upgradeFrom.startsWith("v12.")) {
+        applySdk12IosHybridUpgradeStartupWorkaround(newAppInfo)
+    }
     compileApp(newAppInfo, debug)
 
     val simulators = if (appSource.os == OS.IOS) getRunningTestSimulators() else emptyList()
     runUpgradeTests(newAppInfo, simulators)
+}
+
+/**
+ * LEGACY UPGRADE AUTOMATION (SDK 12.x ONLY): Keeps the current iOS hybrid app paintable when it
+ * inherits an authenticated session from v12.2.0. Remove this function with 12.x hybrid coverage;
+ * v13.2.1 does not use it.
+ *
+ * Restoring the old session can synchronously replace the root view controller during scene
+ * activation. UIKit then contains a fully loaded Cordova page that never paints. Deferring that
+ * replacement by one main-queue turn avoids the activation race. Normal generation is
+ * intentionally untouched.
+ */
+private fun applySdk12IosHybridUpgradeStartupWorkaround(appInfo: AppInfo) {
+    if (appInfo.os != OS.IOS || !appInfo.isHybrid) return
+
+    val appDelegate = File(
+        appInfo.iosRoot,
+        "App/Plugins/com.salesforce/AppDelegate.swift",
+    )
+    if (!appDelegate.exists()) {
+        throw IllegalStateException(
+            "Cannot apply legacy iOS hybrid upgrade workaround: generated AppDelegate not found " +
+                "at ${appDelegate.path}.",
+        )
+    }
+
+    val content = appDelegate.readText()
+    val originalFunction =
+        """    private func setupRootViewController() {
+        |        let config = SalesforceHybridSDKManager.shared.bootConfig as? SFHybridViewConfig
+        |        viewController = SFHybridViewController(config: config)
+        |        window?.rootViewController = viewController
+        |    }
+        |""".trimMargin()
+    val functionCount = content.windowed(originalFunction.length).count { it == originalFunction }
+    if (functionCount != 1) {
+        throw IllegalStateException(
+            "Cannot apply legacy iOS hybrid upgrade workaround to ${appDelegate.path}: " +
+                "expected exactly one setupRootViewController function, found $functionCount.",
+        )
+    }
+
+    val deferredFunction =
+        """    private func setupRootViewController() {
+        |        DispatchQueue.main.async { [weak self] in
+        |            guard let self else {
+        |                return
+        |            }
+        |
+        |            let config = SalesforceHybridSDKManager.shared.bootConfig as? SFHybridViewConfig
+        |            self.viewController = SFHybridViewController(config: config)
+        |            self.window?.rootViewController = self.viewController
+        |        }
+        |    }
+        |""".trimMargin()
+    appDelegate.writeText(content.replace(originalFunction, deferredFunction))
 }
 
 /**
