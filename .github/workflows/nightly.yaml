@@ -132,7 +132,7 @@ jobs:
       fail-fast: false
       matrix:
         app: [MobileSyncExplorerKotlin, hybrid_local, MobileSyncExplorerReactNative]
-        upgradeFrom: ["v12.2.0", "v13.2.0"]
+        upgradeFrom: ["v12.2.0", "v13.2.1"]
         exclude:
           - app: MobileSyncExplorerReactNative
             upgradeFrom: "v12.2.0"
@@ -154,7 +154,7 @@ jobs:
       fail-fast: false
       matrix:
         app: [MobileSyncExplorerSwift, hybrid_local, MobileSyncExplorerReactNative]
-        upgradeFrom: ["v12.2.0", "v13.2.0"]
+        upgradeFrom: ["v12.2.0", "v13.2.1"]
         exclude:
           - app: MobileSyncExplorerReactNative
             upgradeFrom: "v12.2.0"

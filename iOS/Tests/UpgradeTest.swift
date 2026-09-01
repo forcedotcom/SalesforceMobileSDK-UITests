@@ -41,6 +41,8 @@ class UpgradeTest: BaseSDKTest {
     /// for older template UIs.
     func testInitialLogin() {
         let app = TestApplication()
+        // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 and v13.2.1 use the
+        // in-app WebView. Remove this override after both 12.x and 13.x coverage are retired.
         let loginPage = LoginPageObject(testApp: app, expectAdvancedAuthentication: false)
         let authPage = AuthorizationPageObject(testApp: app)
         app.launch()

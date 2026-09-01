@@ -51,6 +51,8 @@ class LoginPageObject {
     /// `webViews.webViews.webViews` subtree with its own username/password fields. Drive the
     /// frontmost (last-presented, top-of-stack) browser and scope every field/button query to it.
     private var loginWebView: XCUIElement {
+        // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 and v13.2.1 use their
+        // top-level WebView. Remove this branch after both 12.x and 13.x coverage are retired.
         if !expectAdvancedAuthentication {
             return app.webViews.firstMatch
         }

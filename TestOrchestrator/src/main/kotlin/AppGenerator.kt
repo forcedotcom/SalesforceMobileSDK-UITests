@@ -48,6 +48,8 @@ private val APP_TYPE_TO_TEMPLATE = mapOf(
     "react_native" to "ReactNativeTemplate",
 )
 private val PRETTY_JSON = Json { prettyPrint = true }
+private const val ANDROID_GENERATION_GRADLE_JVM_ARGS =
+    "-Dorg.gradle.jvmargs=-XX:MaxMetaspaceSize=1g"
 
 fun generateApp(
     appSource: AppSource,
@@ -113,11 +115,36 @@ fun generateApp(
     // compile time).
     val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
     val resolvedAppConfig = testConfig.getApp(appConfig)
+    val loginUrl = testConfig.getLoginHost(KnownLoginHostConfig.REGULAR_AUTH).url
+    // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 can retain the default
+    // login.salesforce.com host, while v13.2.1 iOS can retain bootconfig placeholders. Keep the
+    // post-generation fallback until both 12.x and 13.x upgrade/version coverage are retired.
+    val isLegacyPackager = packagerDir != "SalesforceMobileSDK-Package"
     generationCommand.add("--consumerkey=${resolvedAppConfig.consumerKey}")
     generationCommand.add("--callbackurl=${resolvedAppConfig.redirectUri}")
-    generationCommand.add("--loginserver=${testConfig.loginHosts.first().url}")
+    generationCommand.add("--loginserver=$loginUrl")
 
-    if (generationCommand.runCommand() != 0) {
+    val generationEnvironment = if (appSource.os == OS.ANDROID) {
+        val gradleOptions = listOfNotNull(
+            System.getenv("GRADLE_OPTS")?.takeIf(String::isNotBlank),
+            ANDROID_GENERATION_GRADLE_JVM_ARGS,
+        ).joinToString(" ")
+        mapOf("GRADLE_OPTS" to gradleOptions)
+    } else {
+        emptyMap()
+    }
+
+    // LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): The v13.2.1 packager performs a redundant device
+    // build while generating iOS React Native apps. Its fmt dependency fails with current Xcode
+    // before the orchestrator can patch it and perform the real simulator build. React Native 12.x
+    // is not in the nightly matrix. Remove this patch when 13.x React Native coverage is retired.
+    if (isLegacyPackager && appSource.os == OS.IOS && appSource.isReact) {
+        skipLegacyIosReactNativeGenerationBuild(packagerDir)
+    }
+
+    // Current Android apps compile the Mobile SDK source tree during generation. The templates'
+    // 512 MB metaspace limit is too low for that build, so override it for the packager process.
+    if (generationCommand.runCommand(environmentVariables = generationEnvironment) != 0) {
         throw Exception("Unable to generate app.")
     }
 
@@ -128,10 +155,54 @@ fun generateApp(
     }
 
     if (appSource.isReact) {
-        setupReactNative(appInfo)
+        setupReactNative(
+            appInfo,
+            // LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): The nightly React Native upgrade starts at
+            // v13.2.1; 12.x React Native is excluded. Remove this repair with 13.x RN coverage.
+            repairLegacyAndroidDependencies = packagerDir != "SalesforceMobileSDK-Package",
+        )
+    }
+
+    if (isLegacyPackager) {
+        verbosePrinter?.invoke("Applying OAuth config ignored by legacy packager")
+        applyLegacyOAuthConfig(appInfo, loginUrl, resolvedAppConfig)
     }
 
     return appInfo
+}
+
+/**
+ * LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): Skips the v13.2.1 packager's redundant iOS React
+ * Native validation build. The orchestrator still patches fmt and fully compiles the generated app
+ * in [compileApp]. React Native 12.x is not covered; remove this with 13.x RN coverage.
+ */
+private fun skipLegacyIosReactNativeGenerationBuild(packagerDir: String) {
+    val packagerTest = File(packagerDir, "test/test_force.js")
+    if (!packagerTest.exists()) {
+        throw IllegalStateException(
+            "Cannot patch legacy iOS React Native generation: ${packagerTest.path} not found.",
+        )
+    }
+
+    val buildCall =
+        """        buildForiOS(target, workspaceDir, appName);
+        |""".trimMargin()
+    val content = packagerTest.readText()
+    val buildCallCount = content.windowed(buildCall.length).count { it == buildCall }
+    if (buildCallCount != 1) {
+        throw IllegalStateException(
+            "Cannot patch legacy iOS React Native generation in ${packagerTest.path}: " +
+                "expected exactly one buildForiOS call, found $buildCallCount.",
+        )
+    }
+
+    val guardedBuildCall =
+        """        // SDK 13.x upgrade compatibility: the orchestrator applies the fmt patch before compiling.
+        |        if (!isReactNative) {
+        |            buildForiOS(target, workspaceDir, appName);
+        |        }
+        |""".trimMargin()
+    packagerTest.writeText(content.replace(buildCall, guardedBuildCall))
 }
 
 private fun setupComplexHybrid(appInfo: AppInfo) {
@@ -184,7 +255,10 @@ internal fun copyComplexHybridSampleContent(sampleDir: File, wwwDir: File) {
     bootConfigFile.writeText("$formattedJson\n")
 }
 
-private fun setupReactNative(appInfo: AppInfo) {
+private fun setupReactNative(
+    appInfo: AppInfo,
+    repairLegacyAndroidDependencies: Boolean,
+) {
     progressBanner?.update {
         context = context.advance("Setup React Native")
         completed += 1
@@ -212,8 +286,11 @@ private fun setupReactNative(appInfo: AppInfo) {
     }
 
     if (appInfo.os == OS.ANDROID) {
-        // This is for older versions and a no-op for dev templates.
-        patchReactNativeAutolinking(appInfo)
+        // LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): The v13.2.1 React Native template needs
+        // dependency repair before bundling. Remove this branch with 13.x RN coverage.
+        if (repairLegacyAndroidDependencies) {
+            patchReactNativeAutolinking(appInfo)
+        }
 
         // Create assets directory and bundle JS
         val assetsDir = File(appInfo.androidRoot, "app/src/main/assets")
@@ -231,8 +308,8 @@ private fun setupReactNative(appInfo: AppInfo) {
 }
 
 /**
- * Fixes React Native library Android builds that are incompatible with
- * the current SDK / AGP / React Native version.
+ * LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): Fixes Android library builds from the v13.2.1 React
+ * Native template. React Native 12.x is not in the nightly matrix; remove this with 13.x coverage.
  *
  * Older templates bundle library versions that can fail in two ways:
  * 1. AGP classpath conflict — the library's `buildscript` pins an older
@@ -240,39 +317,39 @@ private fun setupReactNative(appInfo: AppInfo) {
  * 2. API incompatibility — the library's native code references classes
  *    removed in newer React Native versions (e.g. ViewManagerWithGeneratedInterface).
  *
- * Detection: if any library's android/build.gradle contains its own AGP
- * classpath declaration we know this is an old template.  In that case
- * we update *all* known-problematic libraries to their latest releases.
- * For current dev templates none of the checks trigger and this is a no-op.
+ * The caller limits this repair to apps generated by a cloned legacy packager. Within those apps,
+ * if any library's android/build.gradle contains its own AGP classpath declaration, align all
+ * known-problematic libraries to versions compatible with the v13.2.1 template's React Native
+ * 0.81.5. Using `latest` is unsafe because newer releases require newer React Native codegen (for
+ * example, screens 4.26+ requires RN 0.84+).
  */
 private fun patchReactNativeAutolinking(appInfo: AppInfo) {
     val nodeModules = File(appInfo.appPath, "node_modules")
     val agpClasspath = Regex("""com\.android\.tools\.build:gradle""")
 
-    // Libraries that may have build or API incompatibilities with the
-    // current SDK when coming from an older template.
-    val libraries = listOf(
-        "react-native-screens",
-        "react-native-vector-icons",
-        "react-native-gesture-handler",
+    // Libraries from the v13.2.1 template that are incompatible with the current SDK build.
+    val libraries = mapOf(
+        "react-native-screens" to "4.20.0",
+        "react-native-vector-icons" to "10.0.2",
+        "react-native-gesture-handler" to "2.29.1",
     )
 
     // Detect old template: any library's android/build.gradle pins its own AGP.
-    val isOldTemplate = libraries.any { library ->
+    val isOldTemplate = libraries.keys.any { library ->
         val buildFile = File(nodeModules, "$library/android/build.gradle")
         buildFile.exists() && agpClasspath.containsMatchIn(buildFile.readText())
     }
 
     if (!isOldTemplate) return
 
-    val librariesToUpdate = libraries.filter { File(nodeModules, it).exists() }
+    val librariesToUpdate = libraries.filterKeys { File(nodeModules, it).exists() }
 
     verbosePrinter?.invoke(
-        "Old template detected — updating libraries: ${librariesToUpdate.joinToString()}"
+        "Old template detected — aligning libraries: ${librariesToUpdate.keys.joinToString()}"
     )
 
-    val packages = librariesToUpdate.map { "$it@latest" }
-    val yarnResult = (listOf("yarn", "add") + packages)
+    val packages = librariesToUpdate.map { (name, version) -> "$name@$version" }
+    val yarnResult = (listOf("yarn", "add", "--exact") + packages)
         .runCommandCapture(workingDir = appInfo.appPath)
 
     if (yarnResult.exitCode != 0) {

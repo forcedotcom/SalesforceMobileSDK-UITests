@@ -132,7 +132,11 @@ private fun List<String>.runSingleCapture(workingDir: String = "."): CommandResu
     return CommandResult(exitCode, output.toString())
 }
 
-fun List<String>.runCommand(workingDir: String = ".", suppressErrors: Boolean = false): Int {
+fun List<String>.runCommand(
+    workingDir: String = ".",
+    suppressErrors: Boolean = false,
+    environmentVariables: Map<String, String> = emptyMap(),
+): Int {
     val isAdb = this.first().contains("adb")
 
     if (isAdb) {
@@ -140,12 +144,12 @@ fun List<String>.runCommand(workingDir: String = ".", suppressErrors: Boolean = 
         if (devices.size > 1) {
             return devices.maxOfOrNull { device ->
                 val adbArgs = listOf(this.first(), "-s", device) + this.drop(1)
-                adbArgs.runSingleCommand(workingDir, suppressErrors)
+                adbArgs.runSingleCommand(workingDir, suppressErrors, environmentVariables)
             } ?: 0
         }
     }
 
-    return runSingleCommand(workingDir, suppressErrors)
+    return runSingleCommand(workingDir, suppressErrors, environmentVariables)
 }
 
 private fun getAdbDevices(): List<String> {
@@ -160,7 +164,11 @@ private fun getAdbDevices(): List<String> {
         .map { it.split("\t").first() }
 }
 
-private fun List<String>.runSingleCommand(workingDir: String, suppressErrors: Boolean = false): Int {
+private fun List<String>.runSingleCommand(
+    workingDir: String,
+    suppressErrors: Boolean = false,
+    environmentVariables: Map<String, String> = emptyMap(),
+): Int {
     val command = if (this.first().contains("xcodebuild")) {
         listOf("/bin/bash", "-c", "set -o pipefail && ${joinToString(" ") { if (' ' in it) "'$it'" else it }} | xcbeautify")
     } else {
@@ -170,6 +178,7 @@ private fun List<String>.runSingleCommand(workingDir: String, suppressErrors: Bo
     val process = ProcessBuilder(command)
         .directory(File(workingDir))
         .apply {
+            environment().putAll(environmentVariables)
             if (verboseCommandOutput) {
                 redirectOutput(INHERIT)
                 redirectError(INHERIT)

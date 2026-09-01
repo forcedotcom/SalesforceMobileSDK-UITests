@@ -69,7 +69,10 @@ private const val FRE_DISMISS_TIMEOUT: Long = 30_000
  * reach; UiAutomator cross-process lookups are used instead. Fields are matched by their web
  * resource id first, then fall back to the generic EditText/Button classes when Chrome does not
  * surface the ids (QUERY_ALL_PACKAGES in the androidTest manifest grants the cross-process access).
- * Pre-14.0 upgrade tests opt out of the Custom Tab preparation and drive the in-app WebView.
+ *
+ * LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): [expectAdvancedAuthentication] is false while
+ * logging into v12.2.0 and v13.2.1 apps, whose login form is still in the in-app WebView. Remove
+ * the parameter and conditional branch after both 12.x and 13.x upgrade coverage are retired.
  */
 class LoginPageObject(
     private val expectAdvancedAuthentication: Boolean = true,
@@ -129,7 +132,9 @@ class LoginPageObject(
 
     /**
      * Advanced authentication opens the login form in Chrome, whose first-run UI may need clearing.
-     * Upgrade tests run against a pre-14.0 app whose login form remains in the app's WebView.
+     * LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 and v13.2.1 keep the login form in the
+     * app's WebView, so their initial-login phase skips Chrome preparation. Remove this branch only
+     * after both 12.x and 13.x upgrade coverage are retired.
      */
     private fun prepareLoginSurface() {
         if (expectAdvancedAuthentication) {
@@ -143,25 +148,18 @@ class LoginPageObject(
         errorMessage: String,
         waitTimeout: Long = timeout * 5
     ): UiObject {
-        for (selector in listOf(primarySelector, fallbackSelector)) {
-            val control = device.findObject(selector)
-            if (waitForLoginControl(control, waitTimeout)) {
-                return control
-            }
-        }
-        throw AssertionError(errorMessage)
-    }
-
-    private fun waitForLoginControl(control: UiObject, waitTimeout: Long): Boolean {
+        val controls = listOf(primarySelector, fallbackSelector).map(device::findObject)
         val deadline = System.currentTimeMillis() + waitTimeout
         while (System.currentTimeMillis() < deadline) {
             blockLocalNetworkAccessIfPresent()
-            if (control.waitForExists(QUICK_CHECK_TIMEOUT)) {
-                blockLocalNetworkAccessIfPresent()
-                return true
+            for (control in controls) {
+                if (control.waitForExists(QUICK_CHECK_TIMEOUT)) {
+                    blockLocalNetworkAccessIfPresent()
+                    return control
+                }
             }
         }
-        return false
+        throw AssertionError(errorMessage)
     }
 
     /**
