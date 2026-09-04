@@ -231,7 +231,8 @@ private fun setupComplexHybrid(appInfo: AppInfo) {
     val wwwDir = File(appInfo.appPath, "www")
     copyComplexHybridSampleContent(sampleDir, wwwDir)
 
-    val cordovaResult = "cordova prepare".runCommand(workingDir = appInfo.appPath)
+    val platform = if (appInfo.os == OS.IOS) "ios" else "android"
+    val cordovaResult = "cordova prepare $platform".runCommand(workingDir = appInfo.appPath)
     if (cordovaResult != 0) {
         throw Exception("Cordova prepare failed for complex hybrid.")
     }
