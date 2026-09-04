@@ -168,7 +168,7 @@ private fun runAndroidUpgradeLogin(appInfo: AppInfo, upgradeFrom: String) {
     // return before AccountManager registers that authenticator, and login then crashes with a
     // SecurityException. Use a streamed install for the v12.x setup app. v13.2.1 does not need
     // this workaround; remove it with 12.x upgrade coverage.
-    val useIncrementalInstall = !upgradeFrom.startsWith("v12.")
+    val useIncrementalInstall = !upgradeFrom.startsWith("v12.") // Version tags use "v12.x.y".
     installAndroidApp(appInfo, useIncrementalInstall)
 
     "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS"
