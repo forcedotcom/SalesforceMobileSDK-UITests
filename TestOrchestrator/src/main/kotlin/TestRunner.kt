@@ -46,12 +46,12 @@ fun runTests(
     iOSDevice: String,
     useFirebase: Boolean,
     finishProgress: Boolean = true,
-    upgradeLogin: Boolean = false,
+    upgradeFrom: String? = null,
 ) {
     when (appInfo.os) {
         OS.ANDROID -> {
-            if (upgradeLogin) {
-                runAndroidUpgradeLogin(appInfo)
+            if (upgradeFrom != null) {
+                runAndroidUpgradeLogin(appInfo, upgradeFrom)
             } else if (useFirebase) {
                 runAndroidTestsFirebase(appInfo)
             } else {
@@ -64,7 +64,7 @@ fun runTests(
             // Update banner title with resolved iOS versions
             PanelProgressBarMaker.title = "Testing ${appInfo.appName} (iOS " +
                     "${simulators.joinToString(", ") { it.iOSVersion }})"
-            runIosTests(appInfo, simulators, upgradeLogin)
+            runIosTests(appInfo, simulators, upgradeFrom != null)
         }
     }
 
@@ -162,8 +162,14 @@ private fun runIosUpgradeTests(appInfo: AppInfo, simulators: List<SimulatorInfo>
     }
 }
 
-private fun runAndroidUpgradeLogin(appInfo: AppInfo) {
-    installAndroidApp(appInfo)
+private fun runAndroidUpgradeLogin(appInfo: AppInfo, upgradeFrom: String) {
+    // LEGACY UPGRADE AUTOMATION (SDK 12.x ONLY): SDK 12.x creates the account with the shared
+    // com.salesforce.androidsdk authenticator. On Android 16, an incremental APK install can
+    // return before AccountManager registers that authenticator, and login then crashes with a
+    // SecurityException. Use a streamed install for the v12.x setup app. v13.2.1 does not need
+    // this workaround; remove it with 12.x upgrade coverage.
+    val useIncrementalInstall = !upgradeFrom.startsWith("v12.") // Version tags use "v12.x.y".
+    installAndroidApp(appInfo, useIncrementalInstall)
 
     "adb shell pm grant ${appInfo.packageName} android.permission.POST_NOTIFICATIONS"
         .runCommand(suppressErrors = true)

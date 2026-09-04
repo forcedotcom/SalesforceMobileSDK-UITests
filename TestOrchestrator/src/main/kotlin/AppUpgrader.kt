@@ -38,6 +38,8 @@ fun performUpgrade(
     }
     verbosePrinter?.invoke("Re-generating app with dev SDK")
 
+    // The dev Packager receives --skip-build in generateApp; compileApp below produces the new
+    // artifact that is installed over the old app.
     val newAppInfo = generateApp(appSource, useSF, appConfig = appConfig)
     // LEGACY UPGRADE AUTOMATION (SDK 12.x ONLY): v12.2.0 hybrid session restoration needs the
     // startup workaround below. v13.2.1 does not use it. Remove this branch with 12.x coverage.

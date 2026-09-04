@@ -38,7 +38,10 @@ import com.salesforce.util.verbosePrinter
 import kotlinx.serialization.json.*
 import java.io.File
 
-fun installAndroidApp(appInfo: AppInfo) {
+fun installAndroidApp(
+    appInfo: AppInfo,
+    useIncrementalInstall: Boolean = true,
+) {
     // Push config to device so androidTestConfig can load it
     val pushResult = "$ADB push shared/test/android/ui_test_config.json /data/local/tmp/ui_test_config.json".runCommand()
     if (pushResult != 0) {
@@ -51,7 +54,14 @@ fun installAndroidApp(appInfo: AppInfo) {
         completed += 1
     }
     verbosePrinter?.invoke("Installing App")
-    val installResult = "$ADB install -r ${appInfo.apkPath}".split(" ").runCommandCapture()
+    val installCommand = buildList {
+        add(ADB)
+        add("install")
+        if (!useIncrementalInstall) add("--no-incremental")
+        add("-r")
+        add(appInfo.apkPath)
+    }
+    val installResult = installCommand.runCommandCapture()
     if (installResult.exitCode != 0) {
         throw Exception("APK install failed.\n${installResult.output?.trim()}")
     }

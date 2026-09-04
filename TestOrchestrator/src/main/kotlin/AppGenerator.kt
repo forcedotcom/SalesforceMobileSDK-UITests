@@ -123,6 +123,11 @@ fun generateApp(
     generationCommand.add("--consumerkey=${resolvedAppConfig.consumerKey}")
     generationCommand.add("--callbackurl=${resolvedAppConfig.redirectUri}")
     generationCommand.add("--loginserver=$loginUrl")
+    if (!isLegacyPackager) {
+        // The dev Packager supports generation without its own platform build. compileApp builds
+        // the final configured app after all UITest-specific setup has been applied.
+        generationCommand.add("--skip-build")
+    }
 
     val generationEnvironment = if (appSource.os == OS.ANDROID) {
         val gradleOptions = listOfNotNull(
@@ -134,17 +139,23 @@ fun generateApp(
         emptyMap()
     }
 
-    // LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): The v13.2.1 packager performs a redundant device
-    // build while generating iOS React Native apps. Its fmt dependency fails with current Xcode
-    // before the orchestrator can patch it and perform the real simulator build. React Native 12.x
-    // is not in the nightly matrix. Remove this patch when 13.x React Native coverage is retired.
-    if (isLegacyPackager && appSource.os == OS.IOS && appSource.isReact) {
-        skipLegacyIosReactNativeGenerationBuild(packagerDir)
+    // LEGACY PACKAGER COMPATIBILITY (SDK 12.2.0 AND 13.2.1): These released Packagers predate
+    // --skip-build. Apply the equivalent shim whenever one is used; compileApp still builds the
+    // configured app afterward. Remove this per SDK line when its coverage ends.
+    val restorePackagerTestBuild = if (isLegacyPackager) {
+        skipLegacyPackagerTestBuild(packagerDir, appSource.os)
+    } else {
+        null
     }
 
-    // Current Android apps compile the Mobile SDK source tree during generation. The templates'
-    // 512 MB metaspace limit is too low for that build, so override it for the packager process.
-    if (generationCommand.runCommand(environmentVariables = generationEnvironment) != 0) {
+    // Legacy Android generation can still invoke Gradle during dependency setup. The templates'
+    // 512 MB metaspace limit is too low for that path, so override it for the packager process.
+    val generationResult = try {
+        generationCommand.runCommand(environmentVariables = generationEnvironment)
+    } finally {
+        restorePackagerTestBuild?.invoke()
+    }
+    if (generationResult != 0) {
         throw Exception("Unable to generate app.")
     }
 
@@ -172,37 +183,39 @@ fun generateApp(
 }
 
 /**
- * LEGACY UPGRADE AUTOMATION (SDK 13.x ONLY): Skips the v13.2.1 packager's redundant iOS React
- * Native validation build. The orchestrator still patches fmt and fully compiles the generated app
- * in [compileApp]. React Native 12.x is not covered; remove this with 13.x RN coverage.
+ * LEGACY PACKAGER COMPATIBILITY (SDK 12.2.0 AND 13.2.1): Gives released Packagers the behavior of
+ * the dev Packager's `--skip-build` option. It skips `test_force.js` compilation for every app type
+ * on the selected platform; [compileApp] builds the configured app afterward. Once a Packager with
+ * `--skip-build` is the minimum tested source, remove this shim and pass the option instead.
  */
-private fun skipLegacyIosReactNativeGenerationBuild(packagerDir: String) {
+private fun skipLegacyPackagerTestBuild(
+    packagerDir: String,
+    os: OS,
+): () -> Unit {
     val packagerTest = File(packagerDir, "test/test_force.js")
     if (!packagerTest.exists()) {
         throw IllegalStateException(
-            "Cannot patch legacy iOS React Native generation: ${packagerTest.path} not found.",
+            "Cannot skip legacy Packager build: ${packagerTest.path} not found.",
         )
     }
 
-    val buildCall =
-        """        buildForiOS(target, workspaceDir, appName);
-        |""".trimMargin()
+    val buildCall = when (os) {
+        OS.ANDROID -> "        buildForAndroid(target, workspaceDir);\n"
+        OS.IOS -> "        buildForiOS(target, workspaceDir, appName);\n"
+    }
     val content = packagerTest.readText()
     val buildCallCount = content.windowed(buildCall.length).count { it == buildCall }
     if (buildCallCount != 1) {
         throw IllegalStateException(
-            "Cannot patch legacy iOS React Native generation in ${packagerTest.path}: " +
-                "expected exactly one buildForiOS call, found $buildCallCount.",
+            "Cannot skip legacy Packager build in ${packagerTest.path}: " +
+                "expected exactly one ${os.name.lowercase()} build call, found $buildCallCount.",
         )
     }
 
-    val guardedBuildCall =
-        """        // SDK 13.x upgrade compatibility: the orchestrator applies the fmt patch before compiling.
-        |        if (!isReactNative) {
-        |            buildForiOS(target, workspaceDir, appName);
-        |        }
-        |""".trimMargin()
-    packagerTest.writeText(content.replace(buildCall, guardedBuildCall))
+    val skippedBuildCall =
+        "        // UITests legacy Packager compatibility: compileApp builds the app next.\n"
+    packagerTest.writeText(content.replace(buildCall, skippedBuildCall))
+    return { packagerTest.writeText(content) }
 }
 
 private fun setupComplexHybrid(appInfo: AppInfo) {
