@@ -378,6 +378,21 @@ class TestOrchestrator : CliktCommand() {
                     compileApp(appInfo, debug)
                 }
 
+                // Build the current app before authenticating the old app. Upgrade jobs share an
+                // OAuth test user in CI, so installing immediately after login minimizes the
+                // chance that another concurrent login invalidates this job's refresh token.
+                val preparedUpgrade = if (upgradeFrom != null) {
+                    prepareUpgrade(
+                        appSource,
+                        useSF,
+                        debug,
+                        upgradeFrom = upgradeFrom!!,
+                        appConfig = appConfig,
+                    )
+                } else {
+                    null
+                }
+
                 // Run login test (installs app, logs in, asserts app loads)
                 runTests(
                     appInfo,
@@ -390,13 +405,10 @@ class TestOrchestrator : CliktCommand() {
 
                 // Upgrade Phase 2: Upgrade test
                 if (upgradeFrom != null) {
-                    performUpgrade(
-                        appSource,
-                        useSF,
-                        debug,
-                        upgradeFrom = upgradeFrom!!,
-                        appConfig = appConfig,
-                    )
+                    val upgradeApp = checkNotNull(preparedUpgrade) {
+                        "Prepared upgrade app was not available."
+                    }
+                    performUpgrade(upgradeApp)
                 }
             } catch (e: Exception) {
                 failures.add(appSource.appName to e)

@@ -14,19 +14,22 @@ import kotlin.collections.component2
 import kotlin.collections.iterator
 
 /**
- * Phase 2 of upgrade testing: re-generate the app with the current (dev) SDK,
- * re-compile it, install it over the old version, and run the upgrade test
- * which asserts the user is still logged in.
+ * Generates and compiles the current (dev) app for the upgrade.
+ *
+ * The caller prepares both artifacts before the old app logs in. Nightly jobs share an OAuth test
+ * user, so another login can invalidate the old app's refresh token. This lets [performUpgrade]
+ * install and launch the current app immediately after authentication instead of leaving the
+ * session exposed during a multi-minute build.
  */
-fun performUpgrade(
+fun prepareUpgrade(
     appSource: AppSource,
     useSF: Boolean,
     debug: Boolean,
     upgradeFrom: String,
     appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
-) {
-    // Stop any lingering Gradle daemons from Phase 1 to reclaim memory
-    // before Phase 2 compilation starts alongside the running emulator.
+): AppInfo {
+    // Stop any lingering Gradle daemons from Phase 1 to reclaim memory before Phase 2 compilation
+    // starts alongside the running emulator.
     if (appSource.os == OS.ANDROID) {
         verbosePrinter?.invoke("Stopping Gradle daemons to free memory for Phase 2")
         "./gradlew --stop".runCommand(workingDir = TestOrchestrator.ANDROID_TEST_DIR)
@@ -41,28 +44,37 @@ fun performUpgrade(
     // The dev Packager receives --skip-build in generateApp; compileApp below produces the new
     // artifact that is installed over the old app.
     val newAppInfo = generateApp(appSource, useSF, appConfig = appConfig)
-    // LEGACY UPGRADE AUTOMATION (SDK 12.x ONLY): v12.2.0 hybrid session restoration needs the
-    // startup workaround below. v13.2.1 does not use it. Remove this branch with 12.x coverage.
-    if (upgradeFrom.startsWith("v12.")) {
-        applySdk12IosHybridUpgradeStartupWorkaround(newAppInfo)
+    // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): Hybrid sessions restored from v12.2.0 or
+    // v13.2.1 need the startup workaround below when the upgrade follows login immediately.
+    // Remove each version from this condition when its upgrade coverage is retired.
+    if (upgradeFrom.startsWith("v12.") || upgradeFrom.startsWith("v13.")) {
+        applyLegacyIosHybridUpgradeStartupWorkaround(newAppInfo)
     }
     compileApp(newAppInfo, debug)
 
-    val simulators = if (appSource.os == OS.IOS) getRunningTestSimulators() else emptyList()
+    return newAppInfo
+}
+
+/**
+ * Installs the prepared current app over the authenticated old app and verifies that the login
+ * session survives the upgrade.
+ */
+fun performUpgrade(newAppInfo: AppInfo) {
+    val simulators = if (newAppInfo.os == OS.IOS) getRunningTestSimulators() else emptyList()
     runUpgradeTests(newAppInfo, simulators)
 }
 
 /**
- * LEGACY UPGRADE AUTOMATION (SDK 12.x ONLY): Keeps the current iOS hybrid app paintable when it
- * inherits an authenticated session from v12.2.0. Remove this function with 12.x hybrid coverage;
- * v13.2.1 does not use it.
+ * LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): Keeps the current iOS hybrid app paintable when it
+ * inherits an authenticated session from v12.2.0 or v13.2.1 and launches immediately after login.
+ * Remove this function when both 12.x and 13.x hybrid upgrade coverage are retired.
  *
  * Restoring the old session can synchronously replace the root view controller during scene
  * activation. UIKit then contains a fully loaded Cordova page that never paints. Deferring that
  * replacement by one main-queue turn avoids the activation race. Normal generation is
  * intentionally untouched.
  */
-private fun applySdk12IosHybridUpgradeStartupWorkaround(appInfo: AppInfo) {
+private fun applyLegacyIosHybridUpgradeStartupWorkaround(appInfo: AppInfo) {
     if (appInfo.os != OS.IOS || !appInfo.isHybrid) return
 
     val appDelegate = File(
