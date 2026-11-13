@@ -59,10 +59,19 @@ struct UITestConfig: Decodable {
     /// Returns the test user for the current iOS version.
     /// Each major iOS version maps to a different user to avoid conflicts
     /// when running tests on multiple simulators in parallel.
-    func user() -> User {
-        let regularAuth = loginHosts.first { $0.name == "regular_auth" }!
-        let major = Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "0") ?? 0
-        let index = major % regularAuth.users.count
-        return regularAuth.users[index]
+    func user(host: String = "regular_auth") -> User {
+        guard let loginHost = loginHosts.first(where: { $0.name == host }) else {
+            fatalError("Login host '\(host)' not found in ui_test_config.json.")
+        }
+        var major = Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "0") ?? 0
+        // TODO: Remove this special case when iOS 18 support is dropped.
+        // The user index is the major version modulo the number of users on the host. With only
+        // 3 users (native_login), iOS 18 and iOS 27 both give index 0 and would share an account.
+        // Using 28 in place of 18 gives iOS 18 index 1 instead, so 18, 26 and 27 get indexes
+        // 1, 2 and 0. On hosts with 5 users, 28 gives the same index as 18 (3), so those users
+        // are unchanged.
+        if major == 18 { major = 28 }
+        let index = major % loginHost.users.count
+        return loginHost.users[index]
     }
 }

@@ -26,10 +26,8 @@
  */
 package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import android.os.Build
 import pageobjects.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.salesforce.KnownLoginHostConfig
 import com.salesforce.KnownUserConfig
 import com.salesforce.androidTestConfig
@@ -46,12 +44,7 @@ import pageobjects.testapppageobjects.*
 @RunWith(AndroidJUnit4::class)
 class LoginTest {
     val app = TestApplication()
-    val knownUserConfig: KnownUserConfig by lazy {
-        val minSdk = InstrumentationRegistry.getInstrumentation().targetContext
-            .applicationInfo.minSdkVersion
-        val userNumber = (Build.VERSION.SDK_INT - minSdk) % KnownUserConfig.entries.toTypedArray().count()
-        KnownUserConfig.entries[userNumber]
-    }
+    val knownUserConfig: KnownUserConfig by lazy { knownUserConfigForDevice() }
 
     @Before
     fun setupTestApp() {

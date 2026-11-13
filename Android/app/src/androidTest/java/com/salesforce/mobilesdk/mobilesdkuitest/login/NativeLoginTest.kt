@@ -26,8 +26,11 @@
  */
 package com.salesforce.mobilesdk.mobilesdkuitest.login
 
-import pageobjects.loginpageobjects.NativeLoginPageObject
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.salesforce.KnownLoginHostConfig
+import com.salesforce.KnownUserConfig
+import com.salesforce.androidTestConfig
+import pageobjects.loginpageobjects.NativeLoginPageObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +42,10 @@ import pageobjects.testapppageobjects.TestApplication
 class NativeLoginTest {
     private var app = TestApplication()
 
+    private val knownUserConfig: KnownUserConfig by lazy {
+        knownUserConfigForDevice(KnownLoginHostConfig.NATIVE_LOGIN)
+    }
+
     @Before
     fun setupTestApp() {
         app.launch()
@@ -46,9 +53,10 @@ class NativeLoginTest {
 
     @Test
     fun testLogin() {
+        val (username, password) = androidTestConfig.getUser(KnownLoginHostConfig.NATIVE_LOGIN, knownUserConfig)
         val loginPage = NativeLoginPageObject()
-//        loginPage.setUsername(UserUtility.nativeLoginUsername)
-//        loginPage.setPassword(UserUtility.password)
+        loginPage.setUsername(username)
+        loginPage.setPassword(password)
         loginPage.tapLogin()
 
         Thread.sleep(BasePageObject().timeout)

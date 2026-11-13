@@ -114,7 +114,10 @@ fun generateApp(
     // is missing at generation time (previously it was only read later, at
     // compile time).
     val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
-    val resolvedAppConfig = testConfig.getApp(appConfig)
+    // Native Login apps authenticate against an Experience Cloud community with their own
+    // connected app, so they always use the native_login app config regardless of --appConfig.
+    val isNativeLogin = appSource.appName.contains("nativelogin", ignoreCase = true)
+    val resolvedAppConfig = testConfig.getApp(if (isNativeLogin) KnownAppConfig.NATIVE_LOGIN else appConfig)
     val loginUrl = testConfig.getLoginHost(KnownLoginHostConfig.REGULAR_AUTH).url
     // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 can retain the default
     // login.salesforce.com host, while v13.2.1 iOS can retain bootconfig placeholders. Keep the
@@ -161,6 +164,15 @@ fun generateApp(
 
     val appInfo = getAppInfo(appSource)
 
+    if (isNativeLogin) {
+        verbosePrinter?.invoke("Applying Native Login client id, redirect URI and community URL")
+        applyNativeLoginConfig(
+            appInfo = appInfo,
+            appConfig = resolvedAppConfig,
+            communityUrl = testConfig.getLoginHost(KnownLoginHostConfig.NATIVE_LOGIN).url,
+        )
+    }
+
     if (appSource.isComplexHybrid) {
         setupComplexHybrid(appInfo)
     }
@@ -180,6 +192,35 @@ fun generateApp(
     }
 
     return appInfo
+}
+
+/**
+ * The Native Login templates hardcode `your-client-id`, `your-redirect-uri` and `your-community-url`
+ * in source (SceneDelegate.swift / MainApplication.kt) and assert on them at startup, so the
+ * Packager's bootconfig substitution alone leaves an app that crashes on launch. Only the
+ * declaration lines are rewritten: the placeholder strings are also used by the startup checks
+ * (`clientId != "your-client-id"`), which must keep comparing against the placeholder.
+ */
+internal fun applyNativeLoginConfig(appInfo: AppInfo, appConfig: AppConfig, communityUrl: String) {
+    val sourceFile = File(appInfo.appPath).walkTopDown().firstOrNull {
+        it.isFile && it.name == if (appInfo.os == OS.IOS) "SceneDelegate.swift" else "MainApplication.kt"
+    } ?: throw Exception("Native Login source file not found in ${appInfo.appPath}.")
+
+    val declaration = if (appInfo.os == OS.IOS) "let" else "val"
+    val replacements = mapOf(
+        "clientId" to appConfig.consumerKey,
+        "redirectUri" to appConfig.redirectUri,
+        "loginUrl" to communityUrl,
+    )
+    var content = sourceFile.readText()
+    replacements.forEach { (name, value) ->
+        val pattern = Regex("""(\b$declaration\s+$name\s*=\s*)"[^"]*"""")
+        if (!pattern.containsMatchIn(content)) {
+            throw Exception("Could not find '$declaration $name' in ${sourceFile.path}.")
+        }
+        content = pattern.replace(content) { it.groupValues[1] + "\"" + value + "\"" }
+    }
+    sourceFile.writeText(content)
 }
 
 /**

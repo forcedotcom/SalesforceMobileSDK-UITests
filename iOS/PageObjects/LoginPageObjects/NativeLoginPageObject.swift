@@ -35,7 +35,27 @@ import Foundation
 import XCTest
 
 class NativeLoginPageObject: LoginPageObject {
-    
+
+    // Native Login renders SwiftUI fields in the app itself, not a browser web view, so the
+    // web-view based form handling in LoginPageObject does not apply.
+    override func waitForLoginFormReady() -> Void {
+        _ = app.textFields["Username"].waitForExistence(timeout: timeout * 12)
+    }
+
+    override func setUsername(name: String) -> Void {
+        let usernameField = app.textFields["Username"]
+        _ = usernameField.waitForExistence(timeout: timeout * 12)
+        usernameField.tap()
+        usernameField.typeText(name)
+    }
+
+    override func setPassword(password: String) -> Void {
+        let passwordField = app.secureTextFields["Password"]
+        _ = passwordField.waitForExistence(timeout: timeout)
+        passwordField.tap()
+        passwordField.typeText(password)
+    }
+
     override func tapLogin() -> Void {
         hideKeyboard()
         let loginButton = app.buttons["Log In"]

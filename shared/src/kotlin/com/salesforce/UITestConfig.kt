@@ -48,6 +48,7 @@ enum class KnownUserConfig {
 enum class KnownLoginHostConfig {
     REGULAR_AUTH,
     ADVANCED_AUTH,
+    NATIVE_LOGIN,
 }
 
 enum class KnownAppConfig {
@@ -58,7 +59,11 @@ enum class KnownAppConfig {
     BEACON_JWT,
     CA_OPAQUE,
     CA_JWT,
+    NATIVE_LOGIN,
 }
+
+// The shared config also carries keys used by other repos (e.g. loginPoolHost), so ignore unknowns.
+private val configJson = Json { ignoreUnknownKeys = true }
 
 val androidTestConfig: UITestConfig by lazy { loadConfig("android") }
 val iosTestConfig: UITestConfig by lazy { loadConfig("ios") }
@@ -78,7 +83,7 @@ private fun loadConfig(platformPath: String): UITestConfig {
             "(consumer key + redirect URI) before running the tests."
     )
 
-    return Json.decodeFromString(jsonString)
+    return configJson.decodeFromString(jsonString)
 }
 
 @Serializable
