@@ -251,7 +251,7 @@ private fun runAndroidTestsLocal(appInfo: AppInfo) {
         .runCommand(suppressErrors = true)
 
     // TestOrchestrator params
-    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
+    val testClass = if (appInfo.isNativeLogin) {
         "NativeLoginTest"
     } else {
         "LoginTest"
@@ -297,7 +297,7 @@ private fun runAndroidTestsFirebase(appInfo: AppInfo) {
     }
     verbosePrinter?.invoke("Testing App with Firebase")
 
-    val testClass = if (appInfo.appName.contains("nativelogin", ignoreCase = true)) {
+    val testClass = if (appInfo.isNativeLogin) {
         "NativeLoginTest"
     } else {
         "LoginTest"
@@ -346,7 +346,7 @@ private fun runIosTests(
 ) {
     val testScheme = when {
         upgradeLogin -> "UpgradeTest"
-        appInfo.appName.contains("nativelogin", ignoreCase = true) -> "NativeLoginTest"
+        appInfo.isNativeLogin -> "NativeLoginTest"
         else -> "LoginTest"
     }
     val onlyTesting = if (upgradeLogin) "SalesforceMobileSDK-UITest/UpgradeTest/testInitialLogin" else null

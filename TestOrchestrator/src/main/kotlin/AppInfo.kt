@@ -38,6 +38,7 @@ data class AppInfo(
     val debugBuild: Boolean = false,
     val complexHybridType: String? = null,
 ) {
+    val isNativeLogin = isNativeLoginAppName(appName)
     val androidRoot = when {
         isHybrid -> "$appPath/platforms/android"
         isReact -> "$appPath/android"
@@ -67,6 +68,13 @@ data class AppInfo(
         }
     }"
 }
+
+/**
+ * Native Login apps are generated from the iOSNativeLoginTemplate / AndroidNativeLoginTemplate
+ * templates, whose app names are `iosnativelogin` / `androidnativelogin`. Match the end of the name
+ * rather than any substring so other templates are not treated as Native Login apps.
+ */
+fun isNativeLoginAppName(appName: String): Boolean = appName.endsWith("nativelogin", ignoreCase = true)
 
 enum class OS {
     ANDROID,
@@ -105,6 +113,7 @@ abstract class AppSource(open val os: OS) {
         }
     }
     val isReact by lazy { appName.contains("react") }
+    val isNativeLogin by lazy { isNativeLoginAppName(appName) }
 
     data class ByType(override val os: OS, val type: AppType) : AppSource(os) {
         // <android/ios><native/hybridlocal/etc>

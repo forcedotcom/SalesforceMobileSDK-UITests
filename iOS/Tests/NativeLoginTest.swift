@@ -34,6 +34,9 @@
 import XCTest
 
 class NativeLoginTest: BaseSDKTest {
+
+    // Native Login authenticates community users, not the regular_auth org users.
+    override var loginHostName: String { "native_login" }
     
     func testLogin() {
         let app = TestApplication()

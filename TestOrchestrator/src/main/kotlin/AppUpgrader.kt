@@ -26,7 +26,7 @@ fun prepareUpgrade(
     useSF: Boolean,
     debug: Boolean,
     upgradeFrom: String,
-    appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
+    appConfig: KnownAppConfig? = null,
 ): AppInfo {
     // Stop any lingering Gradle daemons from Phase 1 to reclaim memory before Phase 2 compilation
     // starts alongside the running emulator.

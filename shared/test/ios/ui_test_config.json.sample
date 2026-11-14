@@ -1,4 +1,5 @@
 {
+    "loginPoolHost": "https://login.your-env.salesforce.com",
     "loginHosts": [
         {
             "name": "regular_auth",
@@ -51,6 +52,34 @@
                     "password": "yourPasswordHere"
                 }
             ]
+        },
+        {
+            "name": "community_auth",
+            "url": "https://your-community.site.com/customerportal",
+            "users": [
+                {
+                    "username": "tios@communitytestorg.com",
+                    "password": "yourPasswordHere"
+                }
+            ]
+        },
+        {
+            "name": "native_login",
+            "url": "https://your-community.site.com/headless",
+            "users": [
+                {
+                    "username": "testios1@community.yourtestorg.com",
+                    "password": "yourPasswordHere"
+                },
+                {
+                    "username": "testios2@community.yourtestorg.com",
+                    "password": "yourPasswordHere"
+                },
+                {
+                    "username": "testios3@community.yourtestorg.com",
+                    "password": "yourPasswordHere"
+                }
+            ]
         }
     ],
     "apps": [
@@ -81,14 +110,56 @@
         {
             "name": "beacon_opaque",
             "consumerKey": "your_consumer_key_here",
-            "redirectUri": "beaconadvancedopaque://success/done",
+            "redirectUri": "beaconopaque://success/done",
             "scopes": "api content id lightning refresh_token sfap_api web"
         },
         {
             "name": "beacon_jwt",
             "consumerKey": "your_consumer_key_here",
-            "redirectUri": "beaconadvancedjwt://success/done",
+            "redirectUri": "beaconjwt://success/done",
             "scopes": "api content id lightning refresh_token sfap_api web"
+        },
+        {
+            "name": "eca_jwt_rtr",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "ecajwtrtr://success/done",
+            "scopes": "api content id lightning refresh_token sfap_api web"
+        },
+        {
+            "name": "eca_opaque_rtr",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "ecaopaquertr://success/done",
+            "scopes": "api content id lightning refresh_token sfap_api web"
+        },
+        {
+            "name": "eca_jwt_dpop",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "ecajwtdpop://success/done",
+            "scopes": "api content id lightning refresh_token sfap_api web"
+        },
+        {
+            "name": "eca_jwt_dpop_rtr",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "ecajwtdpoprtr://success/done",
+            "scopes": "api content id lightning refresh_token sfap_api web"
+        },
+        {
+            "name": "eca_jwt_headless",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "https://your-community.site.com/customerportal/services/oauth2/echo",
+            "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+        },
+        {
+            "name": "eca_jwt_dpop_headless",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "https://your-community.site.com/customerportal/services/oauth2/echo",
+            "scopes": "api content id lightning refresh_token sfap_api visualforce web"
+        },
+        {
+            "name": "native_login",
+            "consumerKey": "your_consumer_key_here",
+            "redirectUri": "https://your-community.site.com/headless/services/oauth2/echo",
+            "scopes": "api content id lightning refresh_token sfap_api visualforce web"
         }
     ]
 }

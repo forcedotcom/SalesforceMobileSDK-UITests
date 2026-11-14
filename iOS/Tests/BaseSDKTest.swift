@@ -35,7 +35,9 @@
 import XCTest
 
 class BaseSDKTest: XCTestCase {
-    private lazy var testUser = UITestConfig.shared.user()
+    /// Login host in ui_test_config.json that supplies the test user. Subclasses override this.
+    var loginHostName: String { "regular_auth" }
+    private lazy var testUser = UITestConfig.shared.user(host: loginHostName)
     var username: String { testUser.username }
     var password: String { testUser.password }
     var timeout:double_t = 60
