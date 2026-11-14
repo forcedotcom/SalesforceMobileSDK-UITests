@@ -14,7 +14,7 @@ lib/
 gen/
 out/
 DerivedData/
-test
+/test
 tmp*
 *.tgz
 
