@@ -33,8 +33,9 @@ import com.salesforce.KnownUserConfig
 import com.salesforce.androidTestConfig
 
 /**
- * Picks the test user for the device's API level so tests running in parallel on different API
- * levels do not share an account. [userCount] is the number of users available on the login host.
+ * Picks the test user for the device's API level, so tests running in parallel on different API
+ * levels mostly use different accounts. [userCount] is the number of users available on the login
+ * host. When there are fewer users than API levels under test, some API levels share an account.
  */
 fun knownUserConfigForDevice(userCount: Int = KnownUserConfig.entries.size): KnownUserConfig {
     val minSdk = InstrumentationRegistry.getInstrumentation().targetContext

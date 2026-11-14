@@ -57,7 +57,7 @@ fun generateApp(
     packagerDir: String = "SalesforceMobileSDK-Package",
     packagerVersion: String? = null,
     org: String = FORCE_DOT_COM_ORG,
-    appConfig: KnownAppConfig = KnownAppConfig.ECA_OPAQUE,
+    appConfig: KnownAppConfig? = null,
 ): AppInfo {
     val generationCommand = mutableListOf(
         "./$packagerDir/test/test_force.js",
@@ -115,9 +115,17 @@ fun generateApp(
     // compile time).
     val testConfig = if (appSource.os == OS.ANDROID) androidTestConfig else iosTestConfig
     // Native Login apps authenticate against an Experience Cloud community with their own
-    // connected app, so they always use the native_login app config regardless of --appConfig.
-    val isNativeLogin = appSource.appName.contains("nativelogin", ignoreCase = true)
-    val resolvedAppConfig = testConfig.getApp(if (isNativeLogin) KnownAppConfig.NATIVE_LOGIN else appConfig)
+    // connected app, so they always use the native_login app config.
+    val isNativeLogin = appSource.isNativeLogin
+    if (isNativeLogin && appConfig != null && appConfig != KnownAppConfig.NATIVE_LOGIN) {
+        println(
+            "Warning: --appConfig=${appConfig.name.lowercase()} is ignored for Native Login " +
+                "templates; using ${KnownAppConfig.NATIVE_LOGIN.name.lowercase()}."
+        )
+    }
+    val resolvedAppConfig = testConfig.getApp(
+        if (isNativeLogin) KnownAppConfig.NATIVE_LOGIN else appConfig ?: KnownAppConfig.ECA_OPAQUE
+    )
     val loginUrl = testConfig.getLoginHost(KnownLoginHostConfig.REGULAR_AUTH).url
     // LEGACY UPGRADE AUTOMATION (SDK 12.x AND 13.x): v12.2.0 can retain the default
     // login.salesforce.com host, while v13.2.1 iOS can retain bootconfig placeholders. Keep the
@@ -196,17 +204,25 @@ fun generateApp(
 
 /**
  * The Native Login templates hardcode `your-client-id`, `your-redirect-uri` and `your-community-url`
- * in source (SceneDelegate.swift / MainApplication.kt) and assert on them at startup, so the
- * Packager's bootconfig substitution alone leaves an app that crashes on launch. Only the
- * declaration lines are rewritten: the placeholder strings are also used by the startup checks
- * (`clientId != "your-client-id"`), which must keep comparing against the placeholder.
+ * in source and assert on them at startup, so the Packager's bootconfig substitution alone leaves
+ * an app that cannot log in. This rewrites those values in the generated app.
+ *
+ * Expects these declarations, each on its own line with no type annotation:
+ * - iOS, `SalesforceMobileSDK-Templates/iOSNativeLoginTemplate/.../SceneDelegate.swift`:
+ *   `let clientId = "..."`, `let redirectUri = "..."`, `let loginUrl = "..."`
+ * - Android, `SalesforceMobileSDK-Templates/AndroidNativeLoginTemplate/.../MainApplication.kt`:
+ *   `val clientId = "..."`, `val redirectUri = "..."`, `val loginUrl = "..."`
+ *
+ * Only the declarations are rewritten. The startup checks (`clientId != "your-client-id"`) keep
+ * comparing against the placeholder. Throws if a file or declaration is not found, so template
+ * drift fails the run instead of producing an app that cannot log in.
  */
 internal fun applyNativeLoginConfig(appInfo: AppInfo, appConfig: AppConfig, communityUrl: String) {
-    val sourceFile = File(appInfo.appPath).walkTopDown().firstOrNull {
-        it.isFile && it.name == if (appInfo.os == OS.IOS) "SceneDelegate.swift" else "MainApplication.kt"
-    } ?: throw Exception("Native Login source file not found in ${appInfo.appPath}.")
+    val fileName = if (appInfo.os == OS.IOS) "SceneDelegate.swift" else "MainApplication.kt"
+    val sourceFile = File(appInfo.appPath).walkTopDown().firstOrNull { it.isFile && it.name == fileName }
+        ?: throw Exception("Native Login source file $fileName not found in ${appInfo.appPath}.")
 
-    val declaration = if (appInfo.os == OS.IOS) "let" else "val"
+    val keyword = if (appInfo.os == OS.IOS) "let" else "val"
     val replacements = mapOf(
         "clientId" to appConfig.consumerKey,
         "redirectUri" to appConfig.redirectUri,
@@ -214,13 +230,21 @@ internal fun applyNativeLoginConfig(appInfo: AppInfo, appConfig: AppConfig, comm
     )
     var content = sourceFile.readText()
     replacements.forEach { (name, value) ->
-        val pattern = Regex("""(\b$declaration\s+$name\s*=\s*)"[^"]*"""")
+        val pattern = Regex("""(\b$keyword\s+$name\s*=\s*)"[^"]*"""")
         if (!pattern.containsMatchIn(content)) {
-            throw Exception("Could not find '$declaration $name' in ${sourceFile.path}.")
+            throw Exception("Could not find '$keyword $name = \"...\"' in ${sourceFile.path}.")
         }
-        content = pattern.replace(content) { it.groupValues[1] + "\"" + value + "\"" }
+        val literal = escapeForSourceLiteral(value, appInfo.os)
+        content = pattern.replace(content) { it.groupValues[1] + "\"" + literal + "\"" }
     }
     sourceFile.writeText(content)
+}
+
+/** Escapes [value] for use inside a double-quoted Swift or Kotlin string literal. */
+internal fun escapeForSourceLiteral(value: String, os: OS): String {
+    val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
+    // `$` starts a template expression in Kotlin string literals but is a plain character in Swift.
+    return if (os == OS.ANDROID) escaped.replace("$", "\\$") else escaped
 }
 
 /**

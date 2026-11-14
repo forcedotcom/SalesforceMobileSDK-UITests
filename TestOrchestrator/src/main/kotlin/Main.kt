@@ -147,11 +147,11 @@ class TestOrchestrator : CliktCommand() {
     val templateBranch: String? by option("-b", "--templateBranch")
         .help("Generate the app (to test) using a specific branch.  The dev packager is used. " +
                 "\u0085Optionally specify a fork org with '/' (e.g. 'brandonpage/my-feature-branch').")
-    val appConfig: KnownAppConfig by option("--appConfig")
+    val appConfig: KnownAppConfig? by option("--appConfig")
         .enum<KnownAppConfig>(ignoreCase = true)
-        .default(KnownAppConfig.ECA_OPAQUE)
         .help("Which OAuth app config (consumer key + redirect URI) from ui_test_config.json to " +
-                "generate the app with. Defaults to ${KnownAppConfig.ECA_OPAQUE.name.lowercase()}.")
+                "generate the app with. Defaults to ${KnownAppConfig.ECA_OPAQUE.name.lowercase()}. " +
+                "Native Login templates always use ${KnownAppConfig.NATIVE_LOGIN.name.lowercase()}.")
     val useFirebase: Boolean by option("-f", "--firebase").boolean()
         .defaultLazy { IS_CI && upgradeFrom.isNullOrBlank() }
         .help("Run Android tests in Firebase Test Lab. Defaults to on for CI and off otherwise.")
